@@ -101,7 +101,7 @@ class Dolphin:
       method = 'POST'
       service = 'dynamodb'
 
-      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":40,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"D2382TQM\"}}}"
+      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":40,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"" + self.serial + "\"}}}"
 
 
       t = datetime.datetime.utcnow()
