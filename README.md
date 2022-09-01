@@ -4,7 +4,7 @@ A python reverse engineer attempt of the Maytronics Dolpin pool cleaner app
 # example
 robot = Dolphin()
 
-robot.login(<username>, <password>)
+robot.login(username, password)
 
 registers = robot.Query()
 
