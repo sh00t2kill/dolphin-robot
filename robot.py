@@ -27,7 +27,7 @@ class Dolphin:
     def __init__(self):
       #Nothing really to do here
         if (self.Debug):
-            print("Petoneer Python API via the Dark Arts")
+            print("Maytonics Dolphin+ API via the Dark Arts")
             print("====================================")
             print("")  
 
