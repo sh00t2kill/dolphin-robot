@@ -1,3 +1,4 @@
+from multiprocessing.pool import RUN
 from smtpd import DebuggingServer
 from wsgiref.headers import Headers
 import requests
@@ -35,12 +36,13 @@ class Dolphin:
       authreq = self.auth(username, password)
       if not authreq:
         print ("ERROR!!!!!")
-        exit()
+        raise RuntimeError('Unable to authenticate to service')
+        
       tokenreq = self.getToken()
       if  not tokenreq:
         print ("ERROR!!!!!")
-        exit()
-
+        raise RuntimeError('Unable to retrieve token from service')
+        
     def auth(self, username, password):
       # Create the payload
       payload='Email=' + username + '&Password=' + password
