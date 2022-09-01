@@ -32,17 +32,29 @@ class Dolphin:
             print("")  
 
     def login(self, username, password):
-      self.auth(username, password)
-      self.getToken()
+      authreq = self.auth(username, password)
+      if not authreq:
+        print ("ERROR!!!!!")
+        exit()
+      tokenreq = self.getToken()
+      if  not tokenreq:
+        print ("ERROR!!!!!")
+        exit()
 
     def auth(self, username, password):
       # Create the payload
       payload='Email=' + username + '&Password=' + password
       response = requests.request("POST", self.LOGIN_URL, headers=self.Headers, data=payload)
       data = json.loads(response.text)
-      serial = data['Data']['Sernum']
-      token = data['Data']['token']
-      actual_serial = serial[:-2]
+
+      try:
+        serial = data['Data']['Sernum']
+        token = data['Data']['token']
+        actual_serial = serial[:-2]
+      except TypeError:
+        return False
+      if (self.Debug):
+        print("Found token: " + token)
 
       self.serial = actual_serial
       self.login_token = token
@@ -55,14 +67,20 @@ class Dolphin:
        payload='Sernum=' + self.serial
        response = requests.request("POST", self.TOKEN_URL, headers=self.Headers, data=payload)
        data = json.loads(response.text)
-       aws_token = data['Data']['Token']
-       aws_key = data['Data']['AccessKeyId']
-       aws_secret = data['Data']['SecretAccessKey']  
+
+       try:
+         aws_token = data['Data']['Token']
+         aws_key = data['Data']['AccessKeyId']
+         aws_secret = data['Data']['SecretAccessKey']  
+       except:
+         return False
 
        self.aws_token = aws_token
        self.aws_key = aws_key
        self.aws_secret = aws_secret
 
+       if (self.Debug):
+        print("Found aws signature token: " + data['Data']['Token'])
        return True
 
     def sign(self, key, msg):
