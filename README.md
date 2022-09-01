@@ -2,6 +2,8 @@
 A python reverse engineer attempt of the Maytronics Dolpin pool cleaner app
 
 # example
+from robot import Dolphin
+
 robot = Dolphin()
 
 robot.login(username, password)
