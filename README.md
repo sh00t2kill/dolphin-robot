@@ -3,10 +3,11 @@ A python reverse engineer attempt of the Maytronics Dolpin pool cleaner app
 
 # example
 robot = Dolphin()
-robot.auth(<username>, <password>)
-robot.getToken()
+
+robot.login(<username>, <password>)
 
 registers = robot.Query()
+
 print(registers)
 
 # TODO
