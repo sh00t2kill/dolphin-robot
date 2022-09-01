@@ -31,6 +31,10 @@ class Dolphin:
             print("====================================")
             print("")  
 
+    def login(self, username, password):
+      self.auth(username, password)
+      self.getToken()
+
     def auth(self, username, password):
       # Create the payload
       payload='Email=' + username + '&Password=' + password
