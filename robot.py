@@ -42,7 +42,8 @@ class Dolphin:
       if  not tokenreq:
         print ("ERROR!!!!!")
         raise RuntimeError('Unable to retrieve token from service')
-        
+        exit()
+
     def auth(self, username, password):
       # Create the payload
       payload='Email=' + username + '&Password=' + password
@@ -101,7 +102,7 @@ class Dolphin:
       method = 'POST'
       service = 'dynamodb'
 
-      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":40,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"D2382TQM\"}}}"
+      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"D2382TQM\"}}}"
 
 
       t = datetime.datetime.utcnow()
