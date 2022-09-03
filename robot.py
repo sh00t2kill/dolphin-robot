@@ -57,6 +57,7 @@ class Dolphin:
       except TypeError:
         return False
       if (self.Debug):
+        print("Found device:" + serial)
         print("Found token: " + token)
 
       self.serial = actual_serial
@@ -83,7 +84,10 @@ class Dolphin:
        self.aws_secret = aws_secret
 
        if (self.Debug):
+        print("AWS Key:" + aws_key)
+        print("AWS Secret:" + aws_secret)
         print("Found aws signature token: " + data['Data']['Token'])
+
        return True
 
     def sign(self, key, msg):
@@ -96,15 +100,11 @@ class Dolphin:
        kSigning = self.sign(kService, 'aws4_request')
        return kSigning
 
-    def Query(self):
+    def createAWSHeader(self, service):
       content_type = 'application/x-amz-json-1.0'
       amz_target = 'DynamoDB_20120810.Query'
       method = 'POST'
-      service = 'dynamodb'
-
-      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"D2382TQM\"}}}"
-
-
+      
       t = datetime.datetime.utcnow()
       amz_date = t.strftime('%Y%m%dT%H%M%SZ')
       date_stamp = t.strftime('%Y%m%d')
@@ -130,6 +130,13 @@ class Dolphin:
            'Authorization':authorization_header,
            'X-Amz-Security-Token':self.aws_token}
 
+      return headers
+
+    def Query(self):
+      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"D2382TQM\"}}}"
+
+      service = 'dynamodb'
+      headers = self.createAWSHeader(service) 
       request = requests.post(self.DYNAMODB_URL, data=payload, headers=headers)
       return request.text
 
