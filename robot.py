@@ -145,7 +145,36 @@ class Dolphin:
       service = 'dynamodb'
       headers = self.createAWSHeader(service, payload) 
       request = requests.post(self.DYNAMODB_URL, data=payload, headers=headers)
-      return request.text
+      return request
+
+    def mapQuery(self):
+      resp = self.Query()
+      data = resp.json()
+
+      
+      items = data['Items'][0]
+      turn_on = items['rTurnOnCount']["N"]
+      system_data = items['SystemData']['L']
+      timestamp = items['SystemDataTimeStamp']["S"]
+      count = 0
+      if (self.Debug):
+        for x in system_data:
+          print (count, x)
+          count = count + 1
+
+      schedule_type = system_data[110]["S"]
+      work_type = system_data[115]["S"]
+
+      return_data = {
+        "turn_on_count": turn_on,
+        "schedule_type": schedule_type,
+        "work_type": work_type,
+        "timestamp": timestamp
+      }
+
+      return return_data
+
+
 
     def connectIotHub(self):
       myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
