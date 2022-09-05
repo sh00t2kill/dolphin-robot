@@ -4,6 +4,11 @@ from wsgiref.headers import Headers
 import requests
 import json
 import sys, os, base64, datetime, hashlib, hmac
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+import AWSIoTPythonSDK
+import AWSIoTPythonSDK.MQTTLib as AWSIoTPyMQTT
+import uuid
+import time
 
 class Dolphin:
 
@@ -12,6 +17,7 @@ class Dolphin:
     DYNAMODB_URL    = "https://dynamodb.eu-west-1.amazonaws.com/"
     DYNAMODB_REGION = "eu-west-1"
     DYNAMODB_HOST   = 'dynamodb.eu-west-1.amazonaws.com'
+    IOT_URL         =  "a12rqfdx55bdbv-ats.iot.eu-west-1.amazonaws.com"
     Debug           = 1
     Headers         = {
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
@@ -24,9 +30,11 @@ class Dolphin:
     aws_token   = ''
     aws_key     = ''
     aws_secret  = ''
+    awsiot_id   = ''
 
     def __init__(self):
       #Nothing really to do here
+        self.awsiot_id = str(uuid.uuid4())
         if (self.Debug):
             print("Maytonics Dolphin+ API via the Dark Arts")
             print("====================================")
@@ -100,7 +108,7 @@ class Dolphin:
        kSigning = self.sign(kService, 'aws4_request')
        return kSigning
 
-    def createAWSHeader(self, service):
+    def createAWSHeader(self, service, payload):
       content_type = 'application/x-amz-json-1.0'
       amz_target = 'DynamoDB_20120810.Query'
       method = 'POST'
@@ -133,12 +141,22 @@ class Dolphin:
       return headers
 
     def Query(self):
-      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"D2382TQM\"}}}"
-
+      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"" + self.serial + "\"}}}"
       service = 'dynamodb'
-      headers = self.createAWSHeader(service) 
+      headers = self.createAWSHeader(service, payload) 
       request = requests.post(self.DYNAMODB_URL, data=payload, headers=headers)
       return request.text
 
+    def connectIotHub(self):
+      myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
+      myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 8883)
+      myAWSIoTMQTTClient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token) 
+      while True:
+        myAWSIoTMQTTClient.subscribe("#", 1, self.customCallback)
+        time.sleep(1)
 
+    def customCallback(client, userdata, message):
+      print(client)
+      print (userdata)
+      print(message)
 
