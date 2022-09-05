@@ -12,7 +12,7 @@ class Dolphin:
     DYNAMODB_URL    = "https://dynamodb.eu-west-1.amazonaws.com/"
     DYNAMODB_REGION = "eu-west-1"
     DYNAMODB_HOST   = 'dynamodb.eu-west-1.amazonaws.com'
-    Debug           = 1
+    Debug           = 0
     Headers         = {
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
                         'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
@@ -95,14 +95,15 @@ class Dolphin:
        kSigning = self.sign(kService, 'aws4_request')
        return kSigning
 
-    def Query(self):
+    def Query(self, amz_target="DynamoDB_20120810.Query"):
       content_type = 'application/x-amz-json-1.0'
-      amz_target = 'DynamoDB_20120810.Query'
+      #amz_target = 'DynamoDB_20120810.Query'
       method = 'POST'
       service = 'dynamodb'
 
       payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":40,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"" + self.serial + "\"}}}"
-
+      payload = "{\"ExclusiveStartTableName\":\"maytronics_iot_history\",\"Limit\":40}"
+      payload = "{\"Limit\": 30,\"RegionName\": \"eu-west-1\"}"
 
       t = datetime.datetime.utcnow()
       amz_date = t.strftime('%Y%m%dT%H%M%SZ')
