@@ -4,6 +4,11 @@ from wsgiref.headers import Headers
 import requests
 import json
 import sys, os, base64, datetime, hashlib, hmac
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+import AWSIoTPythonSDK
+import AWSIoTPythonSDK.MQTTLib as AWSIoTPyMQTT
+import uuid
+import time
 
 class Dolphin:
 
@@ -12,7 +17,8 @@ class Dolphin:
     DYNAMODB_URL    = "https://dynamodb.eu-west-1.amazonaws.com/"
     DYNAMODB_REGION = "eu-west-1"
     DYNAMODB_HOST   = 'dynamodb.eu-west-1.amazonaws.com'
-    Debug           = 0
+    IOT_URL         =  "a12rqfdx55bdbv-ats.iot.eu-west-1.amazonaws.com"
+    Debug           = 1
     Headers         = {
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
                         'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
@@ -24,9 +30,11 @@ class Dolphin:
     aws_token   = ''
     aws_key     = ''
     aws_secret  = ''
+    awsiot_id   = ''
 
     def __init__(self):
       #Nothing really to do here
+        self.awsiot_id = str(uuid.uuid4())
         if (self.Debug):
             print("Maytonics Dolphin+ API via the Dark Arts")
             print("====================================")
@@ -42,7 +50,8 @@ class Dolphin:
       if  not tokenreq:
         print ("ERROR!!!!!")
         raise RuntimeError('Unable to retrieve token from service')
-        
+        exit()
+
     def auth(self, username, password):
       # Create the payload
       payload='Email=' + username + '&Password=' + password
@@ -56,6 +65,7 @@ class Dolphin:
       except TypeError:
         return False
       if (self.Debug):
+        print("Found device:" + serial)
         print("Found token: " + token)
 
       self.serial = actual_serial
@@ -82,7 +92,10 @@ class Dolphin:
        self.aws_secret = aws_secret
 
        if (self.Debug):
+        print("AWS Key:" + aws_key)
+        print("AWS Secret:" + aws_secret)
         print("Found aws signature token: " + data['Data']['Token'])
+
        return True
 
     def sign(self, key, msg):
@@ -95,16 +108,11 @@ class Dolphin:
        kSigning = self.sign(kService, 'aws4_request')
        return kSigning
 
-    def Query(self, amz_target="DynamoDB_20120810.Query"):
+    def createAWSHeader(self, service, payload):
       content_type = 'application/x-amz-json-1.0'
-      #amz_target = 'DynamoDB_20120810.Query'
+      amz_target = 'DynamoDB_20120810.Query'
       method = 'POST'
-      service = 'dynamodb'
-
-      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":40,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"" + self.serial + "\"}}}"
-      payload = "{\"ExclusiveStartTableName\":\"maytronics_iot_history\",\"Limit\":40}"
-      payload = "{\"Limit\": 30,\"RegionName\": \"eu-west-1\"}"
-
+      
       t = datetime.datetime.utcnow()
       amz_date = t.strftime('%Y%m%dT%H%M%SZ')
       date_stamp = t.strftime('%Y%m%d')
@@ -130,8 +138,53 @@ class Dolphin:
            'Authorization':authorization_header,
            'X-Amz-Security-Token':self.aws_token}
 
+      return headers
+
+    def Query(self):
+      payload = "{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"" + self.serial + "\"}}}"
+      service = 'dynamodb'
+      headers = self.createAWSHeader(service, payload) 
       request = requests.post(self.DYNAMODB_URL, data=payload, headers=headers)
-      return request.text
+      return request
+
+    def mapQuery(self):
+      resp = self.Query()
+      data = resp.json()
+
+      
+      items = data['Items'][0]
+      turn_on = items['rTurnOnCount']["N"]
+      system_data = items['SystemData']['L']
+      timestamp = items['SystemDataTimeStamp']["S"]
+      count = 0
+      if (self.Debug):
+        for x in system_data:
+          print (count, x)
+          count = count + 1
+
+      schedule_type = system_data[110]["S"]
+      work_type = system_data[115]["S"]
+
+      return_data = {
+        "turn_on_count": turn_on,
+        "schedule_type": schedule_type,
+        "work_type": work_type,
+        "timestamp": timestamp
+      }
+
+      return return_data
 
 
 
+    def connectIotHub(self):
+      myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
+      myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 8883)
+      myAWSIoTMQTTClient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token) 
+      while True:
+        myAWSIoTMQTTClient.subscribe("#", 1, self.customCallback)
+        time.sleep(1)
+
+    def customCallback(client, userdata, message):
+      print(client)
+      print (userdata)
+      print(message)
