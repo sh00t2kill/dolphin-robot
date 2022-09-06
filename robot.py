@@ -23,7 +23,7 @@ class Dolphin:
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
                         'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
                       }
-
+    ca_file = "AmazonRootCA1.pem"
     login_token = ''
     aws_token   = ''
     serial      = ''
@@ -186,8 +186,8 @@ class Dolphin:
 
     def buildClient(self):
       script_dir = os.path.dirname(__file__)
-      ca_file = "AmazonRootCA1.pem"
-      ca_file_path = os.path.join(script_dir, ca_file)
+      
+      ca_file_path = os.path.join(script_dir, self.ca_file)
       myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
       myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 443)
       #print(ca_file_path)
@@ -202,8 +202,8 @@ class Dolphin:
       print("Our client is setup, lets try and connect")
       connected = myAWSIoTMQTTClient.connect() 
       if not connected:
-        return False
-      print(connected)
+        raise ConnectionError
+      
       self.awsiot_client = myAWSIoTMQTTClient
       return True
 
@@ -218,7 +218,7 @@ class Dolphin:
       if not self.awsiot_client:
         self.buildClient()
       
-      self.awsiot_client.publish(topic, message)
+      self.awsiot_client.publish(topic, message, 1)
 
     def customCallback(client, userdata, message):
       print(client)
