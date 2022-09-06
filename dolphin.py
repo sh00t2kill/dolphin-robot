@@ -5,7 +5,8 @@
 ##   module: dolphin                ##
 ##   class: DolphinApp              ##
 ##   username: <username>           ##
-##   password: <password>
+##   password: <password>           ##
+## The below are optional           ##
 ##   use_mqtt: True                 ##
 ##   mqtt_topic: dolphin            ##
 ##                                  ##
