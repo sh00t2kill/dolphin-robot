@@ -169,11 +169,18 @@ class Dolphin:
         "turn_on_count": turn_on,
         "schedule_type": schedule_type,
         "work_type": work_type,
-        "timestamp": timestamp
+        "timestamp": timestamp,
+        "last_run_status": self.mapWorkType(work_type)
       }
 
       return return_data
 
+    def mapWorkType(self, work_type):
+      match work_type:
+        case "cloud":
+          return "Cancelled"
+        case _:
+          return work_type
 
 
     def connectIotHub(self):
