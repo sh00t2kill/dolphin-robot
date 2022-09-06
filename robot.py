@@ -200,9 +200,12 @@ class Dolphin:
       myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)
       myAWSIoTMQTTClient.enableMetricsCollection()
       print("Our client is setup, lets try and connect")
-      myAWSIoTMQTTClient.connect() 
-      print("Connected!")
+      connected = myAWSIoTMQTTClient.connect() 
+      if not connected:
+        return False
+      print(connected)
       self.awsiot_client = myAWSIoTMQTTClient
+      return True
 
     def subscribe(self, topic):
       if not self.awsiot_client:
