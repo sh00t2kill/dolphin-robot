@@ -31,6 +31,7 @@ class Dolphin:
     aws_key     = ''
     aws_secret  = ''
     awsiot_id   = ''
+    awsiot_client = False
 
     def __init__(self):
       #Nothing really to do here
@@ -183,13 +184,38 @@ class Dolphin:
           return work_type
 
 
-    def connectIotHub(self):
+    def buildClient(self):
+      script_dir = os.path.dirname(__file__)
+      ca_file = "AmazonRootCA1.pem"
+      ca_file_path = os.path.join(script_dir, ca_file)
       myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
-      myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 8883)
-      myAWSIoTMQTTClient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token) 
+      myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 443)
+      #print(ca_file_path)
+      myAWSIoTMQTTClient.configureCredentials(ca_file_path)
+      myAWSIoTMQTTClient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token)
+      myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
+      myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
+      myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
+      myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)
+      myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)
+      myAWSIoTMQTTClient.enableMetricsCollection()
+      print("Our client is setup, lets try and connect")
+      myAWSIoTMQTTClient.connect() 
+      print("Connected!")
+      self.awsiot_client = myAWSIoTMQTTClient
+
+    def subscribe(self, topic):
+      if not self.awsiot_client:
+        self.buildClient()
       while True:
-        myAWSIoTMQTTClient.subscribe("#", 1, self.customCallback)
+        self.awsiot_client.subscribe(topic, 1, self.customCallback)
         time.sleep(1)
+
+    def publish(self, topic, message):
+      if not self.awsiot_client:
+        self.buildClient()
+      
+      self.awsiot_client.publish(topic, message)
 
     def customCallback(client, userdata, message):
       print(client)
