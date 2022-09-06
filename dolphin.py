@@ -5,7 +5,8 @@
 ##   module: dolphin                ##
 ##   class: DolphinApp              ##
 ##   username: <username>           ##
-##   password: <password>           ##
+##   password: <password>
+##   use_mqtt: True                 ##
 ##   mqtt_topic: dolphin            ##
 ##                                  ##
 ######################################
@@ -25,17 +26,21 @@ class DolphinApp(hass.Hass):
   topic = ''
   robot = False
   mqtt = False
+  use_mqtt = False
 
   def initialize(self):
      self.log("Maytronics Dolphin App")
 
      self.username = self.args["username"]
      self.password = self.args["password"]
-     self.topic = self.args["mqtt_topic"]
-     self.mqtt = self.get_plugin_api("MQTT")
 
      self.log("Using username " + self.username)
-     self.log("Publishing to MQTT Topic:" + self.topic)
+     if "use_mqtt" in self.args:
+       if (self.args["use_mqtt"]):
+         self.use_mqtt = True
+         self.topic = self.args["mqtt_topic"]
+         self.mqtt = self.get_plugin_api("MQTT")
+         self.log("Publishing to MQTT Topic:" + self.topic)
 
      if not self.logged_in:
        self.log("Logging in to Maytronics API")
@@ -59,8 +64,11 @@ class DolphinApp(hass.Hass):
        items = self.robot.mapQuery()
        
      str_items = json.dumps(items)
-     self.log("Publishing " + str_items + " to MQTT on topic " + self.topic)
-     self.mqtt.mqtt_publish( topic=self.topic, payload=str_items, retain=True)
+     if self.use_mqtt:
+       self.log("Publishing " + str_items + " to MQTT on topic " + self.topic)
+       self.mqtt.mqtt_publish( topic=self.topic, payload=str_items, retain=True)
      items["friendly_name"] = "Dolphin " + self.robot.getSerial()
+     if not self.use_mqtt:
+       self.log("Updating sensor to " + str_items)
      self.set_state("sensor.dolphin_last_run", state=items["last_run_status"], attributes=items)
 
