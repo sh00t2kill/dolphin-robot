@@ -19,6 +19,7 @@ class Dolphin:
     DYNAMODB_REGION = "eu-west-1"
     DYNAMODB_HOST   = 'dynamodb.eu-west-1.amazonaws.com'
     IOT_URL         =  "a12rqfdx55bdbv-ats.iot.eu-west-1.amazonaws.com"
+    LISTEN_TOPIC    =  "$aws/things/{}/shadow/get/accepted"
     Debug           = 1
     Headers         = {
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
@@ -41,6 +42,9 @@ class Dolphin:
             print("Maytonics Dolphin+ API via the Dark Arts")
             print("====================================")
             print("")  
+
+    def getSerial(self):
+      return self.serial
 
     def login(self, username, password):
       authreq = self.auth(username, password)
@@ -206,6 +210,15 @@ class Dolphin:
       
       self.awsiot_client = myAWSIoTMQTTClient
       return True
+
+    def subscribeAsync(self, topic):
+      if not self.awsiot_client:
+        self.buildClient()
+      self.callbackmessage = None
+      self.awsiot_client.subscribeAsync(topic, 0, None, self.customCallback)
+
+    def listen(self):
+      self.subscribe(self.LISTEN_TOPIC.format(self.getSerial()))
 
     def subscribe(self, topic):
       if not self.awsiot_client:
