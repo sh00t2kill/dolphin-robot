@@ -18,8 +18,9 @@ class Dolphin:
     DYNAMODB_URL    = "https://dynamodb.eu-west-1.amazonaws.com/"
     DYNAMODB_REGION = "eu-west-1"
     DYNAMODB_HOST   = 'dynamodb.eu-west-1.amazonaws.com'
-    IOT_URL         =  "a12rqfdx55bdbv-ats.iot.eu-west-1.amazonaws.com"
-    LISTEN_TOPIC    =  "$aws/things/{}/shadow/get/accepted"
+    IOT_URL         = "a12rqfdx55bdbv-ats.iot.eu-west-1.amazonaws.com"
+    LISTEN_TOPIC    = "$aws/things/{}/shadow/get/accepted"
+    DYNAMIC_TOPIC   = "Maytronics/{}/main"
     Debug           = 1
     Headers         = {
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
@@ -219,22 +220,14 @@ class Dolphin:
 
     def listen(self):
       self.subscribe(self.LISTEN_TOPIC.format(self.getSerial()))
+      #self.subscribe(self.DYNAMIC_TOPIC.format(self.getSerial()))
 
     def subscribe(self, topic):
       if not self.awsiot_client:
         self.buildClient()
       self.callbackmessage = None
-      f = open('messages', 'a+')
       while True:
         self.awsiot_client.subscribe(topic, 0, self.customCallback)
-        try:
-          if (self.callbackmessage):
-            for key, value in self.callbackmessage.items(): 
-              f.write('%s:%s\n' % (key, value))
-        except:
-          pass
-        finally:
-          pass
         time.sleep(1)
 
     def publish(self, topic, message):
@@ -243,11 +236,24 @@ class Dolphin:
       
       self.awsiot_client.publish(topic, message, 1)
 
-    def customCallback(self, client, userdata, message):
-      print(client)
-      print (userdata)
-      jsonstr = str(message.payload.decode("utf-8"))
-      self.callbackmessage = json.loads(jsonstr)
-      return self.callbackmessage
-      #print(str(message.payload.decode("utf-8")))
 
+    def parseMsg(self, message):
+      state = message['state']
+      reported = state['reported']
+      connected = reported['isConnected']['connected']
+      system_state = reported['systemState']
+      power_state = system_state['pwsState']
+      return {"connected": connected, "state": power_state}
+
+    def getPowerState(self, message):
+      parsed = self.parseMsg(message)
+      return parsed['state']
+
+    def customCallback(self, client, userdata, message):
+      jsonstr = str(message.payload.decode("utf-8"))
+      callbackmessage = json.loads(jsonstr)
+      try:
+        parsed = self.parseMsg(callbackmessage)
+      except KeyError:
+        print (jsonstr)
+      return callbackmessage
