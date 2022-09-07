@@ -164,12 +164,12 @@ class Dolphin:
           print (count, x)
           count = count + 1
 
-      schedule_type = system_data[110]["S"]
+      job_trigger = system_data[110]["S"]
       work_type = system_data[115]["S"]
 
       return_data = {
         "turn_on_count": turn_on,
-        "schedule_type": schedule_type,
+        "job_trigger": job_trigger,
         "work_type": work_type,
         "timestamp": timestamp,
         "last_run_status": self.mapWorkType(work_type)
@@ -187,7 +187,6 @@ class Dolphin:
 
     def buildClient(self):
       script_dir = os.path.dirname(__file__)
-      
       ca_file_path = os.path.join(script_dir, self.ca_file)
       myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
       myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 443)
@@ -200,16 +199,12 @@ class Dolphin:
       myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)
       myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)
       myAWSIoTMQTTClient.enableMetricsCollection()
-      #myAWSIoTMQTTClient.onMessage = self.customCallback
-      
       print("Our client is setup, lets try and connect")
-      connected = myAWSIoTMQTTClient.connect()
+      connected = myAWSIoTMQTTClient.connect() 
       if not connected:
         raise ConnectionError
       
       self.awsiot_client = myAWSIoTMQTTClient
-      
-      
       return True
 
     def subscribe(self, topic):
