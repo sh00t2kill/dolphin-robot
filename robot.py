@@ -10,6 +10,7 @@ import AWSIoTPythonSDK.MQTTLib as AWSIoTPyMQTT
 import uuid
 import time
 
+
 class Dolphin:
 
     LOGIN_URL       = "https://mbapp18.maytronics.com/api/users/Login/"
@@ -209,8 +210,18 @@ class Dolphin:
     def subscribe(self, topic):
       if not self.awsiot_client:
         self.buildClient()
+      self.callbackmessage = None
+      f = open('messages', 'a+')
       while True:
-        self.awsiot_client.subscribe(topic, 1, self.customCallback)
+        self.awsiot_client.subscribe(topic, 0, self.customCallback)
+        try:
+          if (self.callbackmessage):
+            for key, value in self.callbackmessage.items(): 
+              f.write('%s:%s\n' % (key, value))
+        except:
+          pass
+        finally:
+          pass
         time.sleep(1)
 
     def publish(self, topic, message):
@@ -219,8 +230,11 @@ class Dolphin:
       
       self.awsiot_client.publish(topic, message, 1)
 
-    def customCallback(client, userdata, message):
+    def customCallback(self, client, userdata, message):
       print(client)
       print (userdata)
-      print(message)
+      jsonstr = str(message.payload.decode("utf-8"))
+      self.callbackmessage = json.loads(jsonstr)
+      return self.callbackmessage
+      #print(str(message.payload.decode("utf-8")))
 
