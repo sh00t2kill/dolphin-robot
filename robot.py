@@ -26,15 +26,15 @@ class Dolphin:
                         'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
                         'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
                       }
-    ca_file = "AmazonRootCA1.pem"
-    login_token = ''
-    aws_token   = ''
-    serial      = ''
-    aws_token   = ''
-    aws_key     = ''
-    aws_secret  = ''
-    awsiot_id   = ''
-    awsiot_client = False
+    ca_file         = "AmazonRootCA1.pem"
+    login_token     = ''
+    aws_token       = ''
+    serial          = ''
+    aws_token       = ''
+    aws_key         = ''
+    aws_secret      = ''
+    awsiot_id       = ''
+    awsiot_client   = False
 
     def __init__(self):
       #Nothing really to do here
@@ -185,7 +185,7 @@ class Dolphin:
     def mapWorkType(self, work_type):
       match work_type:
         case "cloud":
-          return "Cancelled"
+          return "cancelled"
         case _:
           return work_type
 
@@ -195,7 +195,6 @@ class Dolphin:
       ca_file_path = os.path.join(script_dir, self.ca_file)
       myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
       myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 443)
-      #print(ca_file_path)
       myAWSIoTMQTTClient.configureCredentials(ca_file_path)
       myAWSIoTMQTTClient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token)
       myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
@@ -204,8 +203,11 @@ class Dolphin:
       myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)
       myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)
       myAWSIoTMQTTClient.enableMetricsCollection()
-      print("Our client is setup, lets try and connect")
+      if (self.Debug):
+        print ("Connecting to " + self.IOT_URL)
       connected = myAWSIoTMQTTClient.connect() 
+      if (self.Debug):
+        print ("Connected!!!")
       if not connected:
         raise ConnectionError
       
