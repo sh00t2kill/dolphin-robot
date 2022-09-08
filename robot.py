@@ -9,6 +9,7 @@ import AWSIoTPythonSDK
 import AWSIoTPythonSDK.MQTTLib as AWSIoTPyMQTT
 import uuid
 import time
+import paho.mqtt.client as paho
 
 
 class Dolphin:
@@ -36,6 +37,8 @@ class Dolphin:
     awsiot_id       = ''
     awsiot_client   = False
 
+    LOCAL_STATE_TOPIC = 'robot/state'
+
     def __init__(self):
       #Nothing really to do here
         self.awsiot_id = str(uuid.uuid4())
@@ -47,6 +50,13 @@ class Dolphin:
     def getSerial(self):
       return self.serial
 
+    def setLocalBroker(self, broker, port, username=None, password=None):
+      self.mqtt_client = paho.Client(self.awsiot_id)
+      self.mqtt_client.connect(broker, port)
+          
+    def localPublish(self, message):
+      self.mqtt_client.publish(self.LOCAL_STATE_TOPIC, message)
+      
     def login(self, username, password):
       authreq = self.auth(username, password)
       if not authreq:
@@ -108,6 +118,8 @@ class Dolphin:
     def sign(self, key, msg):
        return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
+    # This is pretty much straight out of AWS documentation RE creating a signature. 
+    # Im not convinced its doing anything but every time it gets touched, things break
     def getSignatureKey(self, key, date_stamp, regionName, serviceName):
        kDate = self.sign(('AWS4' + key).encode('utf-8'), date_stamp)
        kRegion = self.sign(kDate, regionName)
@@ -256,6 +268,10 @@ class Dolphin:
       callbackmessage = json.loads(jsonstr)
       try:
         parsed = self.parseMsg(callbackmessage)
+        if (self.Debug):
+          print (parsed)
+        if (self.mqtt_client):
+            self.localPublish(parsed)
       except KeyError:
         print (jsonstr)
       return callbackmessage
