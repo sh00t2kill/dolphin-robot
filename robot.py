@@ -288,4 +288,9 @@ class Dolphin:
             print("Motor status successfully updated in Device Shadow")
         if responseStatus == "rejected":
             print("Update request " + token + " rejected!")
+
+
+    def listen(self):
+        self.subscribe([("$aws/things/{}/shadow/get/accepted".format(self.serial)), ("$aws/things/{}/shadow/get".format(self.serial)), ("$aws/things/{}/shadow/update/accepted".format(self.serial)), ("$aws/things/{}/shadow/update/rejected".format(self.serial)), ("$aws/things/{}/shadow/get/rejected".format(self.serial)), ("$aws/things/{}/shadow/update/delta".format(self.serial)), ("$aws/things/{}/shadow/update".format(self.serial)), ("Maytronics/" + self.serial + "/main".format(self.serial))])
+
             
