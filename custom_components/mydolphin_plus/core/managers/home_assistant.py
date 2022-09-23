@@ -22,6 +22,9 @@ from ...core.managers.device_manager import DeviceManager
 from ...core.managers.entity_manager import EntityManager
 from ...core.managers.storage_manager import StorageManager
 
+from ...component.helpers.const import TOPIC_PUBLISH as TOPIC_PUBLISH
+from ...component.api.mydolphin_plus_api import MyDolphinPlusAPI
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -33,6 +36,9 @@ class HomeAssistantManager:
                  ):
 
         self._hass = hass
+
+        self.TOPIC_PUBLISH = TOPIC_PUBLISH
+        self.serial = MyDolphinPlusAPI.async_update(self, caller='serial')
 
         self._is_initialized = False
         self._is_updating = False
@@ -112,6 +118,8 @@ class HomeAssistantManager:
             self._entry = entry
 
             await self.async_component_initialize(entry)
+
+            self.register_service_refresh_dolphin_data()
 
             self._hass.loop.create_task(self._async_load_platforms())
 
@@ -272,3 +280,16 @@ class HomeAssistantManager:
             signal = PLATFORMS.get(domain)
 
             async_dispatcher_send(self._hass, signal)
+
+    def register_service_refresh_dolphin_data(self):
+        self._hass.services.async_register(DOMAIN, REFRESH_DOLPHIN_DATA, self.refresh_dolphin_data)
+
+    async def refresh_dolphin_data(self, call_service):
+        #This is testing the ability to on-demand get status updates
+        message = {'state': {'reported': {}}}
+        try:
+            
+            message_publish = MyDolphinPlusAPI._publish(self, TOPIC_PUBLISH.format(self.serial), message)
+            
+        except Exception as e:
+            _LOGGER.debug(e)

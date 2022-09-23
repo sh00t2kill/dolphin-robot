@@ -1,4 +1,4 @@
-# dolphin-robot
+# Maytronics
 A python reverse engineer attempt of the Maytronics Dolpin pool cleaner app
 
 # example

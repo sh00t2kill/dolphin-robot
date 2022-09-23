@@ -22,3 +22,5 @@ PASSWORD_MANAGER = f"pm_{DOMAIN}"
 DATA = f"data_{DOMAIN}"
 
 DOMAIN_KEY_FILE = f"{DOMAIN}.key"
+
+REFRESH_DOLPHIN_DATA = "refresh_dolphin_data"

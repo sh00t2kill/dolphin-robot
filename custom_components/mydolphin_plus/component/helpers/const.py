@@ -72,7 +72,17 @@ AWS_DYNAMODB_SERVICE = "dynamodb"
 TOPIC_GET = "$aws/things/{}/shadow/get/#"
 TOPIC_UPDATE = "$aws/things/{}/shadow/update/#"
 TOPIC_DYNAMIC = "Maytronics/{}/main"
-TOPICS = [TOPIC_DYNAMIC, TOPIC_UPDATE, TOPIC_GET]
+TOPIC_SHADOW1 = "$aws/things/{}/shadow/get/accepted"
+TOPIC_SHADOW2 = "$aws/things/{}/shadow/get"
+TOPIC_SHADOW3 = "$aws/things/{}/shadow/update/accepted"
+TOPIC_SHADOW4 = "$aws/things/{}/shadow/update/rejected"
+TOPIC_SHADOW5 = "$aws/things/{}/shadow/get/rejected"
+TOPIC_SHADOW6 = "$aws/things/{}/shadow/update/delta"
+TOPIC_SHADOW7 = "$aws/things/{}/shadow/update"
+TOPIC_SHADOW = "$aws/things/{}/shadow/#"
+TOPIC_PUBLISH = "$aws/things/{}/shadow/update"
+#TOPICS = [TOPIC_DYNAMIC, TOPIC_UPDATE, TOPIC_GET, TOPIC_SHADOW1, TOPIC_SHADOW2, TOPIC_SHADOW3, TOPIC_SHADOW4, TOPIC_SHADOW5, TOPIC_SHADOW6]
+TOPICS = [TOPIC_DYNAMIC, TOPIC_SHADOW]
 
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Serial Number",

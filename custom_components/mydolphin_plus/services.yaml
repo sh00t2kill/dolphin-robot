@@ -1,0 +1,3 @@
+refresh_dolphin_data:
+  name: Get the latest information on your Dolphin
+  description: Generate JSON and debug it

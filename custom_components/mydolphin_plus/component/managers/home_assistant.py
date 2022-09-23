@@ -93,6 +93,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def load_entities(self):
         ## TODO Create Entities
         _LOGGER.debug("Loading entities")
+        #entity_name = f"{self.entry_title} {monitor.name}"
+        _LOGGER.debug("{self.api.payload}")
 
     def _load_binary_sensor_entity(
             self,

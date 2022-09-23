@@ -177,11 +177,13 @@ class MyDolphinPlusAPI:
 
         return result
 
-    async def async_update(self):
+    async def async_update(self, caller = None):
         _LOGGER.info(f"Updating data from XXX)")
-
-        if self.status == ConnectivityStatus.Failed:
-            await self.initialize()
+        if caller == 'serial':
+            return(self.serial)
+        else:
+            if self.status == ConnectivityStatus.Failed:
+                await self.initialize()
 
     async def _login(self):
         await self._service_login()
@@ -439,7 +441,9 @@ class MyDolphinPlusAPI:
 
     def _publish(self, topic, message):
         if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(topic, message, 1)
+            _LOGGER.debug(f"Publishing: {message} to {topic}")
+            self.awsiot_client.publish(topic, json.dumps(message), 1)
+            
 
         else:
             _LOGGER.error(f"Failed to publish message: {message} to {topic}")
@@ -453,11 +457,17 @@ class MyDolphinPlusAPI:
 
             _LOGGER.debug(f"Message received for device {self.serial}, Topic: {message_topic}, Payload: {payload}")
 
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
+            self.payload = payload
 
-            _LOGGER.error(f"Callback parsing failed, Data: {message}, Error: {str(ex)}, Line: {line_number}")
+        except:
+            try:
+                payload = message_payload
+                self.payload = payload
+                
+            except Exception as ex:
+                exc_type, exc_obj, tb = sys.exc_info()
+                line_number = tb.tb_lineno
+                _LOGGER.error(f"Callback parsing failed, Data: {message}, Error: {str(ex)}, Line: {line_number}")
 
     def _sign_hex(self, key, data):
         result = self._internal_sign(key, data).hexdigest()
