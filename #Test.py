@@ -15,6 +15,7 @@ import json, pprint
 #byte2 = bytearray(byte2, encoding="utf=8")
 #print(byte2.decode(encoding="utf-8"))
 
+dolphin = Dolphin()
 login = dolphin.login('your@login.com','password')
 token = dolphin.getToken()
 #dolphin.subscribe("$aws/things/{}/shadow/get/accepted".format(dolphin.serial))
