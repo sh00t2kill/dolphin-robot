@@ -4,12 +4,12 @@ from wsgiref.headers import Headers
 import requests
 import json
 import sys, os, base64, datetime, hashlib, hmac
-from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient, AWSIoTMQTTShadowClient, AWSIoTMQTTThingJobsClient
 import AWSIoTPythonSDK
 import AWSIoTPythonSDK.MQTTLib as AWSIoTPyMQTT
 import uuid
 import time
-
+import boto3
 
 class Dolphin:
 
@@ -189,52 +189,103 @@ class Dolphin:
       script_dir = os.path.dirname(__file__)
       ca_file_path = os.path.join(script_dir, self.ca_file)
       myAWSIoTMQTTClient = AWSIoTPyMQTT.AWSIoTMQTTClient(self.awsiot_id, useWebsocket=True)
+      #shadowclient = AWSIoTMQTTShadowClient(self.awsiot_id, useWebsocket=True, cleanSession=True)
+      #shadowthings = AWSIoTMQTTThingJobsClient(self.awsiot_id, self.serial, 0, useWebsocket=True)
+      
       myAWSIoTMQTTClient.configureEndpoint(self.IOT_URL, 443)
+      #shadowthings.configureEndpoint(self.IOT_URL, 443)
+      #shadowclient.configureEndpoint(self.IOT_URL, 443)
       #print(ca_file_path)
       myAWSIoTMQTTClient.configureCredentials(ca_file_path)
+      #shadowthings.configureCredentials(ca_file_path)
+      #shadowclient.configureCredentials(ca_file_path)
       myAWSIoTMQTTClient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token)
+      #shadowthings.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token)
+      #shadowclient.configureIAMCredentials(self.aws_key, self.aws_secret, self.aws_token)
       myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
       myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
       myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
       myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)
       myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)
       myAWSIoTMQTTClient.enableMetricsCollection()
-      print("Our client is setup, lets try and connect")
+      #shadowthings.enableMetricsCollection()
+      #shadowclient.enableMetricsCollection()
+      #print("Our client is setup, lets try and connect")
       connected = myAWSIoTMQTTClient.connect() 
+      #shadowconnect = shadowthings.connect()
+      #shadowclientconnect = shadowclient.connect()
+      
       if not connected:
         raise ConnectionError
       
       self.awsiot_client = myAWSIoTMQTTClient
+      #self.shadowclient = shadowclient
+      #self.shadowthings = shadowthings
+      
+      
       return True
+
+    # Custom Shadow callback
+    def customShadowCallback_Get(payload, responseStatus, token):
+        print(responseStatus)
+        payloadDict = json.loads(payload)
+        print("++++++++GET++++++++++")
+        print("property: " + str(payloadDict["state"]["property"]))
+        print("version: " + str(payloadDict["version"]))
+        print("+++++++++++++++++++++++\n\n")
 
     def subscribe(self, topic):
       if not self.awsiot_client:
         self.buildClient()
+      #Log the messages to file for testing
       self.callbackmessage = None
       f = open('messages', 'a+')
       while True:
-        self.awsiot_client.subscribe(topic, 0, self.customCallback)
+        if type(topic) is list:
+          for i in topic:
+            self.awsiot_client.subscribe(i, 0, self.customCallback)
+        else:
+          self.awsiot_client.subscribe(topic, 0, self.customCallback)          
+          
+        #ShadowClient = self.shadowclient.createShadowHandlerWithName("TimeZoneNameAdapterItem", True)
+        #ShadowClient.shadowGet(self.customShadowCallback_Update, 5)
+        message = {"state":{"desired":{}}}
+        #message = {"state":{"desired":{"systemState":{"pwsState":"on"}}}}
+        #self.awsiot_client.publish("$aws/things/{}/shadow/update".format(self.serial), json.dumps(message), 0)
+        #self.awsiot_client.publish("$aws/things/{}/shadow/item/SystemStateAdapter/update".format(self.serial), json.dumps(message), 0)
+        self.awsiot_client.publish("$aws/things/{}/shadow/name/TimeAdapterItem/update".format(self.serial), json.dumps(message), 0)
         try:
           if (self.callbackmessage):
-            for key, value in self.callbackmessage.items(): 
+            for key, value in self.callbackmessage['state'].items(): 
               f.write('%s:%s\n' % (key, value))
         except:
-          pass
-        finally:
           pass
         time.sleep(1)
 
     def publish(self, topic, message):
       if not self.awsiot_client:
         self.buildClient()
-      
       self.awsiot_client.publish(topic, message, 1)
 
     def customCallback(self, client, userdata, message):
       print(client)
       print (userdata)
       jsonstr = str(message.payload.decode("utf-8"))
-      self.callbackmessage = json.loads(jsonstr)
+      try:
+        self.callbackmessage = json.loads(jsonstr)
+      except:
+        self.callbackmessage = jsonstr
+      print(str(message.payload.decode("utf-8")))
       return self.callbackmessage
-      #print(str(message.payload.decode("utf-8")))
+      
 
+    def customShadowCallback_Update(payload, responseStatus, token):
+        # payload is a JSON string ready to be parsed using json.loads(...)
+        # in both Py2.x and Py3.x
+        if responseStatus == "timeout":
+            print("Update request " + token + " time out!")
+        if responseStatus == "accepted":
+            print("Motor status successfully updated in Device Shadow")
+        if responseStatus == "rejected":
+            print("Update request " + token + " rejected!")
+            
