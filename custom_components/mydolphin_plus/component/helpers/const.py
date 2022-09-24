@@ -93,3 +93,18 @@ REPORTED_CATEGORIES = [
     "filterBagIndication",
     "cycleInfo"
 ]
+
+ATTR_CLEANING_MODE = "cleaning_mode"
+ATTR_LED_MODE = "led_mode"
+
+ICON_CLEANING_MODES = {
+    CLEANING_MODE_STOP: "mdi:cctv-off",
+    CLEANING_MODE_START: "mdi:cctv",
+    CLEANING_MODE_RECORD: "mdi:record-rec"
+}
+
+ICON_LED_MODES = {
+    LED_MODE_STOP: "mdi:cctv-off",
+    LED_MODE_START: "mdi:cctv",
+    LED_MODE_RECORD: "mdi:record-rec"
+}

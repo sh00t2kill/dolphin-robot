@@ -96,7 +96,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             _LOGGER.error(f"Failed to async_update_data_providers, Error: {ex}, Line: {line_number}")
 
     def load_entities(self):
-        # Delay?
         data = self._api.data
         name = data.get("Robot Name")
 
@@ -110,6 +109,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_sensor_cleaning_time_left(name, data)
         self._load_switch_power(name, data)
         self._load_switch_led_enabled(name, data)
+
+        delay_settings = data.get("delay", {})
+        self._load_binary_sensor_schedules(name, "delay", delay_settings)
 
         weekly_settings = data.get("weeklySettings", {})
 
@@ -598,6 +600,87 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self.log_exception(
                 ex, f"Failed to load {DOMAIN_SWITCH}: {entity_name}"
             )
+
+    def _load_switch_led_enabled(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Led"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_SWITCH, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SWITCH}: {entity_name}"
+            )
+
+    async def set_cleaning_mode(self, cleaning_mode):
+        await self.api.set_cleaning_mode(cleaning_mode)
+
+    async def set_delay(self,
+                        enabled: bool | None = False,
+                        mode: str | None = "all",
+                        hours: int | None = 255,
+                        minutes: int | None = 255):
+        await self.api.set_delay(enabled, mode, hours, minutes)
+
+    async def set_schedule(self,
+                           day: str,
+                           enabled: bool | None = False,
+                           mode: str | None = "all",
+                           hours: int | None = 255,
+                           minutes: int | None = 255):
+        await self.api.set_schedule(day, enabled, mode, hours, minutes)
+
+    async def set_led_mode(self, mode: int):
+        await self.api.set_led_mode(mode)
+
+    async def set_led_intensity(self, intensity: int):
+        await self.api.set_led_intensity(intensity)
+
+    async def set_led_enabled(self, is_enabled: bool):
+        await self.api.set_led_enabled(is_enabled)
+
+    async def drive(self, direction: str):
+        await self.api.drive(direction)
+
+    async def set_power_state(self, is_on: bool):
+        await self.api.set_power_state(is_on)
 
     @staticmethod
     def log_exception(ex, message):
