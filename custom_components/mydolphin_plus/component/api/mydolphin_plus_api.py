@@ -453,6 +453,25 @@ class MyDolphinPlusAPI:
 
             _LOGGER.debug(f"Message received for device {self.serial}, Topic: {message_topic}, Payload: {payload}")
 
+            if message_topic.endswith("shadow/update/accepted"):
+                state = payload.get("state", {})
+                reported = state.get("reported", {})
+
+                is_connected = reported.get("isConnected", {})
+                connected = reported.get("connected", False)
+
+                weekly_settings = reported.get("weeklySettings")
+                delay = reported.get("delay")
+                system_state = reported.get("systemState")
+                debug = reported.get("debug")
+                filter_bag_indication = reported.get("filterBagIndication")
+                cycle_info = reported.get("cycleInfo")
+
+
+
+
+
+
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
