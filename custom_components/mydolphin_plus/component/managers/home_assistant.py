@@ -6,6 +6,7 @@ https://home-assistant.io/components/mydolphin_plus/
 from __future__ import annotations
 
 import asyncio
+import calendar
 import datetime
 import logging
 import sys
@@ -83,7 +84,11 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         try:
             await self._api.async_update()
 
-            self.device_manager.generate_device(f"{self.entry_title}", "System")
+            data = self._api.data
+            name = data.get("Robot Name")
+            model = data.get("Product Name")
+
+            self.device_manager.generate_device(name, model)
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -91,17 +96,36 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             _LOGGER.error(f"Failed to async_update_data_providers, Error: {ex}, Line: {line_number}")
 
     def load_entities(self):
-        ## TODO Create Entities
-        _LOGGER.debug("Loading entities")
+        # Delay?
+        data = self._api.data
+        name = data.get("Robot Name")
 
-    def _load_binary_sensor_entity(
+        self._load_select_cleaning_mode(name, data)
+        self._load_select_led_mode(name, data)
+        self._load_remote(name, data) # Go forward, backward, left, right, pickup
+        self._load_binary_sensor_status(name, data)
+        self._load_binary_sensor_filter_status(name, data)
+        self._load_sensor_connection_type(name, data)
+        self._load_sensor_cleaning_time(name, data)
+        self._load_sensor_cleaning_time_left(name, data)
+        self._load_switch_power(name, data)
+        self._load_switch_led_enabled(name, data)
+
+        weekly_settings = data.get("weeklySettings", {})
+
+        for day in list(calendar.day_name):
+            day_data = weekly_settings.get(day, {})
+
+            self._load_binary_sensor_schedules(name, day, day_data)
+
+    def _load_select_cleaning_mode(
             self,
-            sensor_type: BinarySensorDeviceClass,
-            device: str
+            device: str,
+            data: dict
     ):
-        try:
-            entity_name = f"{self.entry_title} REPLACE {sensor_type.capitalize()}"
+        entity_name = f"{device} Cleaning Mode"
 
+        try:
             state = STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name
@@ -111,16 +135,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             #    if attr in event_state:
             #        attributes[attr] = event_state.get(attr)
 
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
+            entity = self.entity_manager.get(DOMAIN_SELECT, entity_name)
             created = entity is None
 
             if created:
                 entity = self.entity_manager.get_empty_entity(self.entry_id)
 
-                entity.id = "ID of Entity"
+                entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.binary_sensor_device_class = sensor_type
                 entity.domain = DOMAIN_BINARY_SENSOR
 
             data = {
@@ -140,7 +163,440 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         except Exception as ex:
             self.log_exception(
-                ex, f"Failed to load binary sensor"
+                ex, f"Failed to load {DOMAIN_SELECT}: {entity_name}"
+            )
+
+    def _load_select_led_mode(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Led Mode"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_SELECT, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SELECT}: {entity_name}"
+            )
+
+    def _load_remote(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Remote"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_REMOTE, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_REMOTE}: {entity_name}"
+            )
+
+    def _load_binary_sensor_status(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Status"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
+            )
+
+    def _load_binary_sensor_schedules(
+            self,
+            device: str,
+            day: str,
+            data: dict
+    ):
+        entity_name = f"{device} Schedule {day}"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
+            )
+
+    def _load_binary_sensor_filter_status(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Filter Status"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
+            )
+
+    def _load_sensor_connection_type(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Connection Type"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
+            )
+
+    def _load_sensor_cleaning_time(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Cleaning Time"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
+            )
+
+    def _load_sensor_cleaning_time_left(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Filter Status"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
+            )
+
+    def _load_switch_power(
+            self,
+            device: str,
+            data: dict
+    ):
+        entity_name = f"{device} Power"
+
+        try:
+            state = STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            # for attr in BINARY_SENSOR_ATTRIBUTES:
+            #    if attr in event_state:
+            #        attributes[attr] = event_state.get(attr)
+
+            entity = self.entity_manager.get(DOMAIN_SWITCH, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = DEFAULT_ICON
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (entity.state, str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SWITCH}: {entity_name}"
             )
 
     @staticmethod

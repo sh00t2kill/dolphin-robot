@@ -84,3 +84,12 @@ DATA_ROBOT_DETAILS = {
     "isReg": "Is Registered",
     "RobotFamily": "Product Family"
 }
+
+REPORTED_CATEGORIES = [
+    "weeklySettings",
+    "delay",
+    "systemState",
+    "debug",
+    "filterBagIndication",
+    "cycleInfo"
+]
