@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass
 
 from ...core.helpers.const import *
 from ...core.helpers.enums import EntityStatus
@@ -14,6 +15,8 @@ class EntityData:
     icon: str
     device_name: str
     status: EntityStatus
+    sensor_device_class: SensorDeviceClass | None
+    sensor_state_class: SensorDeviceClass | None
     binary_sensor_device_class: BinarySensorDeviceClass | None
     details: dict
     disabled: bool
@@ -28,6 +31,8 @@ class EntityData:
         self.icon = ""
         self.device_name = ""
         self.status = EntityStatus.CREATED
+        self.sensor_state_class = None
+        self.sensor_device_class = None
         self.binary_sensor_device_class = None
         self.details = {}
         self.disabled = False
@@ -53,6 +58,8 @@ class EntityData:
             ENTITY_ICON: self.icon,
             ENTITY_DEVICE_NAME: self.device_name,
             ENTITY_STATUS: self.status,
+            ENTITY_SENSOR_DEVICE_CLASS: self.sensor_device_class,
+            ENTITY_SENSOR_STATE_CLASS: self.sensor_state_class,
             ENTITY_BINARY_SENSOR_DEVICE_CLASS: self.binary_sensor_device_class,
             ENTITY_MONITOR_DETAILS: self.details,
             ENTITY_DISABLED: self.disabled,

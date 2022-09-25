@@ -7,9 +7,6 @@ from homeassistant.core import Event, HomeAssistant
 
 from ...component.helpers.const import *
 from ...component.managers.home_assistant import MyDolphinPlusHomeAssistantManager
-from ...configuration.managers.configuration_manager import (
-    async_get_configuration_manager,
-)
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 """
-Support for MyDolphin Plus binary sensors.
+Support for MyDolphin Plus.
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/binary_sensor.mydolphin_plus/
+https://github.com/sh00t2kill/dolphin-robot
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ CURRENT_DOMAIN = DOMAIN_BINARY_SENSOR
 
 
 def get_binary_sensor(hass: HomeAssistant, entity: EntityData):
-    binary_sensor = BaseBinarySensor()
+    binary_sensor = MyDolphinPlusBinarySensor()
     binary_sensor.initialize(hass, entity, CURRENT_DOMAIN)
 
     return binary_sensor
@@ -42,7 +42,7 @@ async def async_unload_entry(hass, config_entry):
     return True
 
 
-class BaseBinarySensor(BinarySensorEntity, MyDolphinPlusEntity):
+class MyDolphinPlusBinarySensor(BinarySensorEntity, MyDolphinPlusEntity):
     """Representation a binary sensor that is updated."""
 
     @property

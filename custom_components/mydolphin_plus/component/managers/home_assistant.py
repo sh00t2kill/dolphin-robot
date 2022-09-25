@@ -5,12 +5,11 @@ https://home-assistant.io/components/mydolphin_plus/
 """
 from __future__ import annotations
 
-import asyncio
 import calendar
-import datetime
 import logging
 import sys
 
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -71,14 +70,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         await self.api.initialize(self.config_data)
 
-        if self.api.status == ConnectivityStatus.Connected:
-            print(self.api.status)
-            # ws_version = await self.api.get_socket_io_version()
-
     async def async_stop_data_providers(self):
         self.event_manager.terminate()
         await self.api.terminate()
-        # await self.ws.terminate()
 
     async def async_update_data_providers(self):
         try:
@@ -101,7 +95,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         self._load_select_cleaning_mode(name, data)
         self._load_select_led_mode(name, data)
-        self._load_remote(name, data) # Go forward, backward, left, right, pickup
+        self._load_remote(name, data)
         self._load_binary_sensor_status(name, data)
         self._load_binary_sensor_filter_status(name, data)
         self._load_sensor_connection_type(name, data)
@@ -146,7 +140,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SELECT
 
             data = {
                 "state": (entity.state, str(state)),
@@ -194,7 +188,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SELECT
 
             data = {
                 "state": (entity.state, str(state)),
@@ -242,7 +236,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_REMOTE
 
             data = {
                 "state": (entity.state, str(state)),
@@ -291,6 +285,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_BINARY_SENSOR
+                entity.binary_sensor_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
             data = {
                 "state": (entity.state, str(state)),
@@ -340,6 +335,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_BINARY_SENSOR
+                entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
             data = {
                 "state": (entity.state, str(state)),
@@ -388,6 +384,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_BINARY_SENSOR
+                entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
             data = {
                 "state": (entity.state, str(state)),
@@ -435,7 +432,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SENSOR
+                entity.sensor_device_class = SensorDeviceClass.POWER
+                entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
                 "state": (entity.state, str(state)),
@@ -483,7 +482,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SENSOR
+                entity.sensor_device_class = SensorDeviceClass.DURATION
+                entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
                 "state": (entity.state, str(state)),
@@ -531,7 +532,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SENSOR
+                entity.sensor_device_class = SensorDeviceClass.DURATION
+                entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
                 "state": (entity.state, str(state)),
@@ -579,7 +582,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SWITCH
 
             data = {
                 "state": (entity.state, str(state)),
@@ -627,7 +630,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
+                entity.domain = DOMAIN_SWITCH
 
             data = {
                 "state": (entity.state, str(state)),

@@ -1,7 +1,7 @@
 """
-Support for Shinobi Video.
+Support for MyDolphin Plus.
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/camera.shinobi/
+https://github.com/sh00t2kill/dolphin-robot
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ CURRENT_DOMAIN = DOMAIN_SELECT
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
-    """Set up the Shinobi Video Monitor Mode."""
+    """Set up the SELECT component."""
     await async_setup_base_entry(
         hass, config_entry, async_add_devices, CURRENT_DOMAIN, get_select
     )
@@ -39,7 +39,7 @@ async def async_unload_entry(hass, config_entry):
 
 
 def get_select(hass: HomeAssistant, entity: EntityData):
-    select = ShinobiSelect(entity.name)
+    select = MyDolphinPlusSelect(entity.name)
     select.initialize(hass, entity, CURRENT_DOMAIN)
 
     return select
@@ -68,7 +68,7 @@ SELECTOR_TYPES = {
     ATTR_CLEANING_MODE: CleaningModeSelectDescription(
         key=ATTR_CLEANING_MODE,
         name=ATTR_CLEANING_MODE,
-        icon="mdi:default",
+        icon=CLEANING_MODE_ICON_DEFAULT,
         device_class=f"{DOMAIN}__{ATTR_CLEANING_MODE}",
         options=tuple(ICON_CLEANING_MODES.keys()),
         entity_category=EntityCategory.CONFIG,
@@ -76,7 +76,7 @@ SELECTOR_TYPES = {
     ATTR_LED_MODE: LedModeSelectDescription(
         key=ATTR_LED_MODE,
         name=ATTR_LED_MODE,
-        icon="mdi:default",
+        icon=LED_MODE_ICON_DEFAULT,
         device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
         options=tuple(ICON_LED_MODES.keys()),
         entity_category=EntityCategory.CONFIG,
@@ -84,9 +84,7 @@ SELECTOR_TYPES = {
 }
 
 
-class ShinobiSelect(SelectEntity, MyDolphinPlusEntity, ABC):
-    """ Shinobi Video Monitor Mode Control """
-
+class MyDolphinPlusSelect(SelectEntity, MyDolphinPlusEntity, ABC):
     def __init__(self, entity_name: str):
         super().__init__()
 

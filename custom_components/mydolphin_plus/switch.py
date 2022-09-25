@@ -1,7 +1,7 @@
 """
-Support for Shinobi Video.
+Support for MyDolphin Plus.
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/switch.shinobi/
+https://github.com/sh00t2kill/dolphin-robot
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ CURRENT_DOMAIN = DOMAIN_SWITCH
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
-    """Set up the Shinobi Video Switch."""
+    """Set up the Switch component."""
     await async_setup_base_entry(
         hass, config_entry, async_add_devices, CURRENT_DOMAIN, get_switch
     )
@@ -37,13 +37,13 @@ async def async_unload_entry(hass, config_entry):
 
 
 def get_switch(hass: HomeAssistant, entity: EntityData):
-    switch = ShinobiSwitch()
+    switch = MyDolphinPlusSwitch()
     switch.initialize(hass, entity, CURRENT_DOMAIN)
 
     return switch
 
 
-class ShinobiSwitch(SwitchEntity, MyDolphinPlusEntity):
+class MyDolphinPlusSwitch(SwitchEntity, MyDolphinPlusEntity):
     """Class for a Shinobi Video switch."""
 
     _attr_entity_category = EntityCategory.CONFIG
