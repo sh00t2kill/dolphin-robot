@@ -59,7 +59,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self._config_manager = async_get_configuration_manager(self._hass)
             await self._config_manager.load(entry)
 
-            self._api = MyDolphinPlusAPI(self._hass, self.config_data)
+            self._api = MyDolphinPlusAPI(self._hass, self.config_data, super().update)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -186,7 +186,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             cycle_time = str(datetime.timedelta(minutes=cycle_time_minutes))
 
-            state = mode_name
+            state = mode
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Description": mode_description,
@@ -206,7 +206,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_SELECT
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "device_name": (entity.device_name, device),
             }
 
@@ -268,7 +268,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_SELECT
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "device_name": (entity.device_name, device),
             }
 
@@ -338,7 +338,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.binary_sensor_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }
@@ -404,7 +404,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_BINARY_SENSOR
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }
@@ -459,7 +459,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }
@@ -524,7 +524,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "device_name": (entity.device_name, device),
             }
 
@@ -591,7 +591,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }
@@ -669,7 +669,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }
@@ -733,7 +733,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_SWITCH
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }
@@ -785,7 +785,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_SWITCH
 
             data = {
-                "state": (entity.state, str(state)),
+                "state": (str(entity.state), str(state)),
                 "attributes": (entity.attributes, attributes),
                 "device_name": (entity.device_name, device),
             }

@@ -56,7 +56,7 @@ class MyDolphinPlusSelect(SelectEntity, MyDolphinPlusEntity, ABC):
     @property
     def current_option(self) -> str:
         """Return current lamp mode."""
-        return self.entity.state
+        return str(self.entity.state)
 
     async def async_select_option(self, option: str) -> None:
         """Select monitor mode."""

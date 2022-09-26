@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.5
+- Update the HA when `$aws/things/SERIAL/shadow/update/accepted` event received
+- Fix `select` and `switch` state extraction
+- Implement and test the following actions:
+  - Power on / off
+  - Led on / off
+  - Lef mode
+  - Cleaning mode
+
 ## v0.0.4
 - HA is working with all components as READONLY (action not tested yet)
 

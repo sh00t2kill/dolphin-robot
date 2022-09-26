@@ -26,6 +26,9 @@ root.addHandler(stream_handler)
 _LOGGER = logging.getLogger(__name__)
 
 
+def handle_update():
+    _LOGGER.info("Data updated")
+
 async def run():
     data = {
         CONF_USERNAME: os.environ.get("TEST_USERNAME"),
@@ -34,7 +37,7 @@ async def run():
 
     config_data = ConfigData.from_dict(data)
 
-    api = MyDolphinPlusAPI(None, config_data)
+    api = MyDolphinPlusAPI(None, config_data, handle_update)
 
     await api.initialize()
 
