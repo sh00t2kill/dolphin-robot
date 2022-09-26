@@ -14,21 +14,23 @@ from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory, EntityDescription
 
 from ...component.api.mydolphin_plus_api import MyDolphinPlusAPI
 from ...component.helpers.const import *
-from ...component.managers.event_manager import MyDolphinPlusEventManager
 from ...configuration.managers.configuration_manager import (
     ConfigurationManager,
     async_get_configuration_manager,
 )
 from ...configuration.models.config_data import ConfigData
 from ...core.managers.home_assistant import HomeAssistantManager
-from ..helpers import (
+from ...core.models.select_description import SelectDescription
+from ..helpers.common import (
     get_cleaning_mode_description,
     get_cleaning_mode_name,
     get_date_time_from_timestamp,
 )
+from ..helpers.enums import ConnectivityStatus
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,15 +42,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._api: MyDolphinPlusAPI | None = None
         self._config_manager: ConfigurationManager | None = None
 
-        self._event_manager = MyDolphinPlusEventManager(self._hass, super().update)
-
     @property
     def api(self) -> MyDolphinPlusAPI:
         return self._api
-
-    @property
-    def event_manager(self) -> MyDolphinPlusEventManager:
-        return self._event_manager
 
     @property
     def config_data(self) -> ConfigData:
@@ -63,8 +59,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self._config_manager = async_get_configuration_manager(self._hass)
             await self._config_manager.load(entry)
 
-            await self.event_manager.initialize()
-
             self._api = MyDolphinPlusAPI(self._hass, self.config_data)
 
         except Exception as ex:
@@ -76,19 +70,17 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         await self.api.initialize(self.config_data)
 
+        if self.api.status == ConnectivityStatus.Connected:
+            await self.async_update(datetime.datetime.now())
+
     async def async_stop_data_providers(self):
-        self.event_manager.terminate()
         await self.api.terminate()
 
     async def async_update_data_providers(self):
         try:
             await self._api.async_update()
 
-            data = self._api.data
-            name = data.get("Robot Name")
-            model = data.get("Product Name")
-
-            self.device_manager.generate_device(name, model)
+            self.device_manager.generate_device(self.api.data)
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -183,13 +175,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             cycle_info = data.get("cycleInfo", {})
-            cleaning_mode = cycle_info.cleaningMode("cleaningMode", {})
-            mode = cleaning_mode.cleaningMode("mode", "all")
+            cleaning_mode = cycle_info.get("cleaningMode", {})
+            mode = cleaning_mode.get("mode", "all")
             mode_name = get_cleaning_mode_name(mode)
             mode_description = get_cleaning_mode_description(mode)
 
-            cycle_time_minutes = cleaning_mode.cleaningMode("cycleTime", 0)
-            cycle_start_time_ts = cycle_info.cleaningMode("cycleStartTime", 0)
+            cycle_time_minutes = cleaning_mode.get("cycleTime", 0)
+            cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
 
             cycle_time = str(datetime.timedelta(minutes=cycle_time_minutes))
@@ -219,9 +211,21 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = SelectDescription(
+                    key=ATTR_CLEANING_MODE,
+                    name=ATTR_CLEANING_MODE,
+                    icon=CLEANING_MODE_ICON_DEFAULT,
+                    device_class=f"{DOMAIN}__{ATTR_CLEANING_MODE}",
+                    options=tuple(ICON_CLEANING_MODES.keys()),
+                    entity_category=EntityCategory.CONFIG,
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
+                entity.icon = ICON_CLEANING_MODES.get(state, CLEANING_MODE_ICON_DEFAULT)
+                entity.action = self.set_cleaning_mode
 
                 entity.set_created_or_updated(created)
 
@@ -241,9 +245,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             led = data.get("led", {})
-            led_mode = led.cleaningMode("ledMode", 1)
-            led_intensity = led.cleaningMode("ledIntensity", 80)
-            led_enable = led.cleaningMode("ledEnable", False)
+            led_mode = led.get("ledMode", 1)
+            led_intensity = led.get("ledIntensity", 80)
+            led_enable = led.get("ledEnable", False)
 
             state = led_mode
             attributes = {
@@ -269,9 +273,21 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = SelectDescription(
+                    key=ATTR_LED_MODE,
+                    name=ATTR_LED_MODE,
+                    icon=LED_MODE_ICON_DEFAULT,
+                    device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
+                    options=tuple(ICON_LED_MODES.keys()),
+                    entity_category=EntityCategory.CONFIG,
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
+                entity.action = self.set_led_mode
+                entity.icon = ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT)
 
                 entity.set_created_or_updated(created)
 
@@ -291,13 +307,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             system_state = data.get("systemState", {})
-            pws_state = system_state.cleaningMode("pwsState", "off")
-            robot_state = system_state.cleaningMode("robotState", "notConnected")
-            robot_type = system_state.cleaningMode("robotType")
-            is_busy = system_state.cleaningMode("isBusy", False)
-            turn_on_count = system_state.cleaningMode("rTurnOnCount", 0)
-            time_zone = system_state.cleaningMode("timeZone", 0)
-            time_zone_name = system_state.cleaningMode("timeZoneName", "UTC")
+            pws_state = system_state.get("pwsState", "off")
+            robot_state = system_state.get("robotState", "notConnected")
+            robot_type = system_state.get("robotType")
+            is_busy = system_state.get("isBusy", False)
+            turn_on_count = system_state.get("rTurnOnCount", 0)
+            time_zone = system_state.get("timeZone", 0)
+            time_zone_name = system_state.get("timeZoneName", "UTC")
 
             state = pws_state != STATE_OFF
             attributes = {
@@ -328,9 +344,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -370,10 +392,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 "Start time": job_start_time
             }
 
-            # for attr in BINARY_SENSOR_ATTRIBUTES:
-            #    if attr in event_state:
-            #        attributes[attr] = event_state.get(attr)
-
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
             created = entity is None
 
@@ -382,9 +400,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = DEFAULT_ICON
+                entity.icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
                 entity.domain = DOMAIN_BINARY_SENSOR
-                entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
             data = {
                 "state": (entity.state, str(state)),
@@ -393,9 +410,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -415,7 +439,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             filter_bag_indication = data.get("filterBagIndication", {})
-            filter_state = filter_bag_indication.cleaningMode("state", 0)
+            filter_state = filter_bag_indication.get("state", 0)
 
             state = filter_state != 0
             attributes = {
@@ -430,7 +454,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = DEFAULT_ICON
+                entity.icon = "mdi:tray" if state else "mdi:tray-alert"
                 entity.domain = DOMAIN_BINARY_SENSOR
                 entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
@@ -441,9 +465,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -463,7 +494,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             system_state = data.get("systemState", {})
-            robot_state = system_state.cleaningMode("robotState", "notConnected")
+            robot_state = system_state.get("robotState", "notConnected")
 
             debug = data.get("debug", {})
             wifi_rssi = debug.get("WIFI_RSSI", 0)
@@ -498,9 +529,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -520,17 +558,19 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             cycle_info = data.get("cycleInfo", {})
-            cleaning_mode = cycle_info.cleaningMode("cleaningMode", {})
-            mode = cleaning_mode.cleaningMode("mode", "all")
+            cleaning_mode = cycle_info.get("cleaningMode", {})
+            mode = cleaning_mode.get("mode", "all")
             mode_name = get_cleaning_mode_name(mode)
 
-            cycle_time_minutes = cleaning_mode.cleaningMode("cycleTime", 0)
-            cycle_start_time_ts = cycle_info.cleaningMode("cycleStartTime", 0)
+            cycle_time_minutes = cleaning_mode.get("cycleTime", 0)
+            cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
-
             cycle_time = str(datetime.timedelta(minutes=cycle_time_minutes))
 
             state = cycle_time
+            state_parts = state.split(":")
+            state_hours = state_parts[0]
+
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Mode": mode_name,
@@ -545,7 +585,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = DEFAULT_ICON
+                entity.icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
                 entity.domain = DOMAIN_SENSOR
                 entity.sensor_device_class = SensorDeviceClass.DURATION
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
@@ -557,9 +597,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -579,20 +626,28 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             cycle_info = data.get("cycleInfo", {})
-            cleaning_mode = cycle_info.cleaningMode("cleaningMode", {})
-            mode = cleaning_mode.cleaningMode("mode", "all")
+            cleaning_mode = cycle_info.get("cleaningMode", {})
+            mode = cleaning_mode.get("mode", "all")
             mode_name = get_cleaning_mode_name(mode)
 
-            cycle_time = cleaning_mode.cleaningMode("cycleTime", 0)
-            cycle_start_time_ts = cycle_info.cleaningMode("cycleStartTime", 0)
+            cycle_time = cleaning_mode.get("cycleTime", 0)
+            cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
 
-            now = datetime.datetime.now()
+            now_ts = datetime.datetime.now().timestamp()
+            now_str = str(now_ts)
+            now_parts = now_str.split(".")
+            now_str = now_parts[0]
+            now = int(now_str)
+
             cycle_time_in_seconds = cycle_time * 60
             since_started = now - cycle_time_in_seconds
             seconds_left = 0 if since_started > cycle_time_in_seconds else cycle_time_in_seconds - since_started
 
             state = str(datetime.timedelta(seconds=seconds_left))
+
+            state_parts = state.split(":")
+            state_hours = state_parts[0]
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
@@ -608,7 +663,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = DEFAULT_ICON
+                entity.icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
                 entity.domain = DOMAIN_SENSOR
                 entity.sensor_device_class = SensorDeviceClass.DURATION
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
@@ -620,9 +675,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             }
 
             if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -642,13 +704,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             system_state = data.get("systemState", {})
-            pws_state = system_state.cleaningMode("pwsState", "off")
-            robot_state = system_state.cleaningMode("robotState", "off")
-            robot_type = system_state.cleaningMode("robotType")
-            is_busy = system_state.cleaningMode("isBusy", False)
-            turn_on_count = system_state.cleaningMode("rTurnOnCount", 0)
-            time_zone = system_state.cleaningMode("timeZone", 0)
-            time_zone_name = system_state.cleaningMode("timeZoneName", "UTC")
+            pws_state = system_state.get("pwsState", "off")
+            robot_state = system_state.get("robotState", "off")
+            robot_type = system_state.get("robotType")
+            is_busy = system_state.get("isBusy", False)
+            turn_on_count = system_state.get("rTurnOnCount", 0)
+            time_zone = system_state.get("timeZone", 0)
+            time_zone_name = system_state.get("timeZoneName", "UTC")
 
             state = pws_state != STATE_OFF
             attributes = {
@@ -668,7 +730,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_SWITCH
 
             data = {
@@ -681,6 +742,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.action = self.set_power_state
 
                 entity.set_created_or_updated(created)
 
@@ -700,9 +762,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             led = data.get("led", {})
-            led_mode = led.cleaningMode("ledMode", 1)
-            led_intensity = led.cleaningMode("ledIntensity", 80)
-            led_enable = led.cleaningMode("ledEnable", False)
+            led_mode = led.get("ledMode", 1)
+            led_intensity = led.get("ledIntensity", 80)
+            led_enable = led.get("ledEnable", False)
 
             state = led_enable
             attributes = {
@@ -732,6 +794,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
+                entity.action = self.set_led_enabled
 
                 entity.set_created_or_updated(created)
 

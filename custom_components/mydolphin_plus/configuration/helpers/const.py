@@ -10,6 +10,7 @@ from homeassistant.components.sensor import DOMAIN as DOMAIN_SENSOR
 from homeassistant.components.switch import DOMAIN as DOMAIN_SWITCH
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, STATE_OFF, STATE_ON
 
+MANUFACTURER = ""
 DEFAULT_NAME = "MyDolphin Plus"
 DOMAIN = "mydolphin_plus"
 SUPPORTED_PLATFORMS = [

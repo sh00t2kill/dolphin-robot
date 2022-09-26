@@ -76,7 +76,7 @@ class ConfigurationManager:
         config_data = ConfigData.from_dict(data)
 
         api = MyDolphinPlusAPI(self.hass, config_data)
-        await api.initialize()
+        await api.validate()
 
         errors = ConnectivityStatus.get_config_errors(api.status)
 

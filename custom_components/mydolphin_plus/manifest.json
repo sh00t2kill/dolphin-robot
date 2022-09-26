@@ -10,7 +10,9 @@
         "@lordlala",
         "@elad-bar"
     ],
-    "requirements": [  ],
+    "requirements": [
+        "AWSIoTPythonSDK"
+    ],
     "config_flow": true,
     "version": "0.0.3",
     "iot_class": "cloud_polling"

@@ -161,7 +161,7 @@ SERVICE_SCHEMA_DAILY_SCHEDULE = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_ENABLED): cv.boolean,
         vol.Required(CONF_DAY): vol.In(["forward", "backward", "left", "right"]),
         vol.Required(CONF_MODE): vol.In(CLEANING_MODES.keys()),
-        vol.Required(CONF_TIME): cv.dt_util.STANDARD_DURATION_RE,
+        vol.Required(CONF_TIME): cv.string
     }
 )
 
@@ -170,6 +170,33 @@ SERVICE_SCHEMA_DELAYED_CLEAN = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_DEVICE): cv.string,
         vol.Required(CONF_ENABLED): cv.boolean,
         vol.Required(CONF_MODE): vol.In(CLEANING_MODES.keys()),
-        vol.Required(CONF_TIME): cv.dt_util.STANDARD_DURATION_RE,
+        vol.Required(CONF_TIME): cv.string
     }
 )
+
+CLOCK_HOURS_ICONS = {
+    "0": "mdi:clock-time-twelve",
+    "1": "mdi:clock-time-one",
+    "2": "mdi:clock-time-two",
+    "3": "mdi:clock-time-three",
+    "4": "mdi:clock-time-four",
+    "5": "mdi:clock-time-five",
+    "6": "mdi:clock-time-six",
+    "7": "mdi:clock-time-seven",
+    "8": "mdi:clock-time-eight",
+    "9": "mdi:clock-time-nine",
+    "10": "mdi:clock-time-ten",
+    "11": "mdi:clock-time-eleven",
+    "12": "mdi:clock-time-twelve",
+    "13": "mdi:clock-time-one",
+    "14": "mdi:clock-time-two",
+    "15": "mdi:clock-time-three",
+    "16": "mdi:clock-time-four",
+    "17": "mdi:clock-time-five",
+    "18": "mdi:clock-time-six",
+    "19": "mdi:clock-time-seven",
+    "20": "mdi:clock-time-eight",
+    "21": "mdi:clock-time-nine",
+    "22": "mdi:clock-time-ten",
+    "23": "mdi:clock-time-eleven"
+}

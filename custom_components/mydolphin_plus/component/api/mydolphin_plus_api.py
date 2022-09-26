@@ -103,6 +103,28 @@ class MyDolphinPlusAPI:
                 f"Failed to initialize MyDolphin Plus API ({self.base_url}), error: {ex}, line: {line_number}"
             )
 
+    async def validate(self):
+        _LOGGER.info("Initializing MyDolphin Plus")
+
+        try:
+            if self.hass is None:
+                if self.session is not None:
+                    await self.session.close()
+
+                self.session = aiohttp.client.ClientSession()
+            else:
+                self.session = async_create_clientsession(hass=self.hass)
+
+            await self._service_login()
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to validate login to MyDolphin Plus API ({self.base_url}), error: {ex}, line: {line_number}"
+            )
+
+
     def _validate_request(self, endpoint):
         if not ConnectivityStatus.is_api_request_allowed(endpoint, self.status):
             raise APIValidationException(endpoint, self.status)

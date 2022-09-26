@@ -18,7 +18,7 @@ to test you can run the CLI mode or within the HA.
 - ~~Align consts to the real values of select~~
 - ~~Map remote commands~~
 - ~~Create services~~
-- Test, test and more test
+- Test ~~, test and more test~~ actions
 
 ## How to
 

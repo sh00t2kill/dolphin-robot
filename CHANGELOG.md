@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.0.4
+- HA is working with all components as READONLY (action not tested yet)
+
 ## v0.0.3
 - Update todo in [README](README.md)
 - Update `service.yaml`

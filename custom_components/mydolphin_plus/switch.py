@@ -62,10 +62,7 @@ class MyDolphinPlusSwitch(SwitchEntity, MyDolphinPlusEntity):
         await self.set_mode(False)
 
     async def set_mode(self, enabled: bool):
-        if self.entity.name.endswith("Power"):
-            await self.ha.set_power_state(enabled)
-        else:
-            await self.ha.set_led_enabled(enabled)
+        self.entity.action(enabled)
 
     def turn_on(self, **kwargs) -> None:
         pass

@@ -38,8 +38,7 @@ class ConnectivityStatus(StrEnum):
             str(ConnectivityStatus.Connecting): "invalid_server_details",
             str(ConnectivityStatus.Failed): "invalid_server_details",
             str(ConnectivityStatus.NotFound): "invalid_server_details",
-            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials",
-            str(ConnectivityStatus.TemporaryConnected): "missing_permanent_api_key",
+            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials"
         }
 
         status_description = status_mapping.get(str(status))
