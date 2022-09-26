@@ -183,6 +183,8 @@ class MyDolphinPlusAPI:
         if self.status == ConnectivityStatus.Failed:
             await self.initialize()
 
+        self._load_mqtt_details()
+
     async def _login(self):
         await self._service_login()
         await self._aws_login()
@@ -195,6 +197,8 @@ class MyDolphinPlusAPI:
             _LOGGER.info(f"{key}: {self.data[key]}")
 
         self._listen()
+
+        self._load_mqtt_details()
 
     async def _service_login(self):
         try:
@@ -260,6 +264,11 @@ class MyDolphinPlusAPI:
             _LOGGER.error(f"Failed  to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}")
             self.status = ConnectivityStatus.Failed
 
+    def _load_mqtt_details(self):
+        get_topic = TOPIC_GET.replace("/#", "").replace("{}", self.serial)
+
+        self.awsiot_client.publish(get_topic, None, 0)
+
     async def _load_details(self):
         if self.status != ConnectivityStatus.Connected:
             self.status = ConnectivityStatus.Failed
@@ -296,9 +305,12 @@ class MyDolphinPlusAPI:
     def _set_local_broker(self, broker, port):
         self.mqtt_client.connect(broker, port)
 
-    # This is pretty much straight out of AWS documentation RE creating a signature.
-    # Im not convinced its doing anything but every time it gets touched, things break
     def get_signature_key(self, key, date_stamp, service_name):
+        """
+        This is pretty much straight out of AWS documentation RE creating a signature.
+        I'm not convinced its doing anything but every time it gets touched, things break
+        """
+
         aws_key = f"AWS4{key}".encode()
 
         date_key = self._sign(aws_key, date_stamp)
@@ -431,7 +443,7 @@ class MyDolphinPlusAPI:
 
         if self.status == ConnectivityStatus.Connected:
             for topic in topics:
-                self.awsiot_client.subscribeAsync(topic, 0, None, self._internal_callback)
+                self.awsiot_client.subscribe(topic, 0, self._internal_callback)
 
         else:
             all_topics = self._string_join(topics, ", ")
@@ -453,17 +465,18 @@ class MyDolphinPlusAPI:
 
             _LOGGER.debug(f"Message received for device {self.serial}, Topic: {message_topic}, Payload: {payload}")
 
-            if message_topic.endswith("shadow/update/accepted"):
+            if message_topic.endswith("/accepted"):
                 state = payload.get("state", {})
                 reported = state.get("reported", {})
 
                 is_connected = reported.get("isConnected", {})
                 self.data["isConnected"] = is_connected.get("connected", False)
 
-                for category in REPORTED_CATEGORIES:
+                for category in reported.keys():
                     category_data = reported.get(category)
 
                     if category_data is not None:
+                        _LOGGER.info(f"{category} - {category_data}")
                         self.data[category] = category_data
 
         except Exception as ex:
@@ -519,19 +532,30 @@ class MyDolphinPlusAPI:
         await self._send_desired_command(None)
 
     async def set_delay(self,
+                        device: str,
                         enabled: bool | None = False,
                         mode: str | None = "all",
-                        hours: int | None = 255,
-                        minutes: int | None = 255):
+                        job_time: str | None = None):
 
-        await self.set_schedule("delay", enabled, mode, hours, minutes)
+        await self.set_schedule(device, "delay", enabled, mode, job_time)
 
     async def set_schedule(self,
+                           device: str,
                            day: str,
                            enabled: bool | None = False,
                            mode: str | None = "all",
-                           hours: int | None = 255,
-                           minutes: int | None = 255):
+                           job_time: str | None = None):
+        if device != self.serial:
+            return
+
+        hours = 255
+        minutes = 255
+
+        if enabled:
+            job_time_parts = job_time.split(":")
+            hours = int(job_time_parts[0])
+            minutes = int(job_time_parts[1])
+
         request_data = {
             "weeklySettings": {
                 "triggeredBy": 0,
@@ -594,8 +618,19 @@ class MyDolphinPlusAPI:
 
         await self._send_desired_command(request_data)
 
-    async def drive(self, direction: str):
+    async def drive(self, device: str, direction: str):
+        if device != self.serial:
+            return
+
         _LOGGER.warning(f"Drive is not implemented yet, Value: {direction}")
+
+        await self._send_desired_command(None)
+
+    async def pickup(self, device: str):
+        if device != self.serial:
+            return
+
+        _LOGGER.warning(f"Pickup is not implemented yet")
 
         await self._send_desired_command(None)
 

@@ -91,6 +91,10 @@ class HomeAssistantManager:
         """ Must be implemented to be able to send heartbeat to API """
         pass
 
+    def register_services(self, entry: ConfigEntry | None = None):
+        """ Must be implemented to be able to expose services """
+        pass
+
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         """ Must be implemented to be able to send heartbeat to API """
         pass
@@ -136,6 +140,8 @@ class HomeAssistantManager:
 
         for domain in PLATFORMS:
             await load(self._entry, domain)
+
+        self.register_services()
 
         self._is_initialized = True
 

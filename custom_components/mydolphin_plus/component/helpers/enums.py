@@ -10,7 +10,6 @@ class ConnectivityStatus(StrEnum):
     TemporaryConnected = "Connected with temporary API key"
     Failed = "Failed to access API"
     InvalidCredentials = "Invalid credentials"
-    MissingAPIKey = "Permanent API Key was not found"
     Disconnected = "Disconnected by the system"
     NotFound = "API Not found"
 
@@ -39,7 +38,6 @@ class ConnectivityStatus(StrEnum):
             str(ConnectivityStatus.Connecting): "invalid_server_details",
             str(ConnectivityStatus.Failed): "invalid_server_details",
             str(ConnectivityStatus.NotFound): "invalid_server_details",
-            str(ConnectivityStatus.MissingAPIKey): "missing_permanent_api_key",
             str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials",
             str(ConnectivityStatus.TemporaryConnected): "missing_permanent_api_key",
         }

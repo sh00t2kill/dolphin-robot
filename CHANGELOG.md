@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.0.3
+- Update todo in [README](README.md)
+- Update `service.yaml`
+- On load call topic `$aws/things/SERIAL/shadow/get` to load all details, this simulates loading the mobile app
+- Add `get_accept.jsonc` file example file with all data being collected as part of `api.initialize` or `api.async_update` from MQTT
+- Changed sensor `Connection Type` to binary_sensor of `Connection`
+- Removed remote entity, instead exposed 2 additional services
+  - `mydolphin_plus.drive` - Manually drive the robot
+  - `mydolphin_plus.pickup` - Pickup
+- Loading correct data for:
+  - Binary Sensors: Status, Connection, Filter Bag Status, Delayed Schedule, Daily Schedule (Per day)
+  - Select: Cleaning Mode, Led Mode
+  - Sensor: Cleaning Time, Cleaning Time Left
+  - Switch: Power, Led Enabled
+
 ## v0.0.2
 
 - Create stub functions in MyDolphinPlusAPI and its proxy methods in MyDolphinPlusHomeAssistantManager

@@ -5,13 +5,17 @@ https://home-assistant.io/components/switch.mydolphin_plus/
 """
 from datetime import timedelta
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+import voluptuous as vol
+
+from homeassistant.components.light import PLATFORM_SCHEMA
+from homeassistant.const import CONF_DEVICE, CONF_ENABLED, CONF_MODE
+import homeassistant.helpers.config_validation as cv
 
 from ...core.helpers.const import *
 
 CONF_SUPPORT_STREAM = "support_stream"
 
-VERSION = "0.0.1"
+VERSION = "0.0.3"
 
 DEFAULT_ICON = "mdi:alarm-light"
 ATTR_FRIENDLY_NAME = "friendly_name"
@@ -65,7 +69,15 @@ AWS_DATE_FORMAT = "%Y%m%d"
 AWS_DATE_TIME_FORMAT = f"{AWS_DATE_FORMAT}T%H%M%SZ"
 
 AWS_DYNAMODB_QUERY_PARAMETER = "[SERIAL]"
-AWS_DYNAMODB_QUERY_PAYLOAD = '{\"TableName\":\"maytronics_iot_history\",\"Limit\":1,\"KeyConditionExpression\":\"musn = :val \",\"ScanIndexForward\":false,\"ExpressionAttributeValues\":{\":val\":{\"S\":\"' + AWS_DYNAMODB_QUERY_PARAMETER + '"\'}}}'
+AWS_DYNAMODB_QUERY_PAYLOAD = '{' \
+                             '\"TableName\":\"maytronics_iot_history\",' \
+                             '\"Limit\":1,' \
+                             '\"KeyConditionExpression\":\"musn = :val \",' \
+                             '\"ScanIndexForward\":false,' \
+                             '\"ExpressionAttributeValues\":' \
+                             '{\":val\":' \
+                             '{\"S\":\"' + AWS_DYNAMODB_QUERY_PARAMETER + '"\'}}}'
+
 AWS_DYNAMODB_SERVICE = "dynamodb"
 
 TOPIC_GET = "$aws/things/{}/shadow/get/#"
@@ -84,23 +96,14 @@ DATA_ROBOT_DETAILS = {
     "RobotFamily": "Product Family"
 }
 
-REPORTED_CATEGORIES = [
-    "weeklySettings",
-    "delay",
-    "systemState",
-    "debug",
-    "filterBagIndication",
-    "cycleInfo"
-]
-
 ATTR_CLEANING_MODE = "cleaning_mode"
 ATTR_LED_MODE = "led_mode"
 
-CLEANING_MODE_REGULAR = "Regular"
-CLEANING_MODE_FAST_MODE = "Floor only"
-CLEANING_MODE_FLOOR_ONLY = "regular"
-CLEANING_MODE_WATER_LINE = "Water line"
-CLEANING_MODE_ULTRA_CLEAN = "Ultra clean"
+CLEANING_MODE_REGULAR = "all"
+CLEANING_MODE_FAST_MODE = "short"
+CLEANING_MODE_FLOOR_ONLY = "floor"
+CLEANING_MODE_WATER_LINE = "water"
+CLEANING_MODE_ULTRA_CLEAN = "ultra"
 CLEANING_MODE_ICON_DEFAULT = "mdi:border-all-variant"
 
 ICON_CLEANING_MODES = {
@@ -111,9 +114,9 @@ ICON_CLEANING_MODES = {
     CLEANING_MODE_ULTRA_CLEAN: "mdi:border-all"
 }
 
-LED_MODE_BLINKING = "Blinking"
-LED_MODE_ALWAYS_ON = "Always on"
-LED_MODE_DISCO = "Disco"
+LED_MODE_BLINKING = "1"
+LED_MODE_ALWAYS_ON = "2"
+LED_MODE_DISCO = "3"
 LED_MODE_ICON_DEFAULT = "mdi:lighthouse-on"
 
 ICON_LED_MODES = {
@@ -121,3 +124,52 @@ ICON_LED_MODES = {
     LED_MODE_ALWAYS_ON: "mdi:lightbulb-on",
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline"
 }
+
+CLEANING_MODES = {
+  "all": "Regular - Cleans floor, water and waterline (2h)",
+  "short": "Fast mode - Cleans the floor (1h)",
+  "floor": "Floor only - Cleans the floor only (2h)",
+  "water": "Water line - Cleans the walls and water line (2h)",
+  "ultra": "Ultra clean - Deeply cleans the floor, walls and waterline (2h)"
+}
+
+SERVICE_NAVIGATE = "navigate"
+SERVICE_PICKUP = "pickup"
+SERVICE_SET_DAILY_SCHEDULE = "set_daily_schedule"
+SERVICE_DELAYED_CLEAN = "delayed_clean"
+
+CONF_DIRECTION = "direction"
+CONF_DAY = "day"
+CONF_TIME = "time"
+
+SERVICE_SCHEMA_NAVIGATE = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE): cv.string,
+        vol.Required(CONF_DIRECTION): vol.In(["forward", "backward", "left", "right"])
+    }
+)
+
+SERVICE_SCHEMA_PICKUP = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE): cv.string
+    }
+)
+
+SERVICE_SCHEMA_DAILY_SCHEDULE = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE): cv.string,
+        vol.Required(CONF_ENABLED): cv.boolean,
+        vol.Required(CONF_DAY): vol.In(["forward", "backward", "left", "right"]),
+        vol.Required(CONF_MODE): vol.In(CLEANING_MODES.keys()),
+        vol.Required(CONF_TIME): cv.dt_util.STANDARD_DURATION_RE,
+    }
+)
+
+SERVICE_SCHEMA_DELAYED_CLEAN = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE): cv.string,
+        vol.Required(CONF_ENABLED): cv.boolean,
+        vol.Required(CONF_MODE): vol.In(CLEANING_MODES.keys()),
+        vol.Required(CONF_TIME): cv.dt_util.STANDARD_DURATION_RE,
+    }
+)

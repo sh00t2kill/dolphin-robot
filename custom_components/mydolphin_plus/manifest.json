@@ -7,8 +7,8 @@
     "dependencies": [],
     "codeowners": [
         "@sh00t2kill",
-        "@elad-bar",
-        "@lordlala"
+        "@lordlala",
+        "@elad-bar"
     ],
     "requirements": [  ],
     "config_flow": true,

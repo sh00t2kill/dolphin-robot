@@ -12,12 +12,12 @@ Integration is still work in progress, not tested with HA with all its functiona
 to test you can run the CLI mode or within the HA.
 
 ### TODO
-- On startup trigger the get topic from MQTT as happens when the mobile app is being opened
+- ~~On startup trigger the get topic from MQTT as happens when the mobile app is being opened~~
 - Implement publish commands to the robot (currently stubs that logs the action only)
-- Map the select values to the real one from the app (currently available assumed values)
-- Align consts to the real values of select
-- Map remote commands
-- Create services
+- ~~Map the select values to the real one from the app (currently available assumed values)~~
+- ~~Align consts to the real values of select~~
+- ~~Map remote commands~~
+- ~~Create services~~
 - Test, test and more test
 
 ## How to
@@ -75,35 +75,64 @@ Please remove the integration and re-add it to make it work again.
 | DEBUG                | Boolean | False   | Setting to True will present DEBUG log level message while testing the code, False will set the minimum log level to INFO |
 
 ## HA Components
-| Entity Name                      | Type           | Description                                                   | Additional information                                              |
-|----------------------------------|----------------|---------------------------------------------------------------|---------------------------------------------------------------------|
-| {Robot Name} Status              | Binary Sensors | Indicates whether the robot is turned on or off               |                                                                     |
-| {Robot Name} Filter Bag Status   | Binary Sensors | Indicates whether the robot filter bag is full or not         |                                                                     |
-| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not        | Attributes will hold the mode and delayed time                      |
-| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not     | Attributes will hold the mode and delayed time                      |
-| {Robot Name} Status              | Remote         | Indicates whether the robot is turned on or off               | Allows the following actions:                                       |
-|                                  |                |                                                               | - Go backward                                                       |
-|                                  |                |                                                               | - Go backward                                                       |
-|                                  |                |                                                               | - Go left                                                           |
-|                                  |                |                                                               | - Go right                                                          |
-|                                  |                |                                                               | - Pick up                                                           |
-| {Robot Name} Cleaning Mode       | Select         | Select cleaning mode                                          | Available options                                                   |
-|                                  |                |                                                               | **Regular** - cleans floor, water and waterline (2h)                |
-|                                  |                |                                                               | **Fast mode** - cleans the floor (1h)                               |  Floor only - cleans the floor only (2h)                     |
-|                                  |                |                                                               | **Floor only** - Cleans the floor only (2h)                         |
-|                                  |                |                                                               | **Water line** - cleans the walls and water line (2h)               |
-|                                  |                |                                                               | **Ultra clean** - deeply cleans the floor, walls and waterline (2h) |
-| {Robot Name} Led Mode            | Select         | Select led mode                                               | Available options                                                   |
-|                                  |                |                                                               | **Blinking**                                                        |
-|                                  |                |                                                               | **Always on**                                                       |
-|                                  |                |                                                               | **Disco**                                                           |
-| {Robot Name} Connection Type     | Sensor         | Defines which connection is currently available for the robot |                                                                     |
-| {Robot Name} Cleaning Time       | Sensor         | Indicates the time the robot is cleaning                      |                                                                     |
-| {Robot Name} Cleaning Time Left  | Sensor         | Indicates the time left for the robot to complete the cycle   |                                                                     |
-| {Robot Name} Power               | Switch         | Turned on or off the robot                                    |                                                                     |
-| {Robot Name} Led Enabled         | Switch         | Turned on or off the led                                      |                                                                     |
+| Entity Name                      | Type           | Description                                                 | Additional information                                              |
+|----------------------------------|----------------|-------------------------------------------------------------|---------------------------------------------------------------------|
+| {Robot Name} Connection          | Binary Sensor  | Indicates whether there is a WIFI connection or not         |                                                                     |
+| {Robot Name} Filter Bag Status   | Binary Sensors | Indicates whether the robot filter bag is full or not       |                                                                     |
+| {Robot Name} Status              | Binary Sensors | Indicates whether the robot is turned on or off             |                                                                     |
+| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not      | Attributes will hold the mode and delayed time                      |
+| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not   | Attributes will hold the mode and delayed time                      |
+| {Robot Name} Cleaning Mode       | Select         | Select cleaning mode                                        | Available options                                                   |
+| {Robot Name} Led Mode            | Select         | Select led mode                                             | Available options                                                   |
+| {Robot Name} Cleaning Time       | Sensor         | Indicates the time the robot is cleaning                    |                                                                     |
+| {Robot Name} Cleaning Time Left  | Sensor         | Indicates the time left for the robot to complete the cycle |                                                                     |
+| {Robot Name} Power               | Switch         | Turned on or off the robot                                  |                                                                     |
+| {Robot Name} Led Enabled         | Switch         | Turned on or off the led                                    |                                                                     |
 
-## Services (Not implemented yet)
+### Cleaning Modes
+
+| Key   | Name        | Description                                  | Duration (Hours) |
+|-------|-------------|----------------------------------------------|------------------|
+| all   | Regular     | cleans floor, water and waterline            | 2                |
+| short | Fast mode   | cleans the floor                             | 1                |
+| floor | Floor only  | Cleans the floor only                        | 2                |
+| water | Water line  | cleans the walls and water line              | 2                |
+| ultra | Ultra clean | deeply cleans the floor, walls and waterline | 2                |
+
+
+### Led Modes
+
+| Key | Name      |
+|-----|-----------|
+| 1   | Blinking  |
+| 2   | Always on |
+| 3   | Disco     |
+
+## Services
+### Navigate
+
+Service name: *mydolphin_plus.navigate*
+
+Description: Manually navigate the robot
+
+Payload:
+```yaml
+data:
+  device: Serial Number
+  direction: forward / backward / left / right
+```
+
+### Pickup
+
+Service name: *mydolphin_plus.pickup*
+
+Description: Pickup the robot
+
+Payload:
+```yaml
+data:
+  device: Serial Number
+```
 
 ### Set Daily Schedule
 
@@ -115,30 +144,23 @@ Payload:
 ```yaml
 data:
   day: Sunday
-  isEnabled: true
-  time:
-    hours: 255
-    minutes: 255
-  cleaningMode:
-    mode: all
+  enabled: true
+  time: 00:00
+  mode: all
 ```
-
 
 ### Delayed Cleaning
 
-Service name: *mydolphin_plus.delayed_cleaning*
+Service name: *mydolphin_plus.delayed_clean*
 
 Description: Set a delayed job for cleaning
 
 Payload:
 ```yaml
 data:
-  isEnabled: true
-  time:
-    hours: 255
-    minutes: 255
-  cleaningMode:
-    mode: all
+  enabled: true
+  time: 00:00
+  mode: all
 ```
 
 ## Troubleshooting
