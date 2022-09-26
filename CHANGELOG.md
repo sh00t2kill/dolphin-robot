@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.2
+
+- Create stub functions in MyDolphinPlusAPI and its proxy methods in MyDolphinPlusHomeAssistantManager
+- Add HA components (More details in [README](README.md))
+  - Binary Sensors: Status, Filter Bag Status, Delayed Schedule, Daily Schedule (Per day)
+  - Remote
+  - Select: Cleaning Mode, Led Mode
+  - Sensor: Connection Type, Cleaning Time, Cleaning Time Left
+  - Switch: Power, Led Enabled
+
 ## v0.0.1
 
 Initial changes - functionality changes, refactor and restructuring of based code to match needs for HA custom component

@@ -2,8 +2,6 @@ import logging
 
 from homeassistant.backports.enum import StrEnum
 
-from ...component.helpers.const import *
-
 
 class ConnectivityStatus(StrEnum):
     NotConnected = "Not connected"
