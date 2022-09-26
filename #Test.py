@@ -29,6 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 def handle_update():
     _LOGGER.info("Data updated")
 
+
 async def run():
     data = {
         CONF_USERNAME: os.environ.get("TEST_USERNAME"),

@@ -8,8 +8,8 @@ import json
 import logging
 import os
 import sys
-import uuid
 from typing import Callable
+import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import aiohttp

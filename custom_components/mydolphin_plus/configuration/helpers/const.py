@@ -5,6 +5,7 @@ Following constants are mandatory for CORE:
     SUPPORTED_PLATFORMS - list of supported HA components to initialize
 """
 from homeassistant.components.binary_sensor import DOMAIN as DOMAIN_BINARY_SENSOR
+from homeassistant.components.light import DOMAIN as DOMAIN_LIGHT
 from homeassistant.components.select import DOMAIN as DOMAIN_SELECT
 from homeassistant.components.sensor import DOMAIN as DOMAIN_SENSOR
 from homeassistant.components.switch import DOMAIN as DOMAIN_SWITCH
@@ -17,7 +18,8 @@ SUPPORTED_PLATFORMS = [
     DOMAIN_BINARY_SENSOR,
     DOMAIN_SELECT,
     DOMAIN_SENSOR,
-    DOMAIN_SWITCH
+    DOMAIN_SWITCH,
+    DOMAIN_LIGHT
 ]
 
 DEFAULT_PORT = 8080

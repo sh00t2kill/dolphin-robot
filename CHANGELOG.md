@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.0.6
+- Changed LED `switch` to `light` component
+
 ## v0.0.5
 - Update the HA when `$aws/things/SERIAL/shadow/update/accepted` event received
 - Fix `select` and `switch` state extraction

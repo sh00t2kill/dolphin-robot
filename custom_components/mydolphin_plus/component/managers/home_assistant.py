@@ -26,7 +26,7 @@ from ...configuration.models.config_data import ConfigData
 from ...core.managers.home_assistant import HomeAssistantManager
 from ...core.models.select_description import SelectDescription
 from ..helpers.common import (
-    get_cleaning_mode_description,
+    get_cleaning_mode_details,
     get_cleaning_mode_name,
     get_date_time_from_timestamp,
 )
@@ -154,7 +154,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_sensor_cleaning_time(name, data)
         self._load_sensor_cleaning_time_left(name, data)
         self._load_switch_power(name, data)
-        self._load_switch_led_enabled(name, data)
+        self._load_light_led_enabled(name, data)
 
         delay_settings = data.get("delay", {})
         self._load_binary_sensor_schedules(name, "delay", delay_settings)
@@ -177,8 +177,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             cycle_info = data.get("cycleInfo", {})
             cleaning_mode = cycle_info.get("cleaningMode", {})
             mode = cleaning_mode.get("mode", "all")
-            mode_name = get_cleaning_mode_name(mode)
-            mode_description = get_cleaning_mode_description(mode)
+            mode_description = get_cleaning_mode_details(mode)
 
             cycle_time_minutes = cleaning_mode.get("cycleTime", 0)
             cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
@@ -753,7 +752,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_SWITCH}: {entity_name}"
             )
 
-    def _load_switch_led_enabled(
+    def _load_light_led_enabled(
             self,
             device: str,
             data: dict
@@ -773,7 +772,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 "Intensity": led_intensity
             }
 
-            entity = self.entity_manager.get(DOMAIN_SWITCH, entity_name)
+            entity = self.entity_manager.get(DOMAIN_LIGHT, entity_name)
             created = entity is None
 
             if created:
@@ -782,7 +781,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.id = entity_name
                 entity.name = entity_name
                 entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_SWITCH
+                entity.domain = DOMAIN_LIGHT
 
             data = {
                 "state": (str(entity.state), str(state)),
@@ -802,7 +801,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         except Exception as ex:
             self.log_exception(
-                ex, f"Failed to load {DOMAIN_SWITCH}: {entity_name}"
+                ex, f"Failed to load {DOMAIN_LIGHT}: {entity_name}"
             )
 
     async def set_cleaning_mode(self, cleaning_mode):
