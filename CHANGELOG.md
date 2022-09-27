@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.7
+- Cycle left time sensor: Add attribute of expected end time
+- API: Add logs for server version, time and diff (compared to local time)
+- API: change AWS connectivity request parameter of now, from UTC to local time
+- API: Add connection validation on each step of the initialization process (for better debugging)
+
 ## v0.0.6
 - Changed LED `switch` to `light` component
 

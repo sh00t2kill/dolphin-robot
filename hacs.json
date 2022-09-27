@@ -1,5 +1,5 @@
 {
   "name": "MyDolphin Plus",
-  "iot_class": "Local Polling",
+  "iot_class": "Cloud Polling",
   "homeassistant": "2021.12.0"
 }
