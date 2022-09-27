@@ -154,9 +154,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_sensor_cleaning_time(name, data)
         self._load_sensor_cleaning_time_left(name, data)
         self._load_switch_power(name, data)
-        self._load_light_led_enabled(name, data)
-        
-
+        self._load_light_led_enabled(name, data)     
+        features = data.get("featureEn", {})
+        self._load_binary_sensor_weekly_timer(name, features)
         delay_settings = data.get("delay", {})
         self._load_binary_sensor_schedules(name, "delay", delay_settings)
 
@@ -164,11 +164,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         for day in list(calendar.day_name):
             day_data = weekly_settings.get(day.lower(), {})
-
             self._load_binary_sensor_schedules(name, day, day_data)
-        
-        features = data.get("featureEn", {})
-        self._load_binary_sensor_weekly_timer(name, features)
 
     def _load_select_cleaning_mode(
             self,
