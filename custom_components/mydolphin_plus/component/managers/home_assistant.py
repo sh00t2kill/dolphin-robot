@@ -162,7 +162,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         weekly_settings = data.get("weeklySettings", {})
 
         for day in list(calendar.day_name):
-            day_data = weekly_settings.get(day, {})
+            day_data = weekly_settings.get(day.lower(), {})
 
             self._load_binary_sensor_schedules(name, day, day_data)
 
@@ -377,7 +377,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         hours = job_time.get("hours", 255)
         minutes = job_time.get("minutes", 255)
 
-        entity_name = f"{device} Schedule {day}"
+        entity_name = f"{device} Schedule {day.capitalize()}"
 
         job_start_time = None
         if hours < 255 and minutes < 255:
