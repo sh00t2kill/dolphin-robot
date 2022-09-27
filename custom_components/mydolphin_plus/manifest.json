@@ -14,5 +14,6 @@
         "AWSIoTPythonSDK"
     ],
     "config_flow": true,
-    "version": "0.0.7"
+    "version": "0.0.7",
+    "iot_class": "cloud_polling"
 }
