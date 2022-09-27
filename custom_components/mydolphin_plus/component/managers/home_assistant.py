@@ -776,11 +776,17 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             time_zone = system_state.get("timeZone", 0)
             time_zone_name = system_state.get("timeZoneName", "UTC")
 
-            state = pws_state != STATE_OFF
+            off_states = {
+                "off",
+                "holdWeekly"
+            }
+            state = pws_state not in off_states
+
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Robot": robot_state,
                 "Type": robot_type,
+                "Power": pws_state,
                 "Is Busy": is_busy,
                 "Turn on count": turn_on_count,
                 "Time Zone": f"{time_zone_name} ({time_zone})"
