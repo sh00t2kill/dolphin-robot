@@ -699,7 +699,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             # There seems to be issues with timestamps being returned. If the time is in the future, switch to the other time
             # UTC is sometimes local time, with the local time being local time + timezone offset.
             # This appears to be a Maytonics issue.
-            
+
             now_check_time = datetime.datetime.now()
             if cycle_start_time > now_check_time:
                 cycle_start_time_ts = cycle_info.get("cycleStartTimeUTC", 0)
