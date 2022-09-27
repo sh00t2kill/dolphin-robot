@@ -155,7 +155,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_sensor_cleaning_time_left(name, data)
         self._load_switch_power(name, data)
         self._load_light_led_enabled(name, data)
-
+        features = data.get("featureEn", {})
+        self._load_binary_sensor_weekly_timer(name, features)
         delay_settings = data.get("delay", {})
         self._load_binary_sensor_schedules(name, "delay", delay_settings)
 
@@ -163,7 +164,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         for day in list(calendar.day_name):
             day_data = weekly_settings.get(day.lower(), {})
-
             self._load_binary_sensor_schedules(name, day, day_data)
 
     def _load_select_cleaning_mode(
@@ -362,6 +362,62 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
+    def _load_binary_sensor_weekly_timer(
+            self,
+            device: str,
+            data: dict
+    ):
+        weekly_timer = data.get("weeklyTimer", {})
+        status = weekly_timer.get("status", 'disabled')
+
+        is_enabled = status == "enable"
+        entity_name = f"{device} Weekly Schedule Enabled"
+        try:
+            state = STATE_ON if is_enabled else STATE_OFF
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name,
+                "Status": status
+            }
+
+            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+                entity.domain = DOMAIN_BINARY_SENSOR
+
+            data = {
+                "state": (str(entity.state), str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+                entity.entity_description = entity_description
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
+            )
+
+
     def _load_binary_sensor_schedules(
             self,
             device: str,
@@ -493,6 +549,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             system_state = data.get("systemState", {})
+            power_state = system_state.get("pwsState", "off")
+            is_busy = system_state.get("isBusy", False)
             robot_state = system_state.get("robotState", "notConnected")
 
             debug = data.get("debug", {})
@@ -506,7 +564,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_FRIENDLY_NAME: entity_name,
                 "State": robot_state,
                 "RSSI": wifi_rssi,
-                "WIFI Network": net_name
+                "WIFI Network": net_name,
+                "Power State": power_state,
+                "Busy": is_busy
             }
 
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
