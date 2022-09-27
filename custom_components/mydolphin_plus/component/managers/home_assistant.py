@@ -314,14 +314,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             time_zone = system_state.get("timeZone", 0)
             time_zone_name = system_state.get("timeZoneName", "UTC")
 
-            state = pws_state != STATE_OFF
+            state = STATE_ON if pws_state == "on" else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Robot": robot_state,
                 "Type": robot_type,
                 "Is Busy": is_busy,
                 "Turn on count": turn_on_count,
-                "Time Zone": f"{time_zone_name} ({time_zone})"
+                "Time Zone": f"{time_zone_name} ({time_zone})",
+                "PWS State": pws_state
             }
 
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
@@ -498,7 +499,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             state = filter_state != 0
             attributes = {
-                ATTR_FRIENDLY_NAME: entity_name
+                ATTR_FRIENDLY_NAME: entity_name,
+                "Filter Bag Indication": filter_bag_indication,
+                "Filter State": filter_state
             }
 
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
@@ -711,7 +714,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Mode": mode_name,
-                "Start Time": cycle_start_time
+                "Start Time": cycle_start_time,
+                "Time Now": now,
+                "Seconds Left": seconds_left
             }
 
             entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
