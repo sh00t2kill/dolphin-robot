@@ -497,7 +497,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             filter_bag_indication = data.get("filterBagIndication", {})
             filter_state = filter_bag_indication.get("state", 0)
 
-            state = filter_state != 0
+            state = STATE_ON if filter_state != 0 else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Filter Bag Indication": filter_bag_indication,
