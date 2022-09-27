@@ -14,8 +14,6 @@ import uuid
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import aiohttp
 from aiohttp import ClientResponseError, ClientSession
-import paho.mqtt.client as paho
-import requests
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -57,7 +55,6 @@ class MyDolphinPlusAPI:
             self.base_url = None
 
             self.awsiot_id = str(uuid.uuid4())
-            self.mqtt_client = paho.Client(self.awsiot_id)
             self.status = ConnectivityStatus.NotConnected
 
             self.login_token = None
@@ -327,9 +324,6 @@ class MyDolphinPlusAPI:
 
             _LOGGER.error(f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}")
 
-    def _set_local_broker(self, broker, port):
-        self.mqtt_client.connect(broker, port)
-
     def get_signature_key(self, key, date_stamp, service_name):
         """
         This is pretty much straight out of AWS documentation RE creating a signature.
@@ -399,37 +393,6 @@ class MyDolphinPlusAPI:
         }
 
         return aws_headers
-
-    def map_query(self):
-        payload = AWS_DYNAMODB_QUERY_PAYLOAD.replace(AWS_DYNAMODB_QUERY_PARAMETER, self.serial)
-
-        headers = self.get_aws_header(AWS_DYNAMODB_SERVICE, payload)
-        response = requests.post(DYNAMODB_URL, data=payload, headers=headers)
-
-        data_payload = response.json()
-        data = data_payload.get("Items", [])
-        items = data[0]
-        turn_on_count = items.get("rTurnOnCount", {})
-        system_data = items.get("SystemData", {})
-        system_data_timestamp = items.get("SystemDataTimeStamp", {})
-
-        turn_on = turn_on_count.get("N", 0)
-        timestamp = system_data_timestamp.get("S")
-
-        job_trigger = self._get_system_data_attribute(system_data, 110)
-        work_type = self._get_system_data_attribute(system_data, 115)
-
-        last_run_status = "cancelled" if work_type == "cloud" else work_type
-
-        return_data = {
-            "turn_on_count": turn_on,
-            "job_trigger": job_trigger,
-            "work_type": work_type,
-            "timestamp": timestamp,
-            "last_run_status": last_run_status
-        }
-
-        return return_data
 
     def _connect_aws_iot_client(self):
         script_dir = os.path.dirname(__file__)
