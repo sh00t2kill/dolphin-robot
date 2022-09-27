@@ -562,7 +562,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             wifi = data.get("wifi", {})
             net_name = wifi.get("netName")
 
-            state = robot_state != "notConnected"
+            state = STATE_ON if robot_state != "notConnected" else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "State": robot_state,
