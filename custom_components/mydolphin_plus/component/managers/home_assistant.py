@@ -693,18 +693,21 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             mode_name = get_cleaning_mode_name(mode)
 
             cycle_time = cleaning_mode.get("cycleTime", 0)
+            cycle_time_in_seconds = cycle_time * 60
+
             cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
 
             now_ts = datetime.datetime.now().timestamp()
-            now_str = str(now_ts)
-            now_parts = now_str.split(".")
-            now_str = now_parts[0]
-            now = int(now_str)
+            now = get_date_time_from_timestamp(now_ts)
 
-            cycle_time_in_seconds = cycle_time * 60
-            since_started = now - cycle_time_in_seconds
-            seconds_left = 0 if since_started > cycle_time_in_seconds else cycle_time_in_seconds - since_started
+            expected_cycle_end_time_ts = cycle_time_in_seconds + cycle_start_time_ts
+            expected_cycle_end_time = get_date_time_from_timestamp(expected_cycle_end_time_ts)
+
+            seconds_left = 0
+            if expected_cycle_end_time_ts > now_ts:
+                # still working
+                seconds_left = expected_cycle_end_time_ts - now_ts
 
             state = str(datetime.timedelta(seconds=seconds_left))
 
@@ -715,6 +718,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Mode": mode_name,
                 "Start Time": cycle_start_time,
+                "Expected End Time": expected_cycle_end_time,
                 "Time Now": now,
                 "Seconds Left": seconds_left
             }

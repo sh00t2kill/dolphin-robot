@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 from datetime import datetime
 import hashlib
 import hmac
@@ -21,6 +20,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from ...component.helpers.const import *
 from ...component.helpers.exceptions import APIValidationException
 from ...configuration.models.config_data import ConfigData
+from ..helpers.common import get_date_time_from_timestamp
 from ..helpers.enums import ConnectivityStatus
 
 REQUIREMENTS = ["aiohttp"]
@@ -46,6 +46,10 @@ class MyDolphinPlusAPI:
 
     callback: Callable[[], None]
 
+    server_version: int | None
+    server_timestamp: int | None
+    server_time_diff: int
+
     def __init__(self, hass: HomeAssistant | None, config_data: ConfigData, callback: Callable[[], None] | None = None):
         try:
             self._last_update = datetime.now()
@@ -68,6 +72,10 @@ class MyDolphinPlusAPI:
 
             self.callback = callback
             self.data = {}
+
+            self.server_version = None
+            self.server_timestamp = None
+            self.server_time_diff = 0
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -233,18 +241,21 @@ class MyDolphinPlusAPI:
             payload = await self._async_post(LOGIN_URL, LOGIN_HEADERS, request_data)
 
             data = payload.get("Data", {})
+            if data:
+                serial = data.get("Sernum")
+                token = data.get("token")
 
-            serial = data.get("Sernum")
-            token = data.get("token")
+                actual_serial = serial[:-2]
 
-            actual_serial = serial[:-2]
+                _LOGGER.debug(f"Device {serial} with token: {token}")
 
-            _LOGGER.debug(f"Device {serial} with token: {token}")
+                self.serial = actual_serial
+                self.login_token = token
 
-            self.serial = actual_serial
-            self.login_token = token
+                self.status = ConnectivityStatus.TemporaryConnected
 
-            self.status = ConnectivityStatus.TemporaryConnected
+            else:
+                self.status = ConnectivityStatus.Failed
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -287,6 +298,10 @@ class MyDolphinPlusAPI:
             self.status = ConnectivityStatus.Failed
 
     def _refresh_details(self):
+        if self.status != ConnectivityStatus.Connected:
+            self.status = ConnectivityStatus.Failed
+            return
+
         get_topic = TOPIC_GET.replace("/#", "").replace("{}", self.serial)
 
         self.awsiot_client.publish(get_topic, None, 0)
@@ -341,7 +356,7 @@ class MyDolphinPlusAPI:
         return full_signature
 
     def get_aws_header(self, service, payload):
-        current_time = datetime.datetime.utcnow()
+        current_time = datetime.now()
         amz_date = current_time.strftime(AWS_DATE_TIME_FORMAT)
         date_stamp = current_time.strftime(AWS_DATE_FORMAT)
 
@@ -395,6 +410,10 @@ class MyDolphinPlusAPI:
         return aws_headers
 
     def _connect_aws_iot_client(self):
+        if self.status != ConnectivityStatus.Connected:
+            self.status = ConnectivityStatus.Failed
+            return
+
         script_dir = os.path.dirname(__file__)
         ca_file_path = os.path.join(script_dir, CA_FILE_NAME)
 
@@ -424,18 +443,14 @@ class MyDolphinPlusAPI:
             self.status = ConnectivityStatus.Failed
 
     def _listen(self):
-        topics = []
+        if self.status != ConnectivityStatus.Connected:
+            self.status = ConnectivityStatus.Failed
+            return
 
         for topic in TOPICS:
-            topics.append(topic.format(self.serial))
+            fixed_topic = topic.format(self.serial)
 
-        if self.status == ConnectivityStatus.Connected:
-            for topic in topics:
-                self.awsiot_client.subscribe(topic, 0, self._internal_callback)
-
-        else:
-            all_topics = self._string_join(topics, ", ")
-            _LOGGER.error(f"Failed to subscribe to topics: {all_topics}")
+            self.awsiot_client.subscribe(fixed_topic, 0, self._internal_callback)
 
     def _publish(self, topic, message):
         if self.status == ConnectivityStatus.Connected:
@@ -457,6 +472,13 @@ class MyDolphinPlusAPI:
                 self._refresh_details()
 
             elif message_topic.endswith("get/accepted"):
+                now = datetime.now().timestamp()
+                server_timestamp = payload.get("timestamp")
+
+                self.server_version = payload.get("version")
+                self.server_timestamp = server_timestamp
+                self.server_time_diff = now - server_timestamp
+
                 state = payload.get("state", {})
                 reported = state.get("reported", {})
 
@@ -468,6 +490,11 @@ class MyDolphinPlusAPI:
                         self.data[category] = category_data
 
                 if self.callback is not None:
+                    _LOGGER.debug(f"Server Version: {self.server_version}")
+                    _LOGGER.debug(f"Server Timestamp: {get_date_time_from_timestamp(self.server_timestamp)} [{self.server_timestamp}]")
+                    _LOGGER.debug(f"Local Timestamp: {get_date_time_from_timestamp(now)} [{self.server_timestamp}]")
+                    _LOGGER.debug(f"Diff: {self.server_time_diff}")
+
                     self.callback()
 
         except Exception as ex:
