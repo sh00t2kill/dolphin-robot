@@ -1,3 +1,4 @@
+"""
 import base64
 import datetime
 import hashlib
@@ -280,4 +281,4 @@ class Dolphin:
         except KeyError:
             print(jsonstr)
         return callbackmessage
-
+"""
