@@ -154,7 +154,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_sensor_cleaning_time(name, data)
         self._load_sensor_cleaning_time_left(name, data)
         self._load_switch_power(name, data)
-        self._load_light_led_enabled(name, data)     
+        self._load_light_led_enabled(name, data)
         features = data.get("featureEn", {})
         self._load_binary_sensor_weekly_timer(name, features)
         delay_settings = data.get("delay", {})
