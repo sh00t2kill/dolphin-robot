@@ -270,14 +270,11 @@ class Dolphin:
         return return_data
 
     def mapWorkType(self, work_type):
-        """
         switch work_type:
             case "cloud":
                 return "cancelled"
             case _:
                 return work_type
-        """
-        return work_type
 
     def buildClient(self):
         script_dir = os.path.dirname(__file__)
