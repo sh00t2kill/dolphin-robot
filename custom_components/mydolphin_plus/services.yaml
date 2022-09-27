@@ -1,0 +1,139 @@
+# Service ID
+navigate:
+    name: Navigate
+    description: Manually navigate the robot
+    fields:
+      device:
+        name: Device serial number
+        description: Device serial number
+        required: true
+        example: "A1234D"
+        selector:
+          text:
+      direction:
+        name: Direction
+        description: Which direction to navigate
+        required: true
+        example: "forward"
+        selector:
+          select:
+            options:
+              - forward
+              - backward
+              - left
+              - right
+
+pickup:
+  name: Pickup
+  description: Pickup robot
+  fields:
+    device:
+      name: Device serial number
+      description: Device serial number
+      required: true
+      example: "A1234D"
+      selector:
+        text:
+
+set_daily_schedule:
+  name: Set Daily Schedule
+  description: Set Daily Schedule.
+  fields:
+    device:
+      name: Device serial number
+      description: Device serial number
+      required: true
+      example: "A1234D"
+      selector:
+        text:
+    day:
+      name: Day
+      description: Day to configure
+      required: true
+      example: "Sunday"
+      selector:
+        select:
+          options:
+            - Sunday
+            - Monday
+            - Tuesday
+            - Wednesday
+            - Thursday
+            - Friday
+            - Saturday
+    enabled:
+      name: Enabled
+      description: Enable / Disable the delay clean
+      required: true
+      example: "true"
+      selector:
+        boolean:
+    time:
+      name: Start time
+      description: Cleaning start time
+      required: true
+      example: "01:00"
+      selector:
+        duration:
+    mode:
+      name: Cleaning mode
+      description: Set the cleaning mode
+      required: true
+      example: "all"
+      selector:
+        select:
+          options:
+            - label: Regular - Cleans floor, water and waterline (2h)
+              value: all
+            - label: Fast mode - Cleans the floor (1h)
+              value: short
+            - label: Floor only - Cleans the floor only (2h)
+              value: floor
+            - label: Water line - Cleans the walls and water line (2h)
+              value: water
+            - label: Ultra clean - Deeply cleans the floor, walls and waterline (2h)
+              value: ultra
+
+delayed_clean:
+  name: Delayed clean
+  description: Schedule Delayed Clean.
+  fields:
+    device:
+      name: Device serial number
+      description: Device serial number
+      required: true
+      example: "A1234D"
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: Enable / Disable the delay clean
+      required: true
+      example: "true"
+      selector:
+        boolean:
+    time:
+      name: Delayed time
+      description: Delayed time to start the clean
+      required: true
+      example: "01:00"
+      selector:
+        duration:
+    mode:
+      name: Cleaning mode
+      description: Set the cleaning mode
+      required: true
+      example: "all"
+      selector:
+        select:
+          options:
+            - label: Regular - Cleans floor, water and waterline (2h)
+              value: all
+            - label: Fast mode - Cleans the floor (1h)
+              value: short
+            - label: Floor only - Cleans the floor only (2h)
+              value: floor
+            - label: Water line - Cleans the walls and water line (2h)
+              value: water
+            - label: Ultra clean - Deeply cleans the floor, walls and waterline (2h)
+              value: ultra

@@ -1,0 +1,19 @@
+{
+    "domain": "mydolphin_plus",
+    "name": "MyDolphin Plus",
+    "documentation": "https://github.com/sh00t2kill/dolphin-robot",
+    "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
+    "after_dependencies": [],
+    "dependencies": [],
+    "codeowners": [
+        "@sh00t2kill",
+        "@lordlala",
+        "@elad-bar"
+    ],
+    "requirements": [
+        "AWSIoTPythonSDK"
+    ],
+    "config_flow": true,
+    "version": "0.0.5",
+    "iot_class": "cloud_polling"
+  }

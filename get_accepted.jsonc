@@ -1,0 +1,238 @@
+//isConnected
+{
+    "connected": true
+}
+//systemState
+{
+    "pwsState": "off",
+    "robotState": "notConnected",
+    "robotType": "Q7",
+    "isBusy": false,
+    "rTurnOnCount": 0,
+    "timeZone": 0,
+    "timeZoneName": "********"
+}
+//debug
+{
+    "systemTime": 0,
+    "dynamicFlg": 2,
+    "weeklyNextOp": 0,
+    "automationMode": 0,
+    "WIFI_RSSI": 0,
+    "dataUploadNumber": 0,
+    "updateTime": {
+        "hour": 2,
+        "min": 0
+    },
+    "resetSource": 96,
+    "bleMacAddress": "00:00:00:00:00:00",
+    "wifiMacAddress": "00:00:00:00:00:00",
+    "rtcFlag": true,
+    "disconnectionTrigger": {
+        "code": 12,
+        "timeStamp": 0
+    }
+}
+//filterBagIndication
+{
+    "state": 0,
+    "resetFBI": false
+}
+//cycleInfo
+{
+    "cleaningMode": {
+        "mode": "all",
+        "cycleTime": 120
+    },
+    "cycleStartTime": 0,
+    "cycleStartTimeUTC": 0
+}
+//LastReceiveData
+{
+    "dynamicTopics": [
+        "Maytronics/********/main"
+    ],
+    "robotSerial": "********",
+    "timestamp": 0
+}
+//nextCycleInfo
+{
+    "cleaningMode": {
+        "mode": "all"
+    },
+    "nextCycleDuration": 120
+}
+//dynamicTopics -
+[
+    "Maytronics/********/main"
+]
+
+//robotSerial - ********
+//robotError
+{
+    "errorCode": 2,
+    "pcbHours": 2,
+    "pcbMin": 0,
+    "turnOnCount": 13,
+    "faultValue1": 204,
+    "faultValue2": 1234,
+    "faultValue3": 16
+}
+//pwsError
+{
+    "errorCode": 255,
+    "pcbHours": 65535,
+    "pcbMin": 255,
+    "turnOnCount": 65535,
+    "holdCount": 0,
+    "faultValue1": 65535,
+    "faultValue2": 65535
+}
+//navMode
+{
+    "isSmart": false
+}
+//cleaningModes
+{
+    "all": 120,
+    "short": 60,
+    "cove": 120,
+    "floor": 120,
+    "water": 120,
+    "ultra": 120,
+    "spot": 120,
+    "wall": 120,
+    "ticTac": 600,
+    "custom": 120,
+    "pickup": 5
+}
+//led
+{
+    "ledEnable": true,
+    "ledIntensity": 80,
+    "ledMode": 2
+}
+//weeklySettings
+{
+    "isInRepeatMode": false,
+    "triggeredBy": 0,
+    "sunday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 20,
+            "minutes": 17
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    },
+    "monday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 255,
+            "minutes": 255
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    },
+    "tuesday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 255,
+            "minutes": 255
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    },
+    "wednesday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 255,
+            "minutes": 255
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    },
+    "thursday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 255,
+            "minutes": 255
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    },
+    "friday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 255,
+            "minutes": 255
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    },
+    "saturday": {
+        "isEnabled": false,
+        "time": {
+            "hours": 255,
+            "minutes": 255
+        },
+        "cleaningMode": {
+            "mode": "all"
+        }
+    }
+}
+//delay
+{
+    "isEnabled": false,
+    "triggeredBy": 1,
+    "startTime": {
+        "hours": 21,
+        "minutes": 17
+    },
+    "cleaningMode": {
+        "mode": "all"
+    }
+}
+//versions
+{
+    "sysVersion": 3,
+    "pwsVersion": {
+        "pwsHwVersion": "00",
+        "pwsSwVersion": "06.1020",
+        "pwsBootloaderVersion": "3.30"
+    },
+    "robotVersion": {
+        "muHwVersion": "09",
+        "muSwVersion": "6.01",
+        "muBootloaderVersion": "6.02",
+        "ledHwVersion": "00",
+        "ledSwVersion": "1.22"
+    }
+}
+//featureEn
+{
+    "delay": "disable",
+    "floor": "disable",
+    "weeklyTimer": {
+        "status": "enable",
+        "frequency": 2
+    },
+    "short": "disable",
+    "pickup": "disable",
+    "fbiLED": "enable"
+}
+//wifi
+{
+    "netName": "********"
+}
+//inwat
+{
+    "preHoldTime": 255,
+    "periodicInterval": 2550
+}
