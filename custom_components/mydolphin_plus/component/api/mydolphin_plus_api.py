@@ -304,7 +304,7 @@ class MyDolphinPlusAPI:
 
         get_topic = TOPIC_GET.replace("/#", "").replace("{}", self.serial)
 
-        self.awsiot_client.publish(get_topic, None, 0)
+        self.awsiot_client.publish(get_topic, None, MQTT_QOS_AT_LEAST_ONCE)
 
     async def _load_details(self):
         if self.status != ConnectivityStatus.Connected:
@@ -452,13 +452,6 @@ class MyDolphinPlusAPI:
 
             self.awsiot_client.subscribe(fixed_topic, 0, self._internal_callback)
 
-    def _publish(self, topic, message):
-        if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(topic, message, 0)
-
-        else:
-            _LOGGER.error(f"Failed to publish message: {message} to {topic}")
-
     def _internal_callback(self, client, userdata, message):
         try:
             message_topic = message.topic
@@ -553,7 +546,7 @@ class MyDolphinPlusAPI:
         request_data = json.dumps(new_state)
 
         if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(update_topic, request_data, 0)
+            self.awsiot_client.publish(update_topic, request_data, MQTT_QOS_AT_LEAST_ONCE)
 
         else:
             _LOGGER.error(f"Failed to publish message: {new_state} to {update_topic}")

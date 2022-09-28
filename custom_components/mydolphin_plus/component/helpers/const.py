@@ -27,6 +27,8 @@ LOGIN_URL = f"{BASE_API}/users/Login/"
 TOKEN_URL = f"{BASE_API}/IOT/getToken/"
 ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
 
+MQTT_QOS_AT_LEAST_ONCE = 1
+
 AWS_REGION = "eu-west-1"
 AWS_BASE_HOST = f"{AWS_REGION}.amazonaws.com"
 DYNAMODB_HOST = f'dynamodb.{AWS_BASE_HOST}'
