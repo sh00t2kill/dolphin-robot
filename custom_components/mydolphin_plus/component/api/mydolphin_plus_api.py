@@ -43,6 +43,7 @@ class MyDolphinPlusAPI:
     aws_secret: str | None
     awsiot_id: str | None
     awsiot_client: AWSIoTMQTTClient | None
+    awsiot_client_status: ConnectivityStatus | None
 
     callback: Callable[[], None]
 
@@ -69,6 +70,7 @@ class MyDolphinPlusAPI:
             self.aws_secret = None
             self.awsiot_id = None
             self.awsiot_client = None
+            self.awsiot_client_status = ConnectivityStatus.NotConnected
 
             self.callback = callback
             self.data = {}
@@ -226,8 +228,6 @@ class MyDolphinPlusAPI:
         for key in self.data:
             _LOGGER.info(f"{key}: {self.data[key]}")
 
-        self._listen()
-
         self._refresh_details()
 
     async def _service_login(self):
@@ -304,7 +304,7 @@ class MyDolphinPlusAPI:
 
         get_topic = TOPIC_GET.replace("/#", "").replace("{}", self.serial)
 
-        self.awsiot_client.publish(get_topic, None, 0)
+        self.awsiot_client.publish(get_topic, None, MQTT_QOS_AT_LEAST_ONCE)
 
     async def _load_details(self):
         if self.status != ConnectivityStatus.Connected:
@@ -429,6 +429,13 @@ class MyDolphinPlusAPI:
         aws_client.configureConnectDisconnectTimeout(10)
         aws_client.configureMQTTOperationTimeout(5)
         aws_client.enableMetricsCollection()
+        aws_client.onOnline = self._handle_aws_client_online
+        aws_client.onOffline = self._handle_aws_client_offline
+
+        for topic in TOPICS:
+            fixed_topic = topic.format(self.serial)
+
+            self.awsiot_client.subscribe(fixed_topic, 0, self._internal_callback)
 
         _LOGGER.debug(f"Connecting to {IOT_URL}")
         connected = aws_client.connect()
@@ -442,22 +449,11 @@ class MyDolphinPlusAPI:
             _LOGGER.error("Failed to connect to IOT client")
             self.status = ConnectivityStatus.Failed
 
-    def _listen(self):
-        if self.status != ConnectivityStatus.Connected:
-            self.status = ConnectivityStatus.Failed
-            return
+    def  _handle_aws_client_online(self):
+        self.awsiot_client_status = ConnectivityStatus.Connected
 
-        for topic in TOPICS:
-            fixed_topic = topic.format(self.serial)
-
-            self.awsiot_client.subscribe(fixed_topic, 0, self._internal_callback)
-
-    def _publish(self, topic, message):
-        if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(topic, message, 0)
-
-        else:
-            _LOGGER.error(f"Failed to publish message: {message} to {topic}")
+    def  _handle_aws_client_offline(self):
+        self.awsiot_client_status = ConnectivityStatus.Disconnected
 
     def _internal_callback(self, client, userdata, message):
         try:
@@ -553,7 +549,7 @@ class MyDolphinPlusAPI:
         request_data = json.dumps(new_state)
 
         if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(update_topic, request_data, 0)
+            self.awsiot_client.publish(update_topic, request_data, MQTT_QOS_AT_LEAST_ONCE)
 
         else:
             _LOGGER.error(f"Failed to publish message: {new_state} to {update_topic}")

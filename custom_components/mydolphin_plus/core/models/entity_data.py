@@ -27,8 +27,6 @@ class EntityData:
     entry_id: str
     entity_description: SelectDescription | None
     action: Any
-    icon_set: dict | None
-    default_icon: str | None
 
     def __init__(self, entry_id: str):
         self.id = None
@@ -47,7 +45,6 @@ class EntityData:
         self.entry_id = entry_id
         self.entity_description = None
         self.action = None
-        self.default_icon = None
 
     @property
     def unique_id(self):

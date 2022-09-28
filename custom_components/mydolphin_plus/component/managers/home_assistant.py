@@ -153,6 +153,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_binary_sensor_filter_status(name, data)
         self._load_sensor_cleaning_time(name, data)
         self._load_sensor_cleaning_time_left(name, data)
+        self._load_sensor_broker_status(name)
         self._load_switch_power(name, data)
         self._load_light_led_enabled(name, data)
         features = data.get("featureEn", {})
@@ -418,7 +419,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
-
     def _load_binary_sensor_schedules(
             self,
             device: str,
@@ -650,6 +650,55 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
                 entity.domain = DOMAIN_SENSOR
                 entity.sensor_device_class = SensorDeviceClass.DURATION
+                entity.sensor_state_class = SensorStateClass.MEASUREMENT
+
+            data = {
+                "state": (str(entity.state), str(state)),
+                "attributes": (entity.attributes, attributes),
+                "device_name": (entity.device_name, device),
+            }
+
+            if created or self.entity_manager.compare_data(entity, data):
+                entity_description = EntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    icon=entity.icon
+                )
+
+                entity.state = state
+                entity.attributes = attributes
+                entity.device_name = device
+                entity.entity_description = entity_description
+
+                entity.set_created_or_updated(created)
+
+            self.entity_manager.set(entity)
+
+        except Exception as ex:
+            self.log_exception(
+                ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
+            )
+
+    def _load_sensor_broker_status(self, device: str):
+        entity_name = f"{device} AWS Broker"
+
+        try:
+            state = str(self.api.awsiot_client_status)
+
+            attributes = {
+                ATTR_FRIENDLY_NAME: entity_name
+            }
+
+            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
+            created = entity is None
+
+            if created:
+                entity = self.entity_manager.get_empty_entity(self.entry_id)
+
+                entity.id = entity_name
+                entity.name = entity_name
+                entity.domain = DOMAIN_SENSOR
+                entity.icon = "mdi:aws"
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
