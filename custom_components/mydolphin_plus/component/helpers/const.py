@@ -3,6 +3,7 @@ Support for MyDolphin Plus.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/switch.mydolphin_plus/
 """
+import calendar
 from datetime import timedelta
 
 import voluptuous as vol
@@ -102,8 +103,10 @@ ICON_LED_MODES = {
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline"
 }
 
+DEFAULT_CLEANING_MODE = "all"
+
 CLEANING_MODES = {
-  "all": "Regular - Cleans floor, water and waterline",
+  DEFAULT_CLEANING_MODE: "Regular - Cleans floor, water and waterline",
   "short": "Fast mode - Cleans the floor",
   "floor": "Floor only - Cleans the floor only",
   "water": "Water line - Cleans the walls and water line",
@@ -112,7 +115,7 @@ CLEANING_MODES = {
 
 SERVICE_NAVIGATE = "navigate"
 SERVICE_PICKUP = "pickup"
-SERVICE_SET_DAILY_SCHEDULE = "set_daily_schedule"
+SERVICE_DAILY_SCHEDULE = "daily_schedule"
 SERVICE_DELAYED_CLEAN = "delayed_clean"
 
 CONF_DIRECTION = "direction"
@@ -124,37 +127,34 @@ SWITCH_POWER_OFF_STATES = {
     "holdWeekly"
 }
 
-SERVICE_SCHEMA_NAVIGATE = PLATFORM_SCHEMA.extend(
+SERVICE_SCHEMA_NAVIGATE = vol.Schema(
     {
-        vol.Required(CONF_DEVICE): cv.string,
         vol.Required(CONF_DIRECTION): vol.In(["forward", "backward", "left", "right"])
     }
 )
 
-SERVICE_SCHEMA_PICKUP = PLATFORM_SCHEMA.extend(
+SERVICE_SCHEMA_DAILY_SCHEDULE = vol.Schema(
     {
-        vol.Required(CONF_DEVICE): cv.string
+        vol.Optional(CONF_ENABLED, default=False): cv.boolean,
+        vol.Required(CONF_DAY): vol.In(list(calendar.day_name)),
+        vol.Optional(CONF_MODE, default=DEFAULT_CLEANING_MODE): vol.In(CLEANING_MODES.keys()),
+        vol.Optional(CONF_TIME, default=None): cv.string
     }
 )
 
-SERVICE_SCHEMA_DAILY_SCHEDULE = PLATFORM_SCHEMA.extend(
+SERVICE_SCHEMA_DELAYED_CLEAN = vol.Schema(
     {
-        vol.Required(CONF_DEVICE): cv.string,
-        vol.Required(CONF_ENABLED): cv.boolean,
-        vol.Required(CONF_DAY): vol.In(["forward", "backward", "left", "right"]),
-        vol.Required(CONF_MODE): vol.In(CLEANING_MODES.keys()),
-        vol.Required(CONF_TIME): cv.string
+        vol.Optional(CONF_ENABLED, default=False): cv.boolean,
+        vol.Optional(CONF_MODE, default=DEFAULT_CLEANING_MODE): vol.In(CLEANING_MODES.keys()),
+        vol.Optional(CONF_TIME, default=None): cv.string
     }
 )
 
-SERVICE_SCHEMA_DELAYED_CLEAN = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_DEVICE): cv.string,
-        vol.Required(CONF_ENABLED): cv.boolean,
-        vol.Required(CONF_MODE): vol.In(CLEANING_MODES.keys()),
-        vol.Required(CONF_TIME): cv.string
-    }
-)
+SERVICE_VALIDATION = {
+    SERVICE_NAVIGATE: SERVICE_SCHEMA_NAVIGATE,
+    SERVICE_DAILY_SCHEDULE: SERVICE_SCHEMA_DAILY_SCHEDULE,
+    SERVICE_DELAYED_CLEAN: SERVICE_SCHEMA_DELAYED_CLEAN,
+}
 
 CLOCK_HOURS_ICONS = {
     "0": "mdi:clock-time-twelve",
