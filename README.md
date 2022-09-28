@@ -75,19 +75,16 @@ Please remove the integration and re-add it to make it work again.
 | DEBUG                | Boolean | False   | Setting to True will present DEBUG log level message while testing the code, False will set the minimum log level to INFO |
 
 ## HA Components
-| Entity Name                      | Type           | Description                                                 | Additional information                                              |
-|----------------------------------|----------------|-------------------------------------------------------------|---------------------------------------------------------------------|
-| {Robot Name} Connection          | Binary Sensor  | Indicates whether there is a WIFI connection or not         |                                                                     |
-| {Robot Name} Filter Bag Status   | Binary Sensors | Indicates whether the robot filter bag is full or not       |                                                                     |
-| {Robot Name} Status              | Binary Sensors | Indicates whether the robot is turned on or off             |                                                                     |
-| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not      | Attributes will hold the mode and delayed time                      |
-| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not   | Attributes will hold the mode and delayed time                      |
-| {Robot Name} Cleaning Mode       | Select         | Select cleaning mode                                        | Available options                                                   |
-| {Robot Name} Led Mode            | Select         | Select led mode                                             | Available options                                                   |
-| {Robot Name} Cleaning Time       | Sensor         | Indicates the time the robot is cleaning                    |                                                                     |
-| {Robot Name} Cleaning Time Left  | Sensor         | Indicates the time left for the robot to complete the cycle |                                                                     |
-| {Robot Name} Power               | Switch         | Turned on or off the robot                                  |                                                                     |
-| {Robot Name} Led Enabled         | Switch         | Turned on or off the led                                    |                                                                     |
+| Entity Name                      | Type           | Description                                                 | Additional information                                                                                                             |
+|----------------------------------|----------------|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| {Robot Name}                     | Vacuum         | Provides functionality of vacuum to the robot               | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate Schedule, Delay Clean) |
+| {Robot Name} Filter Bag Status   | Binary Sensors | Indicates whether the robot filter bag is full or not       |                                                                                                                                    |
+| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not      | Attributes will hold the mode and delayed time                                                                                     |
+| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not   | Attributes will hold the mode and delayed time                                                                                     |
+| {Robot Name} Led Mode            | Select         | Select led mode                                             | Available options                                                                                                                  |
+| {Robot Name} Cleaning Time       | Sensor         | Indicates the time the robot is cleaning                    |                                                                                                                                    |
+| {Robot Name} Cleaning Time Left  | Sensor         | Indicates the time left for the robot to complete the cycle |                                                                                                                                    |
+| {Robot Name} Led Enabled         | Switch         | Turned on or off the led                                    |                                                                                                                                    |
 
 ### Cleaning Modes
 
@@ -111,56 +108,52 @@ Please remove the integration and re-add it to make it work again.
 ## Services
 ### Navigate
 
-Service name: *mydolphin_plus.navigate*
-
 Description: Manually navigate the robot
 
 Payload:
 ```yaml
+service: vacuum.send_command
+target:
+  entity_id: vacuum.{Robot Name}
 data:
-  device: Serial Number
-  direction: forward / backward / left / right
-```
-
-### Pickup
-
-Service name: *mydolphin_plus.pickup*
-
-Description: Pickup the robot
-
-Payload:
-```yaml
-data:
-  device: Serial Number
+  command: navigate
+  params:
+    direction: forward / backward / left / right
 ```
 
 ### Set Daily Schedule
-
-Service name: *mydolphin_plus.set_daily_schedule*
 
 Description: Set the schedule for a specific day
 
 Payload:
 ```yaml
+service: vacuum.send_command
+target:
+  entity_id: vacuum.{Robot Name}
 data:
-  day: Sunday
-  enabled: true
-  time: 00:00
-  mode: all
+    command: daily_schedule
+    params:
+      day: Sunday
+      enabled: true
+      time: 00:00
+      mode: all
 ```
 
 ### Delayed Cleaning
-
-Service name: *mydolphin_plus.delayed_clean*
 
 Description: Set a delayed job for cleaning
 
 Payload:
 ```yaml
+service: vacuum.send_command
+target:
+  entity_id: vacuum.{Robot Name}
 data:
-  enabled: true
-  time: 00:00
-  mode: all
+    command: delayed_clean
+    params:
+      enabled: true
+      time: 00:00
+      mode: all
 ```
 
 ## Troubleshooting
