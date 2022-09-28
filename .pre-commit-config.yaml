@@ -21,7 +21,7 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=hass,alot,datas,dof,dur,ether,farenheit,hist,iff,ines,ist,lightsensor,mut,nd,pres,referer,ser,serie,te,technik,ue,uint,visability,wan,wanna,withing,iam,incomfort
-          - --skip="./.*,*.csv,*.json,*.pem,robot.py"
+          - --skip="./.*,*.csv,*.json,*.pem"
           - --quiet-level=2
         exclude_types: [csv, json]
         exclude: ^tests/fixtures/
@@ -41,7 +41,7 @@ repos:
           - --quiet
           - --format=custom
           - --configfile=tests/bandit.yaml
-        files: ^(homeassistant|script|tests)/.+\.py$
+        files: ^(homeassistant|script)/.+\.py$
   - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
     hooks:
@@ -55,7 +55,7 @@ repos:
         exclude: (.vscode|.devcontainer)
       - id: check-yaml
       - id: end-of-file-fixer
-        exclude: (.pem|robot.py)
+        exclude: (.pem)
       - id: trailing-whitespace
       - id: check-added-large-files
   - repo: https://github.com/pre-commit/mirrors-prettier

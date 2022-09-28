@@ -1,2 +1,5 @@
 [tool.black]
 target-version = ["py39", "py310"]
+
+[tool.bandit]
+exclude_dirs = ["tests/*"]

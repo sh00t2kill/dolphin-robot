@@ -1,3 +1,4 @@
+"""test/api_test.py."""
 import asyncio
 from asyncio import sleep
 import logging
@@ -27,10 +28,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def handle_update():
+    """Do update logging."""
     _LOGGER.info("Data updated")
 
 
 async def run():
+    """Test API."""
     data = {
         CONF_USERNAME: os.environ.get("TEST_USERNAME"),
         CONF_PASSWORD: os.environ.get("TEST_PASSWORD"),

@@ -101,11 +101,11 @@ ICON_LED_MODES = {
 }
 
 CLEANING_MODES = {
-  "all": "Regular - Cleans floor, water and waterline (2h)",
-  "short": "Fast mode - Cleans the floor (1h)",
-  "floor": "Floor only - Cleans the floor only (2h)",
-  "water": "Water line - Cleans the walls and water line (2h)",
-  "ultra": "Ultra clean - Deeply cleans the floor, walls and waterline (2h)"
+  "all": "Regular - Cleans floor, water and waterline",
+  "short": "Fast mode - Cleans the floor",
+  "floor": "Floor only - Cleans the floor only",
+  "water": "Water line - Cleans the walls and water line",
+  "ultra": "Ultra clean - Deeply cleans the floor, walls and waterline"
 }
 
 SERVICE_NAVIGATE = "navigate"
@@ -116,6 +116,11 @@ SERVICE_DELAYED_CLEAN = "delayed_clean"
 CONF_DIRECTION = "direction"
 CONF_DAY = "day"
 CONF_TIME = "time"
+
+SWITCH_POWER_OFF_STATES = {
+    "off",
+    "holdWeekly"
+}
 
 SERVICE_SCHEMA_NAVIGATE = PLATFORM_SCHEMA.extend(
     {
