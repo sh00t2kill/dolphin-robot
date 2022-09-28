@@ -781,7 +781,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             time_zone_name = system_state.get("timeZoneName", "UTC")
 
             state = pws_state not in SWITCH_POWER_OFF_STATES
-
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 "Robot": robot_state,
