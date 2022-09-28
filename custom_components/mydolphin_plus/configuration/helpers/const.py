@@ -11,7 +11,7 @@ from homeassistant.components.sensor import DOMAIN as DOMAIN_SENSOR
 from homeassistant.components.switch import DOMAIN as DOMAIN_SWITCH
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, STATE_OFF, STATE_ON
 
-MANUFACTURER = ""
+MANUFACTURER = "Maytronics"
 DEFAULT_NAME = "MyDolphin Plus"
 DOMAIN = "mydolphin_plus"
 SUPPORTED_PLATFORMS = [
@@ -21,8 +21,6 @@ SUPPORTED_PLATFORMS = [
     DOMAIN_SWITCH,
     DOMAIN_LIGHT
 ]
-
-DEFAULT_PORT = 8080
 
 CONFIGURATION_MANAGER = f"cm_{DOMAIN}"
 
