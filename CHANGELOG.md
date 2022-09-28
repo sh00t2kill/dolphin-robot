@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.0.9
+- Removed time from cleaning mode select HA component (select, translations and services)
+- Moved the off_states of switch to constants
+
+## v0.0.8
+- Add a list of relevant states that also determine if a robot is not actively cleaning
+- Added Mydolpin Plus to the standard HACS repo
+
 ## v0.0.7
 - Cycle left time sensor: Add attribute of expected end time
 - API: Add logs for server version, time and diff (compared to local time)
