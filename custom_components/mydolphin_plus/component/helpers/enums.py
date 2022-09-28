@@ -6,11 +6,11 @@ from homeassistant.backports.enum import StrEnum
 class ConnectivityStatus(StrEnum):
     NotConnected = "Not connected"
     Connecting = "Establishing connection to API"
-    Connected = "Connected to the API"
+    Connected = "Connected"
     TemporaryConnected = "Connected with temporary API key"
     Failed = "Failed to access API"
     InvalidCredentials = "Invalid credentials"
-    Disconnected = "Disconnected by the system"
+    Disconnected = "Disconnected"
     NotFound = "API Not found"
 
     @staticmethod
