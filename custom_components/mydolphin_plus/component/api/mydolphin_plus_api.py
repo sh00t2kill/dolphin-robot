@@ -661,7 +661,7 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
         await self._send_desired_command(data)
 
-    async def drive(self, device: str, direction: str):
+    async def navigate(self, device: str, direction: str):
         if device != self.serial:
             return
 

@@ -3,6 +3,11 @@
 ## Not yet defined
 - Fix reconnect AWS IOT MQTT broker by publishing messages with QOS=1 (At least once)
 - Add AWS Broker status sensor
+- Add vacuum entity, replacing:
+  - Cleaning mode select
+  - Connection binary sensor
+  - Power switch
+  - All services
 
 ## v0.0.9
 - Removed time from cleaning mode select HA component (select, translations and services)
