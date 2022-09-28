@@ -1,7 +1,7 @@
 # Changelog
 
 ## Not yet defined
-- Fix reconnect AWS IOT MQTT broker by publishing messages with QOS=1 (At least once) 
+- Fix reconnect AWS IOT MQTT broker by publishing messages with QOS=1 (At least once)
 
 ## v0.0.9
 - Removed time from cleaning mode select HA component (select, translations and services)
