@@ -25,11 +25,7 @@ from ...configuration.managers.configuration_manager import (
 from ...configuration.models.config_data import ConfigData
 from ...core.managers.home_assistant import HomeAssistantManager
 from ...core.models.select_description import SelectDescription
-from ..helpers.common import (
-    get_cleaning_mode_details,
-    get_cleaning_mode_name,
-    get_date_time_from_timestamp,
-)
+from ..helpers.common import get_cleaning_mode_name, get_date_time_from_timestamp
 from ..helpers.enums import ConnectivityStatus
 
 _LOGGER = logging.getLogger(__name__)
@@ -87,66 +83,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             _LOGGER.error(f"Failed to async_update_data_providers, Error: {ex}, Line: {line_number}")
 
-    # TODO: Should be removed once vacuum is ready
-    def register_services(self, entry: ConfigEntry | None = None):
-        services = {
-            SERVICE_NAVIGATE: {
-                "handler": self.async_service_navigate,
-                "scheme": SERVICE_SCHEMA_NAVIGATE
-            },
-            SERVICE_PICKUP: {
-                "handler": self.async_service_pickup,
-                "scheme": SERVICE_SCHEMA_NAVIGATE
-            },
-            SERVICE_SET_DAILY_SCHEDULE: {
-                "handler": self.async_service_set_daily_schedule,
-                "scheme": SERVICE_SCHEMA_DAILY_SCHEDULE
-            },
-            SERVICE_DELAYED_CLEAN: {
-                "handler": self.async_service_delayed_clean,
-                "scheme": SERVICE_SCHEMA_DELAYED_CLEAN
-            }
-        }
-
-        for service in services:
-            service_details = services.get(service)
-            handler = service_details.get("handler")
-            scheme = service_details.get("scheme")
-
-            self._hass.services.async_register(DOMAIN, service, handler, scheme)
-
-    # TODO: Should be removed once vacuum is ready
-    async def async_service_navigate(self, call_service):
-        device = call_service.get("device")
-        direction = call_service.get("direction")
-
-        await self.navigate(device, direction)
-
-    # TODO: Should be removed once vacuum is ready
-    async def async_service_pickup(self, call_service):
-        device = call_service.get("device")
-
-        await self.pickup(device)
-
-    # TODO: Should be removed once vacuum is ready
-    async def async_service_set_daily_schedule(self, call_service):
-        device = call_service.get("device")
-        day = call_service.get("day")
-        enabled = call_service.get("enabled")
-        cleaning_mode = call_service.get("mode", "all")
-        job_time = call_service.get("time")
-
-        await self.set_schedule(device, day, enabled, cleaning_mode, job_time)
-
-    # TODO: Should be removed once vacuum is ready
-    async def async_service_delayed_clean(self, call_service):
-        device = call_service.get("device")
-        enabled = call_service.get("enabled")
-        cleaning_mode = call_service.get("mode", "all")
-        job_time = call_service.get("time")
-
-        await self.set_delay(device, enabled, cleaning_mode, job_time)
-
     def load_entities(self):
         data = self._api.data
         name = data.get("Robot Name")
@@ -156,11 +92,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         # Main Entity
         self._load_vacuum(name, data)
-
-        # TODO: Should be removed once vacuum is ready
-        self._load_select_cleaning_mode(name, data)
-        self._load_binary_sensor_status(name, data)
-        self._load_switch_power(name, data)
 
         # LED Settings
         self._load_select_led_mode(name, data)
@@ -184,76 +115,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         for day in list(calendar.day_name):
             day_data = weekly_settings.get(day.lower(), {})
             self._load_binary_sensor_schedules(name, day, day_data)
-
-    # TODO: Should be removed once vacuum is ready
-    def _load_select_cleaning_mode(
-            self,
-            device: str,
-            data: dict
-    ):
-        entity_name = f"{device} Cleaning Mode"
-
-        try:
-            cycle_info = data.get("cycleInfo", {})
-            cleaning_mode = cycle_info.get("cleaningMode", {})
-            mode = cleaning_mode.get("mode", "all")
-            mode_description = get_cleaning_mode_details(mode)
-
-            cycle_time_minutes = cleaning_mode.get("cycleTime", 0)
-            cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
-            cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
-
-            cycle_time = str(datetime.timedelta(minutes=cycle_time_minutes))
-
-            state = mode
-            attributes = {
-                ATTR_FRIENDLY_NAME: entity_name,
-                "Description": mode_description,
-                "Cycle time": cycle_time,
-                "Start time": cycle_start_time
-            }
-
-            entity = self.entity_manager.get(DOMAIN_SELECT, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_SELECT
-
-            data = {
-                "state": (str(entity.state), str(state)),
-                "device_name": (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
-                entity_description = SelectDescription(
-                    key=ATTR_CLEANING_MODE,
-                    name=ATTR_CLEANING_MODE,
-                    icon=CLEANING_MODE_ICON_DEFAULT,
-                    device_class=f"{DOMAIN}__{ATTR_CLEANING_MODE}",
-                    options=tuple(ICON_CLEANING_MODES.keys()),
-                    entity_category=EntityCategory.CONFIG,
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-                entity.icon = ICON_CLEANING_MODES.get(state, CLEANING_MODE_ICON_DEFAULT)
-                entity.action = self.set_cleaning_mode
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
-
-        except Exception as ex:
-            self.log_exception(
-                ex, f"Failed to load {DOMAIN_SELECT}: {entity_name}"
-            )
 
     def _load_select_led_mode(
             self,
@@ -315,73 +176,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         except Exception as ex:
             self.log_exception(
                 ex, f"Failed to load {DOMAIN_SELECT}: {entity_name}"
-            )
-
-    # TODO: Should be removed once vacuum is ready
-    def _load_binary_sensor_status(
-            self,
-            device: str,
-            data: dict
-    ):
-        entity_name = f"{device} Status"
-
-        try:
-            system_state = data.get("systemState", {})
-            pws_state = system_state.get("pwsState", "off")
-            robot_state = system_state.get("robotState", "notConnected")
-            robot_type = system_state.get("robotType")
-            is_busy = system_state.get("isBusy", False)
-            turn_on_count = system_state.get("rTurnOnCount", 0)
-            time_zone = system_state.get("timeZone", 0)
-            time_zone_name = system_state.get("timeZoneName", "UTC")
-
-            state = STATE_ON if pws_state == "on" else STATE_OFF
-            attributes = {
-                ATTR_FRIENDLY_NAME: entity_name,
-                "Robot": robot_state,
-                "Type": robot_type,
-                "Is Busy": is_busy,
-                "Turn on count": turn_on_count,
-                "Time Zone": f"{time_zone_name} ({time_zone})",
-                "PWS State": pws_state
-            }
-
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
-                entity.binary_sensor_device_class = BinarySensorDeviceClass.CONNECTIVITY
-
-            data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
-                entity_description = EntityDescription(
-                    key=entity.id,
-                    name=entity.name
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
-
-        except Exception as ex:
-            self.log_exception(
-                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
     def _load_binary_sensor_weekly_timer(
@@ -832,66 +626,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
             )
 
-    # TODO: Should be removed once vacuum is ready
-    def _load_switch_power(
-            self,
-            device: str,
-            data: dict
-    ):
-        entity_name = f"{device} Power"
-
-        try:
-            system_state = data.get("systemState", {})
-            pws_state = system_state.get("pwsState", "off")
-            robot_state = system_state.get("robotState", "off")
-            robot_type = system_state.get("robotType")
-            is_busy = system_state.get("isBusy", False)
-            turn_on_count = system_state.get("rTurnOnCount", 0)
-            time_zone = system_state.get("timeZone", 0)
-            time_zone_name = system_state.get("timeZoneName", "UTC")
-
-            state = pws_state not in SWITCH_POWER_OFF_STATES
-            attributes = {
-                ATTR_FRIENDLY_NAME: entity_name,
-                "Robot": robot_state,
-                "Type": robot_type,
-                "Power": pws_state,
-                "Is Busy": is_busy,
-                "Turn on count": turn_on_count,
-                "Time Zone": f"{time_zone_name} ({time_zone})"
-            }
-
-            entity = self.entity_manager.get(DOMAIN_SWITCH, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.domain = DOMAIN_SWITCH
-
-            data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.action = self.set_power_state
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
-
-        except Exception as ex:
-            self.log_exception(
-                ex, f"Failed to load {DOMAIN_SWITCH}: {entity_name}"
-            )
-
     def _load_light_led_enabled(
             self,
             device: str,
@@ -1007,22 +741,18 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def set_cleaning_mode(self, cleaning_mode):
         await self.api.set_cleaning_mode(cleaning_mode)
 
-    # TODO: Remove device parameter once vacuum is ready
     async def set_delay(self,
-                        device: str,
                         enabled: bool | None = False,
                         mode: str | None = "all",
                         job_time: str | None = None):
-        await self.api.set_delay(device, enabled, mode, job_time)
+        await self.api.set_delay(enabled, mode, job_time)
 
-    # TODO: Remove device parameter once vacuum is ready
     async def set_schedule(self,
-                           device: str,
                            day: str,
                            enabled: bool | None = False,
                            mode: str | None = "all",
                            job_time: str | None = None):
-        await self.api.set_schedule(device, day, enabled, mode, job_time)
+        await self.api.set_schedule(day, enabled, mode, job_time)
 
     async def set_led_mode(self, mode: int):
         await self.api.set_led_mode(mode)
@@ -1033,13 +763,11 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def set_led_enabled(self, is_enabled: bool):
         await self.api.set_led_enabled(is_enabled)
 
-    # TODO: Remove device parameter once vacuum is ready
-    async def navigate(self, device: str | None, direction: str):
-        await self.api.navigate(device, direction)
+    async def navigate(self, direction: str):
+        await self.api.navigate(direction)
 
-    # TODO: Remove device parameter once vacuum is ready
-    async def pickup(self, device: str | None):
-        await self.api.pickup(device)
+    async def pickup(self):
+        await self.api.pickup()
 
     async def set_power_state(self, is_on: bool):
         await self.api.set_power_state(is_on)

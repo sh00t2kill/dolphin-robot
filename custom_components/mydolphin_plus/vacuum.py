@@ -9,10 +9,11 @@ from abc import ABC
 import logging
 from typing import Any
 
-from homeassistant.components.switch import SwitchEntity
+import voluptuous
+from voluptuous import MultipleInvalid
+
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 
 from .component.helpers.const import *
 from .component.models.mydolphin_plus_entity import MyDolphinPlusEntity
@@ -60,6 +61,12 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
         self._attr_supported_features = VACUUM_FEATURES
         self._attr_fan_speed_list = CLEANING_MODES.keys()
 
+        self._actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
+            SERVICE_NAVIGATE: self._navigate,
+            SERVICE_DAILY_SCHEDULE: self._set_schedule,
+            SERVICE_DELAYED_CLEAN: self._set_delay,
+        }
+
     @property
     def state(self) -> str | None:
         """Return the status of the vacuum cleaner."""
@@ -86,33 +93,40 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
             **kwargs: Any,
     ) -> None:
         """Send a command to a vacuum cleaner."""
-        if command == SERVICE_NAVIGATE:
-            direction = params.get("direction")
+        validator = SERVICE_VALIDATION.get(command)
+        action = self._actions.get(command)
 
-            if direction is None:
-                _LOGGER.error("Direction is mandatory parameter, please provide and try again")
-                return
+        if validator is None or action is None:
+            _LOGGER.error(f"Command {command} is not supported")
 
-            # TODO: Remove device parameter once vacuum is ready
-            await self.ha.navigate(None, direction)
+        else:
+            try:
+                validator(params)
 
-        elif command == SERVICE_SET_DAILY_SCHEDULE:
-            day = params.get("day")
-            enabled = params.get("enabled", False)
-            cleaning_mode = params.get("mode", "all")
-            job_time = params.get("time", "00:00")
+                await action(params)
+            except MultipleInvalid as ex:
+                _LOGGER.error(ex.msg)
 
-            if day is None:
-                _LOGGER.error("Day is mandatory parameter, please provide and try again")
-                return
+    async def _navigate(self, data: dict[str, Any] | list[Any] | None):
+        direction = data.get(CONF_DIRECTION)
 
-            # TODO: Remove device parameter once vacuum is ready
-            await self.ha.set_schedule(None, day, enabled, cleaning_mode, job_time)
+        if direction is None:
+            _LOGGER.error("Direction is mandatory parameter, please provide and try again")
+            return
 
-        elif command == SERVICE_DELAYED_CLEAN:
-            enabled = params.get("enabled", False)
-            cleaning_mode = params.get("mode", "all")
-            job_time = params.get("time", "00:00")
+        await self.ha.navigate(direction)
 
-            # TODO: Remove device parameter once vacuum is ready
-            await self.ha.set_delay(None, enabled, cleaning_mode, job_time)
+    async def _set_schedule(self, data: dict[str, Any] | list[Any] | None):
+        day = data.get(CONF_DAY)
+        enabled = data.get(CONF_ENABLED, False)
+        cleaning_mode = data.get(CONF_MODE, DEFAULT_CLEANING_MODE)
+        job_time = data.get(CONF_TIME)
+
+        await self.ha.set_schedule(day, enabled, cleaning_mode, job_time)
+
+    async def _set_delay(self, data: dict[str, Any] | list[Any] | None):
+        enabled = data.get(CONF_ENABLED, False)
+        cleaning_mode = data.get(CONF_MODE, DEFAULT_CLEANING_MODE)
+        job_time = data.get(CONF_TIME)
+
+        await self.ha.set_delay(enabled, cleaning_mode, job_time)

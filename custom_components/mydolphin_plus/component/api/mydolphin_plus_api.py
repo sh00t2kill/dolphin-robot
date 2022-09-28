@@ -449,10 +449,10 @@ class MyDolphinPlusAPI:
             _LOGGER.error("Failed to connect to IOT client")
             self.status = ConnectivityStatus.Failed
 
-    def  _handle_aws_client_online(self):
+    def _handle_aws_client_online(self):
         self.awsiot_client_status = ConnectivityStatus.Connected
 
-    def  _handle_aws_client_offline(self):
+    def _handle_aws_client_offline(self):
         self.awsiot_client_status = ConnectivityStatus.Disconnected
 
     def _internal_callback(self, client, userdata, message):
@@ -486,9 +486,12 @@ class MyDolphinPlusAPI:
                         self.data[category] = category_data
 
                 if self.callback is not None:
+                    server_time = get_date_time_from_timestamp(self.server_timestamp)
+                    local_time = get_date_time_from_timestamp(now)
+
                     _LOGGER.debug(f"Server Version: {self.server_version}")
-                    _LOGGER.debug(f"Server Timestamp: {get_date_time_from_timestamp(self.server_timestamp)} [{self.server_timestamp}]")
-                    _LOGGER.debug(f"Local Timestamp: {get_date_time_from_timestamp(now)} [{self.server_timestamp}]")
+                    _LOGGER.debug(f"Server Timestamp: {server_time} [{self.server_timestamp}]")
+                    _LOGGER.debug(f"Local Timestamp: {local_time} [{self.server_timestamp}]")
                     _LOGGER.debug(f"Diff: {self.server_time_diff}")
 
                     self.callback()
@@ -567,26 +570,21 @@ class MyDolphinPlusAPI:
         await self._send_desired_command(data)
 
     async def set_delay(self,
-                        device: str,
                         enabled: bool | None = False,
                         mode: str | None = "all",
                         job_time: str | None = None):
 
-        await self.set_schedule(device, "delay", enabled, mode, job_time)
+        await self.set_schedule("delay", enabled, mode, job_time)
 
     async def set_schedule(self,
-                           device: str,
                            day: str,
                            enabled: bool | None = False,
                            mode: str | None = "all",
                            job_time: str | None = None):
-        if device != self.serial:
-            return
-
         hours = 255
         minutes = 255
 
-        if enabled:
+        if enabled and job_time is not None:
             job_time_parts = job_time.split(":")
             hours = int(job_time_parts[0])
             minutes = int(job_time_parts[1])
@@ -661,18 +659,12 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
         await self._send_desired_command(data)
 
-    async def navigate(self, device: str, direction: str):
-        if device != self.serial:
-            return
-
+    async def navigate(self, direction: str):
         _LOGGER.warning(f"Drive is not implemented yet, Value: {direction}")
 
         # await self._send_desired_command(None)
 
-    async def pickup(self, device: str):
-        if device != self.serial:
-            return
-
+    async def pickup(self):
         _LOGGER.warning(f"Pickup is not implemented yet")
 
         # await self._send_desired_command(None)

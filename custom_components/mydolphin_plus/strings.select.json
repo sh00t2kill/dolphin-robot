@@ -1,12 +1,5 @@
 {
   "state": {
-    "mydolphin_plus__cleaning_mode": {
-      "all": "Regular - Cleans floor, water and waterline",
-      "short": "Fast mode - Cleans the floor",
-      "floor": "Floor only - Cleans the floor only",
-      "water": "Water line - Cleans the walls and water line",
-      "ultra": "Ultra clean - Deeply cleans the floor, walls and waterline"
-    },
     "mydolphin_plus__led_mode": {
       "1": "Blinking",
       "2": "Always on",
