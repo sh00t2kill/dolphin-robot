@@ -83,15 +83,15 @@ set_daily_schedule:
       selector:
         select:
           options:
-            - label: Regular - Cleans floor, water and waterline (2h)
+            - label: Regular - Cleans floor, water and waterline
               value: all
-            - label: Fast mode - Cleans the floor (1h)
+            - label: Fast mode - Cleans the floor
               value: short
-            - label: Floor only - Cleans the floor only (2h)
+            - label: Floor only - Cleans the floor only
               value: floor
-            - label: Water line - Cleans the walls and water line (2h)
+            - label: Water line - Cleans the walls and water line
               value: water
-            - label: Ultra clean - Deeply cleans the floor, walls and waterline (2h)
+            - label: Ultra clean - Deeply cleans the floor, walls and waterline
               value: ultra
 
 delayed_clean:
@@ -127,13 +127,13 @@ delayed_clean:
       selector:
         select:
           options:
-            - label: Regular - Cleans floor, water and waterline (2h)
+            - label: Regular - Cleans floor, water and waterline
               value: all
-            - label: Fast mode - Cleans the floor (1h)
+            - label: Fast mode - Cleans the floor
               value: short
-            - label: Floor only - Cleans the floor only (2h)
+            - label: Floor only - Cleans the floor only
               value: floor
-            - label: Water line - Cleans the walls and water line (2h)
+            - label: Water line - Cleans the walls and water line
               value: water
-            - label: Ultra clean - Deeply cleans the floor, walls and waterline (2h)
+            - label: Ultra clean - Deeply cleans the floor, walls and waterline
               value: ultra
