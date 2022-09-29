@@ -469,14 +469,14 @@ class MyDolphinPlusAPI:
 
             elif message_topic.endswith("get/accepted"):
                 now = datetime.now().timestamp()
-                server_timestamp = payload.get("timestamp")
+                server_timestamp = payload.get(DATA_ROOT_TIMESTAMP)
 
-                self.server_version = payload.get("version")
+                self.server_version = payload.get(DATA_ROOT_VERSION)
                 self.server_timestamp = server_timestamp
                 self.server_time_diff = now - server_timestamp
 
-                state = payload.get("state", {})
-                reported = state.get("reported", {})
+                state = payload.get(DATA_ROOT_STATE, {})
+                reported = state.get(DATA_STATE_REPORTED, {})
 
                 for category in reported.keys():
                     category_data = reported.get(category)
@@ -544,8 +544,8 @@ class MyDolphinPlusAPI:
         update_topic = TOPIC_UPDATE.replace("/#", "").replace("{}", self.serial)
 
         new_state = {
-            "state": {
-                "desired": payload
+            DATA_ROOT_STATE: {
+                DATA_STATE_DESIRED: payload
             }
         }
 
@@ -559,9 +559,9 @@ class MyDolphinPlusAPI:
 
     async def set_cleaning_mode(self, cleaning_mode):
         data = {
-            "cycleInfo": {
-                "cleaningMode": {
-                    "mode": cleaning_mode
+            DATA_SECTION_CYCLE_INFO: {
+                DATA_SCHEDULE_CLEANING_MODE: {
+                    CONF_MODE: cleaning_mode
                 }
             }
         }
@@ -573,35 +573,26 @@ class MyDolphinPlusAPI:
                         enabled: bool | None = False,
                         mode: str | None = CLEANING_MODE_REGULAR,
                         job_time: str | None = None):
+        scheduling = self._get_schedule_settings(enabled, mode, job_time)
 
-        await self.set_schedule("delay", enabled, mode, job_time)
+        request_data = {
+            DATA_SECTION_DELAY: scheduling
+        }
+
+        _LOGGER.info(f"Set delay, Desired: {request_data}")
+        await self._send_desired_command(request_data)
 
     async def set_schedule(self,
                            day: str,
                            enabled: bool | None = False,
                            mode: str | None = CLEANING_MODE_REGULAR,
                            job_time: str | None = None):
-        hours = 255
-        minutes = 255
-
-        if enabled and job_time is not None:
-            job_time_parts = job_time.split(":")
-            hours = int(job_time_parts[0])
-            minutes = int(job_time_parts[1])
+        scheduling = self._get_schedule_settings(enabled, mode, job_time)
 
         request_data = {
-            "weeklySettings": {
-                "triggeredBy": 0,
-                day: {
-                    "isEnabled": enabled,
-                    "cleaningMode": {
-                        "mode": mode
-                    },
-                    "time": {
-                        "hours": hours,
-                        "minutes": minutes
-                    }
-                }
+            DATA_SECTION_WEEKLY_SETTINGS: {
+                DATA_SCHEDULE_TRIGGERED_BY: 0,
+                day: scheduling
             }
         }
 
@@ -609,52 +600,19 @@ class MyDolphinPlusAPI:
         await self._send_desired_command(request_data)
 
     async def set_led_mode(self, mode: int):
-        default_data = {
-            "ledEnable": True,
-            "ledIntensity": 80,
-            "ledMode": mode
-        }
-
-        request_data = self.data.get("led", default_data)
-        request_data["ledMode"] = int(mode)
-
-        data = {
-            "led": request_data
-        }
+        data = self._get_led_settings(DATA_LED_MODE, mode)
 
         _LOGGER.info(f"Set led mode, Desired: {data}")
         await self._send_desired_command(data)
 
     async def set_led_intensity(self, intensity: int):
-        default_data = {
-            "ledEnable": True,
-            "ledIntensity": intensity,
-            "ledMode": 1
-        }
-
-        request_data = self.data.get("led", default_data)
-        request_data["ledIntensity"] = intensity
-
-        data = {
-            "led": request_data
-        }
+        data = self._get_led_settings(DATA_LED_INTENSITY, intensity)
 
         _LOGGER.info(f"Set led intensity, Desired: {data}")
         await self._send_desired_command(data)
 
     async def set_led_enabled(self, is_enabled: bool):
-        default_data = {
-            "ledEnable": is_enabled,
-            "ledIntensity": 80,
-            "ledMode": 1
-        }
-
-        request_data = self.data.get("led", default_data)
-        request_data["ledEnable"] = is_enabled
-
-        data = {
-            "led": request_data
-        }
+        data = self._get_led_settings(DATA_LED_ENABLE, is_enabled)
 
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
         await self._send_desired_command(data)
@@ -670,13 +628,50 @@ class MyDolphinPlusAPI:
         # await self._send_desired_command(None)
 
     async def set_power_state(self, is_on: bool):
-        request_data = None
-
         request_data = {
-            "systemState": {
-                "pwsState": PWS_STATE_ON if is_on else PWS_STATE_OFF
+            DATA_SECTION_SYSTEM_STATE: {
+                DATA_SYSTEM_STATE_PWS_STATE: PWS_STATE_ON if is_on else PWS_STATE_OFF
             }
         }
 
         _LOGGER.info(f"Set power state, Desired: {request_data}")
         await self._send_desired_command(request_data)
+
+    @staticmethod
+    def _get_schedule_settings(enabled, mode, job_time):
+        hours = 255
+        minutes = 255
+
+        if enabled and job_time is not None:
+            job_time_parts = job_time.split(":")
+            hours = int(job_time_parts[0])
+            minutes = int(job_time_parts[1])
+
+        data = {
+            DATA_SCHEDULE_IS_ENABLED: enabled,
+            DATA_SCHEDULE_CLEANING_MODE: {
+                CONF_MODE: mode
+            },
+            DATA_SCHEDULE_TIME: {
+                DATA_SCHEDULE_TIME_HOURS: hours,
+                DATA_SCHEDULE_TIME_MINUTES: minutes
+            }
+        }
+
+        return data
+
+    def _get_led_settings(self, key, value):
+        default_data = {
+            DATA_LED_ENABLE: DEFAULT_ENABLE,
+            DATA_LED_INTENSITY: DEFAULT_LED_INTENSITY,
+            DATA_LED_MODE: LED_MODE_BLINKING
+        }
+
+        request_data = self.data.get(DATA_SECTION_LED, default_data)
+        request_data[key] = value
+
+        data = {
+            DATA_SECTION_LED: request_data
+        }
+
+        return data

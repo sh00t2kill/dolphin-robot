@@ -103,12 +103,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_sensor_broker_status(name)
 
         # Scheduling Sensors
-        features = data.get("featureEn", {})
-        self._load_binary_sensor_weekly_timer(name, features)
-        delay_settings = data.get("delay", {})
-        self._load_binary_sensor_schedules(name, "delay", delay_settings)
+        self._load_binary_sensor_weekly_timer(name, data)
 
-        weekly_settings = data.get("weeklySettings", {})
+        delay_settings = data.get(DATA_SECTION_DELAY, {})
+        self._load_binary_sensor_schedules(name, DATA_SECTION_DELAY, delay_settings)
+
+        weekly_settings = data.get(DATA_SECTION_WEEKLY_SETTINGS, {})
 
         for day in list(calendar.day_name):
             day_data = weekly_settings.get(day.lower(), {})
@@ -122,10 +122,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device} Led Mode"
 
         try:
-            led = data.get("led", {})
-            led_mode = led.get("ledMode", 1)
-            led_intensity = led.get("ledIntensity", 80)
-            led_enable = led.get("ledEnable", False)
+            led = data.get(DATA_SECTION_LED, {})
+            led_mode = led.get(DATA_LED_MODE, LED_MODE_BLINKING)
+            led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
+            led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
 
             state = led_mode
             attributes = {
@@ -181,12 +181,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             device: str,
             data: dict
     ):
-        weekly_timer = data.get("weeklyTimer", {})
-        status = weekly_timer.get(ATTR_STATUS, "disabled")
-
-        is_enabled = status == "enable"
         entity_name = f"{device} Weekly Schedule Enabled"
         try:
+            features = data.get(DATA_SECTION_FEATURE, {})
+
+            weekly_timer = features.get(DATA_FEATURE_WEEKLY_TIMER, {})
+            status = weekly_timer.get(ATTR_STATUS, ATTR_DISABLED)
+
+            is_enabled = status == ATTR_ENABLE
+
             state = STATE_ON if is_enabled else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
@@ -237,14 +240,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             day: str,
             data: dict
     ):
-        is_enabled = data.get("isEnabled", False)
-        cleaning_mode = data.get("cleaningMode", {})
-        job_time = data.get("time", {})
+        is_enabled = data.get(DATA_SCHEDULE_IS_ENABLED, False)
+        cleaning_mode = data.get(DATA_SCHEDULE_CLEANING_MODE, {})
+        job_time = data.get(DATA_SCHEDULE_TIME, {})
 
         mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
         mode_name = get_cleaning_mode_name(mode)
-        hours = job_time.get("hours", 255)
-        minutes = job_time.get("minutes", 255)
+        hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, 255)
+        minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, 255)
 
         entity_name = f"{device} Schedule {day.capitalize()}"
 
@@ -306,9 +309,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device} Filter Status"
 
         try:
-            filter_bag_indication = data.get("filterBagIndication", {})
+            filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
             filter_state = filter_bag_indication.get(CONF_STATE, 0)
-            reset_fbi = filter_bag_indication.get("resetFBI", 0)
+            reset_fbi = filter_bag_indication.get(DATA_FILTER_BAG_INDICATION_RESET_FBI, 0)
 
             state = STATE_ON if filter_state != 0 else STATE_OFF
             attributes = {
@@ -364,13 +367,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device} Cleaning Time"
 
         try:
-            cycle_info = data.get("cycleInfo", {})
-            cleaning_mode = cycle_info.get("cleaningMode", {})
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
             mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
             mode_name = get_cleaning_mode_name(mode)
 
-            cycle_time_minutes = cleaning_mode.get("cycleTime", 0)
-            cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
+            cycle_time_minutes = cleaning_mode.get(DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0)
+            cycle_start_time_ts = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0)
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
             cycle_time = str(datetime.timedelta(minutes=cycle_time_minutes))
 
@@ -481,19 +484,18 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device} Time Left"
 
         try:
-            cycle_info = data.get("cycleInfo", {})
-            cleaning_mode = cycle_info.get("cleaningMode", {})
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
             mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
             mode_name = get_cleaning_mode_name(mode)
 
-            cycle_time = cleaning_mode.get("cycleTime", 0)
+            cycle_time = cleaning_mode.get(DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0)
             cycle_time_in_seconds = cycle_time * 60
 
-            cycle_start_time_ts = cycle_info.get("cycleStartTime", 0)
+            cycle_start_time_ts = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0)
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
 
             now_ts = datetime.datetime.now().timestamp()
-            now = get_date_time_from_timestamp(now_ts)
 
             expected_cycle_end_time_ts = cycle_time_in_seconds + cycle_start_time_ts
             expected_cycle_end_time = get_date_time_from_timestamp(expected_cycle_end_time_ts)
@@ -563,10 +565,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device} Led"
 
         try:
-            led = data.get("led", {})
-            led_mode = led.get("ledMode", 1)
-            led_intensity = led.get("ledIntensity", 80)
-            led_enable = led.get("ledEnable", False)
+            led = data.get(DATA_SECTION_LED, {})
+            led_mode = led.get(DATA_LED_MODE, LED_MODE_BLINKING)
+            led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
+            led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
 
             state = led_enable
             attributes = {
@@ -617,11 +619,11 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         try:
             details = self.get_system_status_details(data)
 
-            debug = data.get("debug", {})
-            wifi_rssi = debug.get("WIFI_RSSI", 0)
+            debug = data.get(DATA_SECTION_DEBUG, {})
+            wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
 
-            wifi = data.get("wifi", {})
-            net_name = wifi.get("netName")
+            wifi = data.get(DATA_SECTION_WIFI, {})
+            net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
 
             state = details.get(CONF_STATE)
 
@@ -709,14 +711,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     @staticmethod
     def get_system_status_details(data: dict):
-        system_state = data.get("systemState", {})
-        pws_state = system_state.get("pwsState", "off")
-        robot_state = system_state.get("robotState", "off")
-        robot_type = system_state.get("robotType")
-        is_busy = system_state.get("isBusy", False)
-        turn_on_count = system_state.get("rTurnOnCount", 0)
-        time_zone = system_state.get("timeZone", 0)
-        time_zone_name = system_state.get("timeZoneName", "UTC")
+        system_state = data.get(DATA_SECTION_SYSTEM_STATE, {})
+        pws_state = system_state.get(DATA_SYSTEM_STATE_PWS_STATE, PWS_STATE_OFF)
+        robot_state = system_state.get(DATA_SYSTEM_STATE_ROBOT_STATE, ROBOT_STATE_NOT_CONNECTED)
+        robot_type = system_state.get(DATA_SYSTEM_STATE_ROBOT_TYPE)
+        is_busy = system_state.get(DATA_SYSTEM_STATE_IS_BUSY, False)
+        turn_on_count = system_state.get(DATA_SYSTEM_STATE_TURN_ON_COUNT, 0)
+        time_zone = system_state.get(DATA_SYSTEM_STATE_TIME_ZONE, 0)
+        time_zone_name = system_state.get(DATA_SYSTEM_STATE_TIME_ZONE_NAME, DEFAULT_TIME_ZONE_NAME)
 
         pws_on = pws_state in [PWS_STATE_ON]
         pws_off = pws_state in [PWS_STATE_OFF, PWS_STATE_HOLD_DELAY, PWS_STATE_HOLD_WEEKLY]
@@ -743,13 +745,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         state = CALCULATED_STATES.get(calculated_state, "Unmapped")
 
         result = {
-            "Calculated Status": calculated_state,
-            "PWS Status": pws_state,
-            "Robot Status": robot_state,
-            "Robot Type": robot_type,
-            "Busy": is_busy,
-            "Turn on count": turn_on_count,
-            "Time Zone": f"{time_zone_name} ({time_zone})",
+            ATTR_CALCULATED_STATUS: calculated_state,
+            ATTR_PWS_STATUS: pws_state,
+            ATTR_ROBOT_STATUS: robot_state,
+            ATTR_ROBOT_TYPE: robot_type,
+            ATTR_IS_BUSY: is_busy,
+            ATTR_TURN_ON_COUNT: turn_on_count,
+            ATTR_TIME_ZONE: f"{time_zone_name} ({time_zone})",
             CONF_STATE: state
         }
 

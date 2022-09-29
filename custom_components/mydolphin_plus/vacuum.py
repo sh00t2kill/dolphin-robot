@@ -118,15 +118,15 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
 
     async def _set_schedule(self, data: dict[str, Any] | list[Any] | None):
         day = data.get(CONF_DAY)
-        enabled = data.get(CONF_ENABLED, False)
-        cleaning_mode = data.get(CONF_MODE, DEFAULT_CLEANING_MODE)
+        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
+        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
         job_time = data.get(CONF_TIME)
 
         await self.ha.set_schedule(day, enabled, cleaning_mode, job_time)
 
     async def _set_delay(self, data: dict[str, Any] | list[Any] | None):
-        enabled = data.get(CONF_ENABLED, False)
-        cleaning_mode = data.get(CONF_MODE, DEFAULT_CLEANING_MODE)
+        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
+        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
         job_time = data.get(CONF_TIME)
 
         await self.ha.set_delay(enabled, cleaning_mode, job_time)

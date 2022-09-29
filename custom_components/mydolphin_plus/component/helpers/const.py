@@ -8,7 +8,6 @@ from datetime import timedelta
 
 import voluptuous as vol
 
-from homeassistant.components.light import PLATFORM_SCHEMA
 from homeassistant.const import (
     ATTR_MODE,
     CONF_DEVICE,
@@ -32,6 +31,67 @@ ATTR_RSSI = "RSSI"
 ATTR_NETWORK_NAME = "network_name"
 ATTR_INTENSITY = "intensity"
 ATTR_EXPECTED_END_TIME = "expected_end_time"
+
+ATTR_CALCULATED_STATUS = "calculated_status"
+ATTR_PWS_STATUS = "pws_status"
+ATTR_ROBOT_STATUS = "robot_status"
+ATTR_ROBOT_TYPE = "robot_type"
+ATTR_IS_BUSY = "busy"
+ATTR_TURN_ON_COUNT = "turn_on_count"
+ATTR_TIME_ZONE = "time_zone"
+
+ATTR_ENABLE = "enable"
+ATTR_DISABLED = "disabled"
+
+DATA_ROOT_STATE = "state"
+DATA_ROOT_TIMESTAMP = "timestamp"
+DATA_ROOT_VERSION = "version"
+
+DATA_STATE_REPORTED = "reported"
+DATA_STATE_DESIRED = "desired"
+
+DATA_SECTION_LED = "led"
+DATA_SECTION_DEBUG = "debug"
+DATA_SECTION_WIFI = "wifi"
+DATA_SECTION_CYCLE_INFO = "cycleInfo"
+DATA_SECTION_FILTER_BAG_INDICATION = "filterBagIndication"
+DATA_SECTION_WEEKLY_SETTINGS = "weeklySettings"
+DATA_SECTION_DELAY = "delay"
+DATA_SECTION_FEATURE = "featureEn"
+DATA_SECTION_SYSTEM_STATE = "systemState"
+
+DATA_SYSTEM_STATE_PWS_STATE = "pwsState"
+DATA_SYSTEM_STATE_ROBOT_STATE = "robotState"
+DATA_SYSTEM_STATE_ROBOT_TYPE = "robotType"
+DATA_SYSTEM_STATE_IS_BUSY = "isBusy"
+DATA_SYSTEM_STATE_TURN_ON_COUNT = "rTurnOnCount"
+DATA_SYSTEM_STATE_TIME_ZONE = "timeZone"
+DATA_SYSTEM_STATE_TIME_ZONE_NAME = "timeZoneName"
+
+DATA_FEATURE_WEEKLY_TIMER = "weeklyTimer"
+
+DATA_SCHEDULE_IS_ENABLED = "isEnabled"
+DATA_SCHEDULE_CLEANING_MODE = "cleaningMode"
+DATA_SCHEDULE_TIME = "time"
+DATA_SCHEDULE_TIME_HOURS = "hours"
+DATA_SCHEDULE_TIME_MINUTES = "minutes"
+DATA_SCHEDULE_TRIGGERED_BY = "triggeredBy"
+
+DATA_FILTER_BAG_INDICATION_RESET_FBI = "resetFBI"
+
+DATA_CYCLE_INFO_CLEANING_MODE = "cleaningMode"
+DATA_CYCLE_INFO_CLEANING_MODE_DURATION = "cycleTime"
+DATA_CYCLE_INFO_CLEANING_MODE_START_TIME = "cycleStartTime"
+
+DATA_LED_MODE = "ledMode"
+DATA_LED_INTENSITY = "ledIntensity"
+DATA_LED_ENABLE = "ledEnable"
+DATA_DEBUG_WIFI_RSSI = "WIFI_RSSI"
+DATA_WIFI_NETWORK_NAME = "netName"
+
+DEFAULT_LED_INTENSITY = 80
+DEFAULT_ENABLE = False
+DEFAULT_TIME_ZONE_NAME = "UTC"
 
 SCAN_INTERVAL = timedelta(seconds=60)
 HEARTBEAT_INTERVAL_SECONDS = timedelta(seconds=25)
@@ -150,7 +210,7 @@ SERVICE_SCHEMA_DAILY_SCHEDULE = vol.Schema(
     {
         vol.Optional(CONF_ENABLED, default=False): cv.boolean,
         vol.Required(CONF_DAY): vol.In(list(calendar.day_name)),
-        vol.Optional(CONF_MODE, default=DEFAULT_CLEANING_MODE): vol.In(CLEANING_MODES.keys()),
+        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(CLEANING_MODES.keys()),
         vol.Optional(CONF_TIME, default=None): cv.string
     }
 )
@@ -158,7 +218,7 @@ SERVICE_SCHEMA_DAILY_SCHEDULE = vol.Schema(
 SERVICE_SCHEMA_DELAYED_CLEAN = vol.Schema(
     {
         vol.Optional(CONF_ENABLED, default=False): cv.boolean,
-        vol.Optional(CONF_MODE, default=DEFAULT_CLEANING_MODE): vol.In(CLEANING_MODES.keys()),
+        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(CLEANING_MODES.keys()),
         vol.Optional(CONF_TIME, default=None): cv.string
     }
 )
