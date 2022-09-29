@@ -27,7 +27,7 @@ from ...configuration.managers.configuration_manager import (
 from ...configuration.models.config_data import ConfigData
 from ...core.managers.home_assistant import HomeAssistantManager
 from ...core.models.select_description import SelectDescription
-from ..helpers.common import get_cleaning_mode_name, get_date_time_from_timestamp
+from ..helpers.common import get_cleaning_mode_name, get_date_time_from_timestamp, get_cleaning_mode_details
 from ..helpers.enums import ConnectivityStatus
 
 _LOGGER = logging.getLogger(__name__)
@@ -688,6 +688,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     async def set_led_enabled(self, is_enabled: bool):
         await self.api.set_led_enabled(is_enabled)
+
+    def get_fan_speed(self):
+        data = self.api.data
+
+        cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+        cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+        mode_details = get_cleaning_mode_details(mode)
+
+        return mode_details
 
     async def pickup(self):
         await self.api.pickup()

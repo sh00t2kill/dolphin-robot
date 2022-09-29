@@ -56,12 +56,17 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
 
     def __init__(self):
         self._attr_supported_features = VACUUM_FEATURES
-        self._attr_fan_speed_list = list(CLEANING_MODES.keys())
+        self._attr_fan_speed_list = list(CLEANING_MODES.values())
 
     @property
     def state(self) -> str | None:
         """Return the status of the vacuum cleaner."""
         return self.entity.state
+
+    @property
+    def fan_speed(self) -> str | None:
+        """Return the fan speed of the vacuum cleaner."""
+        return self.ha.get_fan_speed()
 
     async def async_return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
@@ -69,7 +74,11 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
 
     async def async_set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
         """Set fan speed."""
-        await self.ha.set_cleaning_mode(fan_speed)
+        for key in CLEANING_MODES:
+            value = CLEANING_MODES[key]
+
+            if value == fan_speed:
+                await self.ha.set_cleaning_mode(key)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self.ha.set_power_state(True)
