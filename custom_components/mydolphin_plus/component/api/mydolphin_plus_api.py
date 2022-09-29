@@ -571,7 +571,7 @@ class MyDolphinPlusAPI:
 
     async def set_delay(self,
                         enabled: bool | None = False,
-                        mode: str | None = "all",
+                        mode: str | None = CLEANING_MODE_REGULAR,
                         job_time: str | None = None):
 
         await self.set_schedule("delay", enabled, mode, job_time)
@@ -579,7 +579,7 @@ class MyDolphinPlusAPI:
     async def set_schedule(self,
                            day: str,
                            enabled: bool | None = False,
-                           mode: str | None = "all",
+                           mode: str | None = CLEANING_MODE_REGULAR,
                            job_time: str | None = None):
         hours = 255
         minutes = 255
@@ -672,12 +672,11 @@ class MyDolphinPlusAPI:
     async def set_power_state(self, is_on: bool):
         request_data = None
 
-        if is_on:
-            request_data = {
-                "systemState": {
-                    "pwsState": "on"
-                }
+        request_data = {
+            "systemState": {
+                "pwsState": PWS_STATE_ON if is_on else PWS_STATE_OFF
             }
+        }
 
         _LOGGER.info(f"Set power state, Desired: {request_data}")
         await self._send_desired_command(request_data)

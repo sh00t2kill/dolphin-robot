@@ -9,7 +9,14 @@ from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.components.light import PLATFORM_SCHEMA
-from homeassistant.const import CONF_DEVICE, CONF_ENABLED, CONF_MODE
+from homeassistant.const import (
+    ATTR_MODE,
+    CONF_DEVICE,
+    CONF_DEVICE_ID,
+    CONF_ENABLED,
+    CONF_MODE,
+    CONF_STATE,
+)
 import homeassistant.helpers.config_validation as cv
 
 from ...core.helpers.const import *
@@ -18,6 +25,13 @@ VERSION = "0.0.3"
 
 DEFAULT_ICON = "mdi:alarm-light"
 ATTR_FRIENDLY_NAME = "friendly_name"
+ATTR_START_TIME = "start_time"
+ATTR_STATUS = "status"
+ATTR_RESET_FBI = "reset_fbi"
+ATTR_RSSI = "RSSI"
+ATTR_NETWORK_NAME = "network_name"
+ATTR_INTENSITY = "intensity"
+ATTR_EXPECTED_END_TIME = "expected_end_time"
 
 SCAN_INTERVAL = timedelta(seconds=60)
 HEARTBEAT_INTERVAL_SECONDS = timedelta(seconds=25)
@@ -84,6 +98,14 @@ CLEANING_MODE_WATER_LINE = "water"
 CLEANING_MODE_ULTRA_CLEAN = "ultra"
 CLEANING_MODE_ICON_DEFAULT = "mdi:border-all-variant"
 
+CLEANING_MODES = {
+  CLEANING_MODE_REGULAR: "Regular - Cleans floor, water and waterline",
+  CLEANING_MODE_FAST_MODE: "Fast mode - Cleans the floor",
+  CLEANING_MODE_FLOOR_ONLY: "Floor only - Cleans the floor only",
+  CLEANING_MODE_WATER_LINE: "Water line - Cleans the walls and water line",
+  CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline"
+}
+
 ICON_CLEANING_MODES = {
     CLEANING_MODE_REGULAR: CLEANING_MODE_ICON_DEFAULT,
     CLEANING_MODE_FAST_MODE: "mdi:clock-fast",
@@ -103,16 +125,6 @@ ICON_LED_MODES = {
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline"
 }
 
-DEFAULT_CLEANING_MODE = "all"
-
-CLEANING_MODES = {
-  DEFAULT_CLEANING_MODE: "Regular - Cleans floor, water and waterline",
-  "short": "Fast mode - Cleans the floor",
-  "floor": "Floor only - Cleans the floor only",
-  "water": "Water line - Cleans the walls and water line",
-  "ultra": "Ultra clean - Deeply cleans the floor, walls and waterline"
-}
-
 SERVICE_NAVIGATE = "navigate"
 SERVICE_PICKUP = "pickup"
 SERVICE_DAILY_SCHEDULE = "daily_schedule"
@@ -121,6 +133,7 @@ SERVICE_DELAYED_CLEAN = "delayed_clean"
 CONF_DIRECTION = "direction"
 CONF_DAY = "day"
 CONF_TIME = "time"
+CONF_ATTRIBUTES = "attributes"
 
 SWITCH_POWER_OFF_STATES = {
     "off",
@@ -181,4 +194,26 @@ CLOCK_HOURS_ICONS = {
     "21": "mdi:clock-time-nine",
     "22": "mdi:clock-time-ten",
     "23": "mdi:clock-time-eleven"
+}
+
+PWS_STATE_ON = "on"
+PWS_STATE_OFF = "off"
+PWS_STATE_HOLD_DELAY = "holdDelay"
+PWS_STATE_HOLD_WEEKLY = "holdWeekly"
+PWS_STATE_PROGRAMMING = "programming"
+
+ROBOT_STATE_FINISHED = "finished"
+ROBOT_STATE_FAULT = "fault"
+ROBOT_STATE_NOT_CONNECTED = "notConnected"
+ROBOT_STATE_PROGRAMMING = "programming"
+ROBOT_STATE_INIT = "init"
+ROBOT_STATE_SCANNING = "scanning"
+
+CALCULATED_STATES = {
+    PWS_STATE_ON: PWS_STATE_ON,
+    PWS_STATE_OFF: PWS_STATE_OFF,
+    PWS_STATE_PROGRAMMING: PWS_STATE_PROGRAMMING,
+    ROBOT_STATE_NOT_CONNECTED: "Disconnected",
+    PWS_STATE_HOLD_DELAY: "Idle (Delay)",
+    PWS_STATE_HOLD_WEEKLY: "Idle (Schedule)",
 }

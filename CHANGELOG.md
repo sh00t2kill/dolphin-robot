@@ -3,6 +3,8 @@
 ## Not yet defined
 - Fix reconnect AWS IOT MQTT broker by publishing messages with QOS=1 (At least once)
 - Add AWS Broker status sensor
+- Override Time Left to 0 when robot is not cleaning
+- Send explicit OFF command when toggling robot to off
 - Add vacuum entity, replacing:
   - Cleaning mode select
   - Connection binary sensor

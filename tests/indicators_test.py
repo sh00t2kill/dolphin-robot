@@ -46,7 +46,7 @@ def indicator(
 ):
     """Assumption: indicator to present failed to connect."""
     result = IndicatorType.ROBOT_STATE_NOT_CONNECTED
-    if pws_state == "on" and robot_state == PWS_CLOUD_STATUS_NOT_CONNECTED:
+    if pws_state == "on" and robot_state == ROBOT_STATE_NOT_CONNECTED:
         result = None
 
     print(result)

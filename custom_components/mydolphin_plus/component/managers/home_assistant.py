@@ -5,7 +5,6 @@ https://home-assistant.io/components/mydolphin_plus/
 """
 from __future__ import annotations
 
-import calendar
 import datetime
 import logging
 import sys
@@ -98,7 +97,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_light_led_enabled(name, data)
 
         # Sensors
-        self._load_binary_sensor_connection(name, data)
         self._load_binary_sensor_filter_status(name, data)
         self._load_sensor_cleaning_time(name, data)
         self._load_sensor_cleaning_time_left(name, data)
@@ -132,8 +130,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             state = led_mode
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Enable": led_enable,
-                "ledIntensity": led_intensity
+                CONF_ENABLED: led_enable,
+                ATTR_INTENSITY: led_intensity
             }
 
             entity = self.entity_manager.get(DOMAIN_SELECT, entity_name)
@@ -148,8 +146,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_SELECT
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -184,7 +182,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             data: dict
     ):
         weekly_timer = data.get("weeklyTimer", {})
-        status = weekly_timer.get("status", 'disabled')
+        status = weekly_timer.get(ATTR_STATUS, "disabled")
 
         is_enabled = status == "enable"
         entity_name = f"{device} Weekly Schedule Enabled"
@@ -192,7 +190,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             state = STATE_ON if is_enabled else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Status": status
+                ATTR_STATUS: status
             }
 
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
@@ -207,9 +205,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_BINARY_SENSOR
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -243,7 +241,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         cleaning_mode = data.get("cleaningMode", {})
         job_time = data.get("time", {})
 
-        mode = cleaning_mode.get("mode", "all")
+        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
         mode_name = get_cleaning_mode_name(mode)
         hours = job_time.get("hours", 255)
         minutes = job_time.get("minutes", 255)
@@ -258,8 +256,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             state = STATE_ON if is_enabled else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Mode": mode_name,
-                "Start time": job_start_time
+                ATTR_MODE: mode_name,
+                ATTR_START_TIME: job_start_time
             }
 
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
@@ -274,9 +272,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_BINARY_SENSOR
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -309,13 +307,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             filter_bag_indication = data.get("filterBagIndication", {})
-            filter_state = filter_bag_indication.get("state", 0)
+            filter_state = filter_bag_indication.get(CONF_STATE, 0)
+            reset_fbi = filter_bag_indication.get("resetFBI", 0)
 
             state = STATE_ON if filter_state != 0 else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Filter Bag Indication": filter_bag_indication,
-                "Filter State": filter_state
+                ATTR_RESET_FBI: reset_fbi,
+                ATTR_STATUS: filter_state
             }
 
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
@@ -331,77 +330,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
-                entity_description = EntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=entity.icon
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
-
-        except Exception as ex:
-            self.log_exception(
-                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
-            )
-
-    def _load_binary_sensor_connection(
-            self,
-            device: str,
-            data: dict
-    ):
-        entity_name = f"{device} Connection"
-
-        try:
-            system_state = data.get("systemState", {})
-            power_state = system_state.get("pwsState", "off")
-            is_busy = system_state.get("isBusy", False)
-            robot_state = system_state.get("robotState", "notConnected")
-
-            debug = data.get("debug", {})
-            wifi_rssi = debug.get("WIFI_RSSI", 0)
-
-            wifi = data.get("wifi", {})
-            net_name = wifi.get("netName")
-
-            state = STATE_ON if robot_state != "notConnected" else STATE_OFF
-            attributes = {
-                ATTR_FRIENDLY_NAME: entity_name,
-                "State": robot_state,
-                "RSSI": wifi_rssi,
-                "WIFI Network": net_name,
-                "Power State": power_state,
-                "Busy": is_busy
-            }
-
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_BINARY_SENSOR
-                entity.sensor_device_class = SensorDeviceClass.POWER
-                entity.sensor_state_class = SensorStateClass.MEASUREMENT
-
-            data = {
-                "state": (str(entity.state), str(state)),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -435,7 +366,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         try:
             cycle_info = data.get("cycleInfo", {})
             cleaning_mode = cycle_info.get("cleaningMode", {})
-            mode = cleaning_mode.get("mode", "all")
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
             mode_name = get_cleaning_mode_name(mode)
 
             cycle_time_minutes = cleaning_mode.get("cycleTime", 0)
@@ -449,8 +380,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Mode": mode_name,
-                "Start Time": cycle_start_time
+                ATTR_MODE: mode_name,
+                ATTR_START_TIME: cycle_start_time
             }
 
             entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
@@ -467,9 +398,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -516,9 +447,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -552,7 +483,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         try:
             cycle_info = data.get("cycleInfo", {})
             cleaning_mode = cycle_info.get("cleaningMode", {})
-            mode = cleaning_mode.get("mode", "all")
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
             mode_name = get_cleaning_mode_name(mode)
 
             cycle_time = cleaning_mode.get("cycleTime", 0)
@@ -579,11 +510,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Mode": mode_name,
-                "Start Time": cycle_start_time,
-                "Expected End Time": expected_cycle_end_time,
-                "Time Now": now,
-                "Seconds Left": seconds_left
+                ATTR_MODE: mode_name,
+                ATTR_START_TIME: cycle_start_time,
+                ATTR_EXPECTED_END_TIME: expected_cycle_end_time
             }
 
             entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
@@ -600,9 +529,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -642,8 +571,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             state = led_enable
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Mode": led_mode,
-                "Intensity": led_intensity
+                ATTR_MODE: led_mode,
+                ATTR_INTENSITY: led_intensity
             }
 
             entity = self.entity_manager.get(DOMAIN_LIGHT, entity_name)
@@ -658,9 +587,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_LIGHT
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -686,25 +615,24 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = device
 
         try:
-            system_state = data.get("systemState", {})
-            pws_state = system_state.get("pwsState", "off")
-            robot_state = system_state.get("robotState", "off")
-            robot_type = system_state.get("robotType")
-            is_busy = system_state.get("isBusy", False)
-            turn_on_count = system_state.get("rTurnOnCount", 0)
-            time_zone = system_state.get("timeZone", 0)
-            time_zone_name = system_state.get("timeZoneName", "UTC")
+            details = self.get_system_status_details(data)
 
-            state = pws_state not in SWITCH_POWER_OFF_STATES
+            debug = data.get("debug", {})
+            wifi_rssi = debug.get("WIFI_RSSI", 0)
+
+            wifi = data.get("wifi", {})
+            net_name = wifi.get("netName")
+
+            state = details.get(CONF_STATE)
+
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                "Robot": robot_state,
-                "Type": robot_type,
-                "Power": pws_state,
-                "Is Busy": is_busy,
-                "Turn on count": turn_on_count,
-                "Time Zone": f"{time_zone_name} ({time_zone})"
+                ATTR_RSSI: wifi_rssi,
+                ATTR_NETWORK_NAME: net_name
             }
+
+            for key in details:
+                attributes[key] = details.get(key)
 
             entity = self.entity_manager.get(DOMAIN_VACUUM, entity_name)
             created = entity is None
@@ -718,9 +646,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_VACUUM
 
             data = {
-                "state": (str(entity.state), str(state)),
-                "attributes": (entity.attributes, attributes),
-                "device_name": (entity.device_name, device),
+                CONF_STATE: (str(entity.state), str(state)),
+                CONF_ATTRIBUTES: (entity.attributes, attributes),
+                CONF_DEVICE_ID: (entity.device_name, device),
             }
 
             if created or self.entity_manager.compare_data(entity, data):
@@ -743,14 +671,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     async def set_delay(self,
                         enabled: bool | None = False,
-                        mode: str | None = "all",
+                        mode: str | None = CLEANING_MODE_REGULAR,
                         job_time: str | None = None):
         await self.api.set_delay(enabled, mode, job_time)
 
     async def set_schedule(self,
                            day: str,
                            enabled: bool | None = False,
-                           mode: str | None = "all",
+                           mode: str | None = CLEANING_MODE_REGULAR,
                            job_time: str | None = None):
         await self.api.set_schedule(day, enabled, mode, job_time)
 
@@ -778,3 +706,51 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         line_number = tb.tb_lineno
 
         _LOGGER.error(f"{message}, Error: {str(ex)}, Line: {line_number}")
+
+    @staticmethod
+    def get_system_status_details(data: dict):
+        system_state = data.get("systemState", {})
+        pws_state = system_state.get("pwsState", "off")
+        robot_state = system_state.get("robotState", "off")
+        robot_type = system_state.get("robotType")
+        is_busy = system_state.get("isBusy", False)
+        turn_on_count = system_state.get("rTurnOnCount", 0)
+        time_zone = system_state.get("timeZone", 0)
+        time_zone_name = system_state.get("timeZoneName", "UTC")
+
+        pws_on = pws_state in [PWS_STATE_ON]
+        pws_off = pws_state in [PWS_STATE_OFF, PWS_STATE_HOLD_DELAY, PWS_STATE_HOLD_WEEKLY]
+        pws_programming = pws_state == PWS_STATE_PROGRAMMING
+
+        robot_on = robot_state not in [ROBOT_STATE_INIT, ROBOT_STATE_SCANNING, ROBOT_STATE_NOT_CONNECTED]
+        robot_off = robot_state not in [ROBOT_STATE_FINISHED, ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
+        robot_programming = robot_state == PWS_STATE_PROGRAMMING
+
+        if pws_off and robot_off:
+            calculated_state = PWS_STATE_OFF
+        elif pws_programming and robot_programming:
+            calculated_state = PWS_STATE_PROGRAMMING
+        elif pws_state == PWS_STATE_ON and robot_state == ROBOT_STATE_NOT_CONNECTED:
+            calculated_state = ROBOT_STATE_NOT_CONNECTED
+        elif (pws_on and robot_on) or (pws_programming and not robot_programming):
+            calculated_state = PWS_STATE_ON
+        else:
+            state_description = f"pwsState: {pws_state}, robotState: {robot_state}"
+            _LOGGER.warning(f"Unhandled mapping, state will be set according to pws_state, {state_description}")
+
+            calculated_state = pws_state
+
+        state = CALCULATED_STATES.get(calculated_state, "Unmapped")
+
+        result = {
+            "Calculated Status": calculated_state,
+            "PWS Status": pws_state,
+            "Robot Status": robot_state,
+            "Robot Type": robot_type,
+            "Busy": is_busy,
+            "Turn on count": turn_on_count,
+            "Time Zone": f"{time_zone_name} ({time_zone})",
+            CONF_STATE: state
+        }
+
+        return result
