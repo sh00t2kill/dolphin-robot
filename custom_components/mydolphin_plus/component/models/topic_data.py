@@ -1,4 +1,4 @@
-from custom_components.mydolphin_plus import *
+from ...component.helpers.const import *
 
 
 class TopicData:

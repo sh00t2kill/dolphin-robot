@@ -762,7 +762,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         robot_off = robot_state not in [ROBOT_STATE_FINISHED, ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
         robot_programming = robot_state == PWS_STATE_PROGRAMMING
 
-        if pws_off and robot_off:
+        if pws_off or robot_off:
             calculated_state = PWS_STATE_OFF
         elif pws_programming and robot_programming:
             calculated_state = PWS_STATE_PROGRAMMING

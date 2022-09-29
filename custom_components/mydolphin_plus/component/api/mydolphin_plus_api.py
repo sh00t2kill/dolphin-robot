@@ -322,13 +322,13 @@ class MyDolphinPlusAPI:
         aws_client.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
         aws_client.configureDrainingFrequency(2)  # Draining: 2 Hz
         aws_client.configureConnectDisconnectTimeout(10)
-        aws_client.configureMQTTOperationTimeout(5)
+        aws_client.configureMQTTOperationTimeout(10)
         aws_client.enableMetricsCollection()
         aws_client.onOnline = self._handle_aws_client_online
         aws_client.onOffline = self._handle_aws_client_offline
 
         for topic in self.topic_data.subscribe:
-            self.awsiot_client.subscribe(topic, 0, self._internal_callback)
+            aws_client.subscribe(topic, 0, self._internal_callback)
 
         connected = aws_client.connect()
 
@@ -400,7 +400,7 @@ class MyDolphinPlusAPI:
                 _LOGGER.warning(f"Rejected message for {message_topic}, Message: {payload}")
 
             elif message_topic == self.topic_data.dynamic:
-                _LOGGER.info(f"Dynamic payload: {payload}")
+                _LOGGER.debug(f"Dynamic payload: {payload}")
 
             elif message_topic == self.topic_data.update_accepted:
                 self._refresh_details()
@@ -423,7 +423,7 @@ class MyDolphinPlusAPI:
                         _LOGGER.debug(f"{category} - {category_data}")
                         self.data[category] = category_data
 
-                await self.read_temperature_and_in_water_details()
+                self._read_temperature_and_in_water_details()
 
                 if self.callback is not None:
                     server_time = get_date_time_from_timestamp(self.server_timestamp)
@@ -458,33 +458,33 @@ class MyDolphinPlusAPI:
 
         return result
 
-    async def _send_desired_command(self, payload: dict | None):
-        new_state = {
+    def _send_desired_command(self, payload: dict | None):
+        data = {
             DATA_ROOT_STATE: {
                 DATA_STATE_DESIRED: payload
             }
         }
 
-        request_data = json.dumps(new_state)
+        self._publish(self.topic_data.update, data)
 
-        if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(self.topic_data.update, request_data, MQTT_QOS_AT_LEAST_ONCE)
-
-        else:
-            _LOGGER.error(f"Failed to publish message: {new_state} to {self.topic_data.update}")
-
-    async def _send_dynamic_command(self, payload: dict | None):
+    def _send_dynamic_command(self, payload: dict | None):
         data = {
             DYNAMIC_CONTENT: payload
         }
 
-        request_data = json.dumps(data)
+        self._publish(self.topic_data.dynamic, data)
+
+    def _publish(self, topic: str, data: dict | None):
+        payload = json.dumps(data)
 
         if self.status == ConnectivityStatus.Connected:
-            self.awsiot_client.publish(self.topic_data.dynamic, request_data, MQTT_QOS_AT_LEAST_ONCE)
+            try:
+                self.awsiot_client.publish(topic, payload, MQTT_QOS_AT_LEAST_ONCE)
+            except Exception as ex:
+                _LOGGER.error(f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}")
 
         else:
-            _LOGGER.error(f"Failed to publish message: {request_data} to {self.topic_data.dynamic}")
+            _LOGGER.error(f"Failed to publish message: {data} to {topic}")
 
     async def set_cleaning_mode(self, cleaning_mode):
         data = {
@@ -496,7 +496,7 @@ class MyDolphinPlusAPI:
         }
 
         _LOGGER.info(f"Set cleaning mode, Desired: {data}")
-        await self._send_desired_command(data)
+        self._send_desired_command(data)
 
     async def set_delay(self,
                         enabled: bool | None = False,
@@ -509,7 +509,7 @@ class MyDolphinPlusAPI:
         }
 
         _LOGGER.info(f"Set delay, Desired: {request_data}")
-        await self._send_desired_command(request_data)
+        self._send_desired_command(request_data)
 
     async def set_schedule(self,
                            day: str,
@@ -526,25 +526,25 @@ class MyDolphinPlusAPI:
         }
 
         _LOGGER.info(f"Set schedule, Desired: {request_data}")
-        await self._send_desired_command(request_data)
+        self._send_desired_command(request_data)
 
     async def set_led_mode(self, mode: int):
         data = self._get_led_settings(DATA_LED_MODE, mode)
 
         _LOGGER.info(f"Set led mode, Desired: {data}")
-        await self._send_desired_command(data)
+        self._send_desired_command(data)
 
     async def set_led_intensity(self, intensity: int):
         data = self._get_led_settings(DATA_LED_INTENSITY, intensity)
 
         _LOGGER.info(f"Set led intensity, Desired: {data}")
-        await self._send_desired_command(data)
+        self._send_desired_command(data)
 
     async def set_led_enabled(self, is_enabled: bool):
         data = self._get_led_settings(DATA_LED_ENABLE, is_enabled)
 
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
-        await self._send_desired_command(data)
+        self._send_desired_command(data)
 
     async def navigate(self, direction: str):
         request_data = {
@@ -552,22 +552,22 @@ class MyDolphinPlusAPI:
             DYNAMIC_CONTENT_DIRECTION: direction
         }
 
-        await self._send_dynamic_command(request_data)
+        self._send_dynamic_command(request_data)
 
     async def quit_navigation(self):
         request_data = {
             DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
         }
 
-        await self._send_dynamic_command(request_data)
+        self._send_dynamic_command(request_data)
 
-    async def read_temperature_and_in_water_details(self):
+    def _read_temperature_and_in_water_details(self):
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: self.serial_number,
             DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: self.motor_unit_serial
         }
 
-        await self._send_dynamic_command(request_data)
+        self._send_dynamic_command(request_data)
 
     async def pickup(self):
         await self.set_cleaning_mode(CLEANING_MODE_PICKUP)
@@ -580,7 +580,7 @@ class MyDolphinPlusAPI:
         }
 
         _LOGGER.info(f"Set power state, Desired: {request_data}")
-        await self._send_desired_command(request_data)
+        self._send_desired_command(request_data)
 
     async def reset_filter_indicator(self):
         request_data = {

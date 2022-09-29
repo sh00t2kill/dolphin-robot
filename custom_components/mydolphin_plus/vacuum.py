@@ -56,7 +56,7 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
 
     def __init__(self):
         self._attr_supported_features = VACUUM_FEATURES
-        self._attr_fan_speed_list = CLEANING_MODES.keys()
+        self._attr_fan_speed_list = list(CLEANING_MODES.keys())
 
     @property
     def state(self) -> str | None:
