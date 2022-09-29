@@ -23,6 +23,7 @@ from ...core.helpers.const import *
 VERSION = "0.0.3"
 
 DEFAULT_ICON = "mdi:alarm-light"
+
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_START_TIME = "start_time"
 ATTR_STATUS = "status"
@@ -78,6 +79,7 @@ DATA_SCHEDULE_TIME_MINUTES = "minutes"
 DATA_SCHEDULE_TRIGGERED_BY = "triggeredBy"
 
 DATA_FILTER_BAG_INDICATION_RESET_FBI = "resetFBI"
+DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND = "resetFbi"
 
 DATA_CYCLE_INFO_CLEANING_MODE = "cleaningMode"
 DATA_CYCLE_INFO_CLEANING_MODE_DURATION = "cycleTime"
@@ -92,6 +94,7 @@ DATA_WIFI_NETWORK_NAME = "netName"
 DEFAULT_LED_INTENSITY = 80
 DEFAULT_ENABLE = False
 DEFAULT_TIME_ZONE_NAME = "UTC"
+DEFAULT_TIME_PART = 255
 
 SCAN_INTERVAL = timedelta(seconds=60)
 HEARTBEAT_INTERVAL_SECONDS = timedelta(seconds=25)
@@ -106,9 +109,9 @@ MQTT_QOS_AT_LEAST_ONCE = 1
 
 AWS_REGION = "eu-west-1"
 AWS_BASE_HOST = f"{AWS_REGION}.amazonaws.com"
-DYNAMODB_HOST = f'dynamodb.{AWS_BASE_HOST}'
 
-IOT_URL = f"a12rqfdx55bdbv-ats.iot.{AWS_BASE_HOST}"
+AWS_IOT_URL = f"a12rqfdx55bdbv-ats.iot.{AWS_BASE_HOST}"
+AWS_IOT_PORT = 443
 
 LOGIN_HEADERS = {
     'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
@@ -116,26 +119,18 @@ LOGIN_HEADERS = {
 }
 CA_FILE_NAME = "AmazonRootCA.pem"
 
-AWS_HEADER_CONTENT_TYPE = "content-type"
-AWS_HEADER_HOST = "host"
-AWS_HEADER_DATE = "x-amz-date"
-AWS_HEADER_TARGET = "x-amz-target"
-
-AWS_CONTENT_TYPE = "application/x-amz-json-1.0"
-AMZ_TARGET = "DynamoDB_20120810.Query"
-AWS_METHOD = "POST\n/\n"
-AWS_ALGORITHM = "AWS4-HMAC-SHA256"
-AWS_REQUEST_KEY = "aws4_request"
-
 AWS_DATE_FORMAT = "%Y%m%d"
-AWS_DATE_TIME_FORMAT = f"{AWS_DATE_FORMAT}T%H%M%SZ"
 
-AWS_DYNAMODB_QUERY_PARAMETER = "[SERIAL]"
-
-TOPIC_GET = "$aws/things/{}/shadow/get/#"
-TOPIC_UPDATE = "$aws/things/{}/shadow/update/#"
+TOPIC_SHADOW = "$aws/things/{}/shadow"
 TOPIC_DYNAMIC = "Maytronics/{}/main"
-TOPICS = [TOPIC_DYNAMIC, TOPIC_UPDATE, TOPIC_GET]
+
+TOPIC_WILDCARD = "#"
+
+TOPIC_ACTION_GET = "get"
+TOPIC_ACTION_UPDATE = "update"
+
+TOPIC_CALLBACK_ACCEPTED = "accepted"
+TOPIC_CALLBACK_DOCUMENTS = "documents"
 
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Serial Number",
@@ -156,6 +151,7 @@ CLEANING_MODE_FAST_MODE = "short"
 CLEANING_MODE_FLOOR_ONLY = "floor"
 CLEANING_MODE_WATER_LINE = "water"
 CLEANING_MODE_ULTRA_CLEAN = "ultra"
+CLEANING_MODE_PICKUP = "pickup"
 CLEANING_MODE_ICON_DEFAULT = "mdi:border-all-variant"
 
 CLEANING_MODES = {
@@ -163,7 +159,7 @@ CLEANING_MODES = {
   CLEANING_MODE_FAST_MODE: "Fast mode - Cleans the floor",
   CLEANING_MODE_FLOOR_ONLY: "Floor only - Cleans the floor only",
   CLEANING_MODE_WATER_LINE: "Water line - Cleans the walls and water line",
-  CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline"
+  CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline",
 }
 
 ICON_CLEANING_MODES = {
@@ -268,6 +264,8 @@ ROBOT_STATE_NOT_CONNECTED = "notConnected"
 ROBOT_STATE_PROGRAMMING = "programming"
 ROBOT_STATE_INIT = "init"
 ROBOT_STATE_SCANNING = "scanning"
+
+UNMAPPED_CALCULATED_STATE = "Unmapped"
 
 CALCULATED_STATES = {
     PWS_STATE_ON: PWS_STATE_ON,

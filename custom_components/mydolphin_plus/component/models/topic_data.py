@@ -1,0 +1,40 @@
+from custom_components.mydolphin_plus import *
+
+
+class TopicData:
+    serial: str
+    dynamic: str
+
+    def __init__(self, serial: str):
+        self.serial = serial
+
+        self._shadow_topic = TOPIC_SHADOW.format(serial)
+        self.dynamic = TOPIC_DYNAMIC.format(serial)
+
+    @property
+    def get(self) -> str:
+        return f"{self._shadow_topic}/{TOPIC_ACTION_GET}"
+
+    @property
+    def _get_wildcard(self) -> str:
+        return f"{self.get}/{TOPIC_WILDCARD}"
+
+    @property
+    def get_accepted(self) -> str:
+        return f"{self.get}/{TOPIC_CALLBACK_ACCEPTED}"
+
+    @property
+    def update(self) -> str:
+        return f"{self._shadow_topic}/{TOPIC_ACTION_UPDATE}"
+
+    @property
+    def _update_wildcard(self) -> str:
+        return f"{self.update}/{TOPIC_WILDCARD}"
+
+    @property
+    def update_accepted(self) -> str:
+        return f"{self.update}/{TOPIC_CALLBACK_ACCEPTED}"
+
+    @property
+    def subscribe(self) -> list[str]:
+        return [self.dynamic, self._get_wildcard, self._update_wildcard]

@@ -249,19 +249,19 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             day: str,
             data: dict
     ):
-        is_enabled = data.get(DATA_SCHEDULE_IS_ENABLED, False)
+        is_enabled = data.get(DATA_SCHEDULE_IS_ENABLED, DEFAULT_ENABLE)
         cleaning_mode = data.get(DATA_SCHEDULE_CLEANING_MODE, {})
         job_time = data.get(DATA_SCHEDULE_TIME, {})
 
         mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
         mode_name = get_cleaning_mode_name(mode)
-        hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, 255)
-        minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, 255)
+        hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, DEFAULT_TIME_PART)
+        minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, DEFAULT_TIME_PART)
 
         entity_name = f"{device} Schedule {day.capitalize()}"
 
         job_start_time = None
-        if hours < 255 and minutes < 255:
+        if hours < DEFAULT_TIME_PART and minutes < DEFAULT_TIME_PART:
             job_start_time = str(datetime.timedelta(hours=hours, minutes=minutes))
 
         try:
@@ -315,7 +315,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             device: str,
             data: dict
     ):
-        entity_name = f"{device} Filter Status"
+        entity_name = f"{device} Filter"
 
         try:
             filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
@@ -373,7 +373,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             device: str,
             data: dict
     ):
-        entity_name = f"{device} Cleaning Time"
+        entity_name = f"{device} Cycle Time"
 
         try:
             cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
@@ -490,7 +490,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             device: str,
             data: dict
     ):
-        entity_name = f"{device} Time Left"
+        entity_name = f"{device} Cycle Time Left"
 
         try:
             cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
@@ -571,7 +571,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             device: str,
             data: dict
     ):
-        entity_name = f"{device} Led"
+        entity_name = device
 
         try:
             led = data.get(DATA_SECTION_LED, {})
@@ -776,7 +776,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             calculated_state = pws_state
 
-        state = CALCULATED_STATES.get(calculated_state, "Unmapped")
+        state = CALCULATED_STATES.get(calculated_state, UNMAPPED_CALCULATED_STATE)
 
         result = {
             ATTR_CALCULATED_STATUS: calculated_state,
