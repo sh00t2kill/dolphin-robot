@@ -3,6 +3,7 @@
 ## Not yet defined
 - Fix reconnect AWS IOT MQTT broker by publishing messages with QOS=1 (At least once)
 - Add AWS Broker status sensor
+- Send explicit OFF command when toggling robot to off
 
 ## v0.0.9
 - Removed time from cleaning mode select HA component (select, translations and services)
