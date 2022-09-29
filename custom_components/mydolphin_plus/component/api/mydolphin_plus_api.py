@@ -681,11 +681,15 @@ class MyDolphinPlusAPI:
         request_data = None
 
         if is_on:
-            request_data = {
-                "systemState": {
-                    "pwsState": "on"
-                }
+            pws_state = "on"
+        else:
+            pws_state = "off"
+        
+        request_data = {
+            "systemState": {
+                "pwsState": pws_state
             }
+        }
 
         _LOGGER.info(f"Set power state, Desired: {request_data}")
         await self._send_desired_command(request_data)
