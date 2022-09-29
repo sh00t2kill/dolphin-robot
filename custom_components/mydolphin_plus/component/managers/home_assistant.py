@@ -27,7 +27,11 @@ from ...configuration.managers.configuration_manager import (
 from ...configuration.models.config_data import ConfigData
 from ...core.managers.home_assistant import HomeAssistantManager
 from ...core.models.select_description import SelectDescription
-from ..helpers.common import get_cleaning_mode_name, get_date_time_from_timestamp, get_cleaning_mode_details
+from ..helpers.common import (
+    get_cleaning_mode_details,
+    get_cleaning_mode_name,
+    get_date_time_from_timestamp,
+)
 from ..helpers.enums import ConnectivityStatus
 
 _LOGGER = logging.getLogger(__name__)

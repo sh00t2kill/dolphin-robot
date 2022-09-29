@@ -295,5 +295,3 @@ CALCULATED_STATES = {
     PWS_STATE_HOLD_DELAY: "Idle (Delay)",
     PWS_STATE_HOLD_WEEKLY: "Idle (Schedule)",
 }
-
-
