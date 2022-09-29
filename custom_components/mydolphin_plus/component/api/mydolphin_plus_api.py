@@ -440,7 +440,7 @@ class MyDolphinPlusAPI:
         _LOGGER.debug(f"Connecting to {IOT_URL}")
         connected = aws_client.connect()
 
-        _LOGGER.debug("Connected!!!")
+        _LOGGER.debug(f"Connected to {IOT_URL}")
 
         if connected:
             self.awsiot_client = aws_client
