@@ -349,7 +349,8 @@ class MyDolphinPlusAPI:
 
         if forced or diff_seconds >= SCAN_INTERVAL.total_seconds():
             self.last_update = now
-            self.awsiot_client.publish(self.topic_data.get, None, MQTT_QOS_AT_LEAST_ONCE)
+
+            self._publish(self.topic_data.get, None)
 
     async def _load_details(self):
         if self.status != ConnectivityStatus.Connected:
@@ -479,7 +480,7 @@ class MyDolphinPlusAPI:
         self._publish(self.topic_data.dynamic, data)
 
     def _publish(self, topic: str, data: dict | None):
-        payload = json.dumps(data)
+        payload = data if data is None else json.dumps(data)
 
         if self.status == ConnectivityStatus.Connected:
             try:

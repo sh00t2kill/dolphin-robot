@@ -194,7 +194,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             device: str,
             data: dict
     ):
-        entity_name = f"{device} Weekly Schedule Enabled"
+        entity_name = f"{device} Weekly Schedule"
         try:
             features = data.get(DATA_SECTION_FEATURE, {})
 
