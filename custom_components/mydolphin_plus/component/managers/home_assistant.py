@@ -8,6 +8,9 @@ from __future__ import annotations
 import datetime
 import logging
 import sys
+from typing import Any
+
+from voluptuous import MultipleInvalid
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
@@ -36,6 +39,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         self._api: MyDolphinPlusAPI | None = None
         self._config_manager: ConfigurationManager | None = None
+
+        self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
+            SERVICE_NAVIGATE: self._navigate,
+            SERVICE_DAILY_SCHEDULE: self._set_schedule,
+            SERVICE_DELAYED_CLEAN: self._set_delay,
+        }
 
     @property
     def api(self) -> MyDolphinPlusAPI:
@@ -671,19 +680,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def set_cleaning_mode(self, cleaning_mode):
         await self.api.set_cleaning_mode(cleaning_mode)
 
-    async def set_delay(self,
-                        enabled: bool | None = False,
-                        mode: str | None = CLEANING_MODE_REGULAR,
-                        job_time: str | None = None):
-        await self.api.set_delay(enabled, mode, job_time)
-
-    async def set_schedule(self,
-                           day: str,
-                           enabled: bool | None = False,
-                           mode: str | None = CLEANING_MODE_REGULAR,
-                           job_time: str | None = None):
-        await self.api.set_schedule(day, enabled, mode, job_time)
-
     async def set_led_mode(self, mode: int):
         await self.api.set_led_mode(mode)
 
@@ -693,14 +689,52 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def set_led_enabled(self, is_enabled: bool):
         await self.api.set_led_enabled(is_enabled)
 
-    async def navigate(self, direction: str):
-        await self.api.navigate(direction)
-
     async def pickup(self):
         await self.api.pickup()
 
     async def set_power_state(self, is_on: bool):
         await self.api.set_power_state(is_on)
+
+    async def send_command(self,
+                           command: str,
+                           params: dict[str, Any] | list[Any] | None):
+        validator = SERVICE_VALIDATION.get(command)
+        action = self._robot_actions.get(command)
+
+        if validator is None or action is None:
+            _LOGGER.error(f"Command {command} is not supported")
+
+        else:
+            try:
+                validator(params)
+
+                await action(params)
+            except MultipleInvalid as ex:
+                _LOGGER.error(ex.msg)
+
+    async def _navigate(self, data: dict[str, Any] | list[Any] | None):
+        direction = data.get(CONF_DIRECTION)
+
+        if direction is None:
+            _LOGGER.error("Direction is mandatory parameter, please provide and try again")
+            return
+
+        await self.api.navigate(direction)
+
+    async def _set_schedule(self, data: dict[str, Any] | list[Any] | None):
+        day = data.get(CONF_DAY)
+        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
+        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
+        job_time = data.get(CONF_TIME)
+
+        await self.api.set_schedule(day, enabled, cleaning_mode, job_time)
+
+    async def _set_delay(self, data: dict[str, Any] | list[Any] | None):
+        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
+        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
+        job_time = data.get(CONF_TIME)
+
+        await self.api.set_delay(enabled, cleaning_mode, job_time)
 
     @staticmethod
     def log_exception(ex, message):

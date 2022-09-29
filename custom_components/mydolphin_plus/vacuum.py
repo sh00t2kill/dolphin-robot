@@ -9,9 +9,6 @@ from abc import ABC
 import logging
 from typing import Any
 
-import voluptuous
-from voluptuous import MultipleInvalid
-
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeature
 from homeassistant.core import HomeAssistant
 
@@ -61,12 +58,6 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
         self._attr_supported_features = VACUUM_FEATURES
         self._attr_fan_speed_list = CLEANING_MODES.keys()
 
-        self._actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
-            SERVICE_NAVIGATE: self._navigate,
-            SERVICE_DAILY_SCHEDULE: self._set_schedule,
-            SERVICE_DELAYED_CLEAN: self._set_delay,
-        }
-
     @property
     def state(self) -> str | None:
         """Return the status of the vacuum cleaner."""
@@ -86,6 +77,11 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self.ha.set_power_state(False)
 
+    async def async_toggle(self, **kwargs: Any) -> None:
+        is_on = self.entity.state == PWS_STATE_ON
+
+        await self.ha.set_power_state(not is_on)
+
     async def async_send_command(
             self,
             command: str,
@@ -93,40 +89,4 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
             **kwargs: Any,
     ) -> None:
         """Send a command to a vacuum cleaner."""
-        validator = SERVICE_VALIDATION.get(command)
-        action = self._actions.get(command)
-
-        if validator is None or action is None:
-            _LOGGER.error(f"Command {command} is not supported")
-
-        else:
-            try:
-                validator(params)
-
-                await action(params)
-            except MultipleInvalid as ex:
-                _LOGGER.error(ex.msg)
-
-    async def _navigate(self, data: dict[str, Any] | list[Any] | None):
-        direction = data.get(CONF_DIRECTION)
-
-        if direction is None:
-            _LOGGER.error("Direction is mandatory parameter, please provide and try again")
-            return
-
-        await self.ha.navigate(direction)
-
-    async def _set_schedule(self, data: dict[str, Any] | list[Any] | None):
-        day = data.get(CONF_DAY)
-        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
-        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
-        job_time = data.get(CONF_TIME)
-
-        await self.ha.set_schedule(day, enabled, cleaning_mode, job_time)
-
-    async def _set_delay(self, data: dict[str, Any] | list[Any] | None):
-        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
-        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
-        job_time = data.get(CONF_TIME)
-
-        await self.ha.set_delay(enabled, cleaning_mode, job_time)
+        self.ha.send_command(command, params)
