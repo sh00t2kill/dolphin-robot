@@ -11,6 +11,7 @@
   - Power switch
   - All services
 
+
 ## v0.0.9
 - Removed time from cleaning mode select HA component (select, translations and services)
 - Moved the off_states of switch to constants
