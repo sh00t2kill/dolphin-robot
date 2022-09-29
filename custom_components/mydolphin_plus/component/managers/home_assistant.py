@@ -32,6 +32,7 @@ from ..helpers.common import (
 )
 from ..helpers.enums import ConnectivityStatus
 
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -740,6 +741,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             cleaning_mode = cycle_info.get("cleaningMode", {})
             mode = cleaning_mode.get("mode", "all")
             mode_name = get_cleaning_mode_name(mode)
+            system_state = data.get("systemState", {})
+            pws_state = system_state.get("pwsState", "off")
+            is_on = pws_state not in SWITCH_POWER_OFF_STATES
 
             cycle_time = cleaning_mode.get("cycleTime", 0)
             cycle_time_in_seconds = cycle_time * 60
@@ -754,7 +758,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             expected_cycle_end_time = get_date_time_from_timestamp(expected_cycle_end_time_ts)
 
             seconds_left = 0
-            if expected_cycle_end_time_ts > now_ts:
+            # make sure we check the cleaner state -- if its currently off, leave seconds_left to 0
+            if is_on and expected_cycle_end_time_ts > now_ts:
                 # still working
                 seconds_left = expected_cycle_end_time_ts - now_ts
 
