@@ -683,8 +683,7 @@ class MyDolphinPlusAPI:
         if is_on:
             pws_state = "on"
         else:
-            pws_state = "off"
-        
+            pws_state = "off"       
         request_data = {
             "systemState": {
                 "pwsState": pws_state
