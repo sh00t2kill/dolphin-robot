@@ -32,7 +32,6 @@ from ..helpers.common import (
 )
 from ..helpers.enums import ConnectivityStatus
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
