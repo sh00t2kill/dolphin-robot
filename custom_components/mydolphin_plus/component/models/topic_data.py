@@ -5,11 +5,11 @@ class TopicData:
     serial: str
     dynamic: str
 
-    def __init__(self, serial: str):
-        self.serial = serial
+    def __init__(self, motor_unit_serial: str):
+        self.motor_unit_serial = motor_unit_serial
 
-        self._shadow_topic = TOPIC_SHADOW.format(serial)
-        self.dynamic = TOPIC_DYNAMIC.format(serial)
+        self._shadow_topic = TOPIC_SHADOW.format(motor_unit_serial)
+        self.dynamic = TOPIC_DYNAMIC.format(motor_unit_serial)
 
     @property
     def get(self) -> str:

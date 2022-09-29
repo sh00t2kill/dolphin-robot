@@ -36,7 +36,8 @@ class MyDolphinPlusAPI:
 
     login_token: str | None
     aws_token: str | None
-    serial: str | None
+    serial_number: str | None
+    motor_unit_serial: str | None
     aws_token: str | None
     aws_key: str | None
     aws_secret: str | None
@@ -65,7 +66,8 @@ class MyDolphinPlusAPI:
 
             self.login_token = None
             self.aws_token = None
-            self.serial = None
+            self.serial_number = None
+            self.motor_unit_serial = None
             self.aws_token = None
             self.aws_key = None
             self.aws_secret = None
@@ -245,17 +247,17 @@ class MyDolphinPlusAPI:
 
             data = payload.get("Data", {})
             if data:
-                serial = data.get("Sernum")
+                motor_unit_serial = data.get("Sernum")
                 token = data.get("token")
 
-                actual_serial = serial[:-2]
+                actual_motor_unit_serial = motor_unit_serial[:-2]
 
-                _LOGGER.debug(f"Device {serial} with token: {token}")
+                _LOGGER.debug(f"Device {motor_unit_serial} with token: {token}")
 
-                self.serial = actual_serial
+                self.motor_unit_serial = actual_motor_unit_serial
                 self.login_token = token
 
-                self.topic_data = TopicData(self.serial)
+                self.topic_data = TopicData(self.motor_unit_serial)
 
                 self.status = ConnectivityStatus.TemporaryConnected
 
@@ -282,7 +284,7 @@ class MyDolphinPlusAPI:
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            request_data = f"Sernum={self.serial}"
+            request_data = f"Sernum={self.motor_unit_serial}"
 
             payload = await self._async_post(TOKEN_URL, headers, request_data)
 
@@ -326,9 +328,7 @@ class MyDolphinPlusAPI:
         aws_client.onOffline = self._handle_aws_client_offline
 
         for topic in self.topic_data.subscribe:
-            fixed_topic = topic.format(self.serial)
-
-            self.awsiot_client.subscribe(fixed_topic, 0, self._internal_callback)
+            self.awsiot_client.subscribe(topic, 0, self._internal_callback)
 
         connected = aws_client.connect()
 
@@ -360,7 +360,7 @@ class MyDolphinPlusAPI:
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            request_data = f"Sernum={self.serial}"
+            request_data = f"Sernum={self.motor_unit_serial}"
 
             payload = await self._async_post(ROBOT_DETAILS_URL, headers, request_data)
 
@@ -368,6 +368,7 @@ class MyDolphinPlusAPI:
 
             if response_status == "1":
                 data = payload.get("Data", "0")
+                self.serial_number = data.get("SERN")
 
                 for key in DATA_ROBOT_DETAILS:
                     new_key = DATA_ROBOT_DETAILS.get(key)
@@ -388,14 +389,20 @@ class MyDolphinPlusAPI:
 
     def _internal_callback(self, client, userdata, message):
         try:
-            message_topic = message.topic
+            message_topic: str = message.topic
             message_payload = message.payload.decode("utf-8")
 
             payload = json.loads(message_payload)
 
-            _LOGGER.info(f"Message received for device {self.serial}, Topic: {message_topic}")
+            _LOGGER.info(f"Message received for device {self.motor_unit_serial}, Topic: {message_topic}")
 
-            if message_topic == self.topic_data.update_accepted:
+            if message_topic.endswith(TOPIC_CALLBACK_REJECTED):
+                _LOGGER.warning(f"Rejected message for {message_topic}, Message: {payload}")
+
+            elif message_topic == self.topic_data.dynamic:
+                _LOGGER.info(f"Dynamic payload: {payload}")
+
+            elif message_topic == self.topic_data.update_accepted:
                 self._refresh_details()
 
             elif message_topic == self.topic_data.get_accepted:
@@ -415,6 +422,8 @@ class MyDolphinPlusAPI:
                     if category_data is not None:
                         _LOGGER.debug(f"{category} - {category_data}")
                         self.data[category] = category_data
+
+                await self.read_temperature_and_in_water_details()
 
                 if self.callback is not None:
                     server_time = get_date_time_from_timestamp(self.server_timestamp)
@@ -463,6 +472,19 @@ class MyDolphinPlusAPI:
 
         else:
             _LOGGER.error(f"Failed to publish message: {new_state} to {self.topic_data.update}")
+
+    async def _send_dynamic_command(self, payload: dict | None):
+        data = {
+            DYNAMIC_CONTENT: payload
+        }
+
+        request_data = json.dumps(data)
+
+        if self.status == ConnectivityStatus.Connected:
+            self.awsiot_client.publish(self.topic_data.dynamic, request_data, MQTT_QOS_AT_LEAST_ONCE)
+
+        else:
+            _LOGGER.error(f"Failed to publish message: {request_data} to {self.topic_data.dynamic}")
 
     async def set_cleaning_mode(self, cleaning_mode):
         data = {
@@ -525,9 +547,27 @@ class MyDolphinPlusAPI:
         await self._send_desired_command(data)
 
     async def navigate(self, direction: str):
-        _LOGGER.warning(f"Drive is not implemented yet, Value: {direction}")
+        request_data = {
+            DYNAMIC_CONTENT_SPEED: JOYSTICK_SPEED,
+            DYNAMIC_CONTENT_DIRECTION: direction
+        }
 
-        # await self._send_desired_command(None)
+        await self._send_dynamic_command(request_data)
+
+    async def quit_navigation(self):
+        request_data = {
+            DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
+        }
+
+        await self._send_dynamic_command(request_data)
+
+    async def read_temperature_and_in_water_details(self):
+        request_data = {
+            DYNAMIC_CONTENT_SERIAL_NUMBER: self.serial_number,
+            DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: self.motor_unit_serial
+        }
+
+        await self._send_dynamic_command(request_data)
 
     async def pickup(self):
         await self.set_cleaning_mode(CLEANING_MODE_PICKUP)

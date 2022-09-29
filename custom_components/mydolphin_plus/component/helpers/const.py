@@ -44,12 +44,18 @@ ATTR_TIME_ZONE = "time_zone"
 ATTR_ENABLE = "enable"
 ATTR_DISABLED = "disabled"
 
+DYNAMIC_CONTENT = "content"
+DYNAMIC_CONTENT_SERIAL_NUMBER = "serialNumber"
+DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL = "motorUnitSerial"
+DYNAMIC_CONTENT_REMOTE_CONTROL_MODE = "rcMode"
+DYNAMIC_CONTENT_SPEED = "speed"
+DYNAMIC_CONTENT_DIRECTION = "direction"
+
+ATTR_REMOTE_CONTROL_MODE_EXIT = "exit"
+
 DATA_ROOT_STATE = "state"
 DATA_ROOT_TIMESTAMP = "timestamp"
 DATA_ROOT_VERSION = "version"
-
-DATA_STATE_REPORTED = "reported"
-DATA_STATE_DESIRED = "desired"
 
 DATA_SECTION_LED = "led"
 DATA_SECTION_DEBUG = "debug"
@@ -60,6 +66,9 @@ DATA_SECTION_WEEKLY_SETTINGS = "weeklySettings"
 DATA_SECTION_DELAY = "delay"
 DATA_SECTION_FEATURE = "featureEn"
 DATA_SECTION_SYSTEM_STATE = "systemState"
+
+DATA_STATE_REPORTED = "reported"
+DATA_STATE_DESIRED = "desired"
 
 DATA_SYSTEM_STATE_PWS_STATE = "pwsState"
 DATA_SYSTEM_STATE_ROBOT_STATE = "robotState"
@@ -130,10 +139,11 @@ TOPIC_ACTION_GET = "get"
 TOPIC_ACTION_UPDATE = "update"
 
 TOPIC_CALLBACK_ACCEPTED = "accepted"
+TOPIC_CALLBACK_REJECTED = "rejected"
 TOPIC_CALLBACK_DOCUMENTS = "documents"
 
 DATA_ROBOT_DETAILS = {
-    "SERNUM": "Serial Number",
+    "SERNUM": "Motor Unit Serial",
     "PARTNAME": "Product Name",
     "PARTDES": "Product Description",
     "AppName": "Application Name",
@@ -182,7 +192,6 @@ ICON_LED_MODES = {
 }
 
 SERVICE_NAVIGATE = "navigate"
-SERVICE_PICKUP = "pickup"
 SERVICE_DAILY_SCHEDULE = "daily_schedule"
 SERVICE_DELAYED_CLEAN = "delayed_clean"
 
@@ -191,14 +200,25 @@ CONF_DAY = "day"
 CONF_TIME = "time"
 CONF_ATTRIBUTES = "attributes"
 
-SWITCH_POWER_OFF_STATES = {
-    "off",
-    "holdWeekly"
-}
+JOYSTICK_SPEED = 100
+
+JOYSTICK_STOP = "stop"
+JOYSTICK_FORWARD = "forward"
+JOYSTICK_BACKWARD = "backward"
+JOYSTICK_RIGHT = "right"
+JOYSTICK_LEFT = "left"
+
+JOYSTICK_DIRECTIONS = [
+    JOYSTICK_STOP,
+    JOYSTICK_FORWARD,
+    JOYSTICK_BACKWARD,
+    JOYSTICK_RIGHT,
+    JOYSTICK_LEFT
+]
 
 SERVICE_SCHEMA_NAVIGATE = vol.Schema(
     {
-        vol.Required(CONF_DIRECTION): vol.In(["forward", "backward", "left", "right"])
+        vol.Required(CONF_DIRECTION): vol.In([JOYSTICK_DIRECTIONS])
     }
 )
 
@@ -275,3 +295,5 @@ CALCULATED_STATES = {
     PWS_STATE_HOLD_DELAY: "Idle (Delay)",
     PWS_STATE_HOLD_WEEKLY: "Idle (Schedule)",
 }
+
+
