@@ -52,10 +52,10 @@ class MyDolphinPlusAPI:
     server_time_diff: int
 
     topic_data: TopicData | None
+    last_update: float | None
 
     def __init__(self, hass: HomeAssistant | None, config_data: ConfigData, callback: Callable[[], None] | None = None):
         try:
-            self._last_update = datetime.now()
             self.hass = hass
             self.config_data = config_data
             self.session = None
@@ -83,6 +83,7 @@ class MyDolphinPlusAPI:
             self.server_time_diff = 0
 
             self.topic_data = None
+            self.last_update = None
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -157,8 +158,6 @@ class MyDolphinPlusAPI:
 
                 _LOGGER.debug(f"POST request [{url}] completed successfully, Result: {result}")
 
-                self._last_update = datetime.now()
-
         except ClientResponseError as crex:
             _LOGGER.error(
                 f"Failed to post JSON to {url}, HTTP Status: {crex.message} ({crex.status})"
@@ -191,8 +190,6 @@ class MyDolphinPlusAPI:
                 result = await response.json()
 
                 _LOGGER.debug(f"GET request [{url}] completed successfully, Result: {result}")
-
-                self._last_update = datetime.now()
 
         except ClientResponseError as crex:
             _LOGGER.error(
@@ -340,12 +337,19 @@ class MyDolphinPlusAPI:
             _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
             self.status = ConnectivityStatus.Failed
 
-    def _refresh_details(self):
+    def _refresh_details(self, forced: bool = False):
         if self.status != ConnectivityStatus.Connected:
             self.status = ConnectivityStatus.Failed
             return
 
-        self.awsiot_client.publish(self.topic_data.get, None, MQTT_QOS_AT_LEAST_ONCE)
+        now = datetime.now().timestamp()
+        last_update = 0 if self.last_update is None else self.last_update
+
+        diff_seconds = now - last_update
+
+        if forced or diff_seconds >= SCAN_INTERVAL.total_seconds():
+            self.last_update = now
+            self.awsiot_client.publish(self.topic_data.get, None, MQTT_QOS_AT_LEAST_ONCE)
 
     async def _load_details(self):
         if self.status != ConnectivityStatus.Connected:
@@ -403,7 +407,7 @@ class MyDolphinPlusAPI:
                 _LOGGER.debug(f"Dynamic payload: {payload}")
 
             elif message_topic == self.topic_data.update_accepted:
-                self._refresh_details()
+                self._refresh_details(True)
 
             elif message_topic == self.topic_data.get_accepted:
                 now = datetime.now().timestamp()
@@ -423,7 +427,7 @@ class MyDolphinPlusAPI:
                         _LOGGER.debug(f"{category} - {category_data}")
                         self.data[category] = category_data
 
-                self._read_temperature_and_in_water_details()
+                # self._read_temperature_and_in_water_details()
 
                 if self.callback is not None:
                     server_time = get_date_time_from_timestamp(self.server_timestamp)
@@ -498,10 +502,10 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Set cleaning mode, Desired: {data}")
         self._send_desired_command(data)
 
-    async def set_delay(self,
-                        enabled: bool | None = False,
-                        mode: str | None = CLEANING_MODE_REGULAR,
-                        job_time: str | None = None):
+    def set_delay(self,
+                  enabled: bool | None = False,
+                  mode: str | None = CLEANING_MODE_REGULAR,
+                  job_time: str | None = None):
         scheduling = self._get_schedule_settings(enabled, mode, job_time)
 
         request_data = {
@@ -511,11 +515,11 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Set delay, Desired: {request_data}")
         self._send_desired_command(request_data)
 
-    async def set_schedule(self,
-                           day: str,
-                           enabled: bool | None = False,
-                           mode: str | None = CLEANING_MODE_REGULAR,
-                           job_time: str | None = None):
+    def set_schedule(self,
+                     day: str,
+                     enabled: bool | None = False,
+                     mode: str | None = CLEANING_MODE_REGULAR,
+                     job_time: str | None = None):
         scheduling = self._get_schedule_settings(enabled, mode, job_time)
 
         request_data = {
@@ -528,25 +532,25 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Set schedule, Desired: {request_data}")
         self._send_desired_command(request_data)
 
-    async def set_led_mode(self, mode: int):
+    def set_led_mode(self, mode: int):
         data = self._get_led_settings(DATA_LED_MODE, mode)
 
         _LOGGER.info(f"Set led mode, Desired: {data}")
         self._send_desired_command(data)
 
-    async def set_led_intensity(self, intensity: int):
+    def set_led_intensity(self, intensity: int):
         data = self._get_led_settings(DATA_LED_INTENSITY, intensity)
 
         _LOGGER.info(f"Set led intensity, Desired: {data}")
         self._send_desired_command(data)
 
-    async def set_led_enabled(self, is_enabled: bool):
+    def set_led_enabled(self, is_enabled: bool):
         data = self._get_led_settings(DATA_LED_ENABLE, is_enabled)
 
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
         self._send_desired_command(data)
 
-    async def navigate(self, direction: str):
+    def navigate(self, direction: str):
         request_data = {
             DYNAMIC_CONTENT_SPEED: JOYSTICK_SPEED,
             DYNAMIC_CONTENT_DIRECTION: direction
@@ -554,7 +558,7 @@ class MyDolphinPlusAPI:
 
         self._send_dynamic_command(request_data)
 
-    async def quit_navigation(self):
+    def quit_navigation(self):
         request_data = {
             DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
         }
@@ -569,10 +573,10 @@ class MyDolphinPlusAPI:
 
         self._send_dynamic_command(request_data)
 
-    async def pickup(self):
-        await self.set_cleaning_mode(CLEANING_MODE_PICKUP)
+    def pickup(self):
+        self.set_cleaning_mode(CLEANING_MODE_PICKUP)
 
-    async def set_power_state(self, is_on: bool):
+    def set_power_state(self, is_on: bool):
         request_data = {
             DATA_SECTION_SYSTEM_STATE: {
                 DATA_SYSTEM_STATE_PWS_STATE: PWS_STATE_ON if is_on else PWS_STATE_OFF
@@ -582,7 +586,7 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Set power state, Desired: {request_data}")
         self._send_desired_command(request_data)
 
-    async def reset_filter_indicator(self):
+    def reset_filter_indicator(self):
         request_data = {
             DATA_SECTION_FILTER_BAG_INDICATION: {
                 DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND: True
@@ -590,7 +594,7 @@ class MyDolphinPlusAPI:
         }
 
         _LOGGER.info(f"Reset filter bag indicator, Desired: {request_data}")
-        await self._send_desired_command(request_data)
+        self._send_desired_command(request_data)
 
     @staticmethod
     def _get_schedule_settings(enabled, mode, job_time):

@@ -53,22 +53,16 @@ class MyDolphinPlusSwitch(SwitchEntity, MyDolphinPlusEntity):
         """Return the boolean response if the node is on."""
         return self.entity.state
 
-    async def async_turn_on(self, **kwargs):
+    def turn_on(self, **kwargs):
         """Turn device on."""
-        await self.set_mode(True)
+        self.set_mode(True)
 
-    async def async_turn_off(self, **kwargs):
+    def turn_off(self, **kwargs):
         """Turn device off."""
-        await self.set_mode(False)
+        self.set_mode(False)
 
-    async def set_mode(self, enabled: bool):
-        await self.entity.action(enabled)
-
-    def turn_on(self, **kwargs) -> None:
-        pass
-
-    def turn_off(self, **kwargs) -> None:
-        pass
+    def set_mode(self, enabled: bool):
+        self.entity.action(enabled)
 
     async def async_setup(self):
         pass

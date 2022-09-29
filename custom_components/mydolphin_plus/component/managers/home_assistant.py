@@ -497,13 +497,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device} Cycle Time Left"
 
         try:
+            system_details = self._get_system_status_details(data)
+            calculated_state = system_details.get(ATTR_CALCULATED_STATUS)
+
             cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
             cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
             mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
             mode_name = get_cleaning_mode_name(mode)
-            system_state = data.get("systemState", {})
-            pws_state = system_state.get("pwsState", "off")
-            is_on = pws_state not in SWITCH_POWER_OFF_STATES
 
             cycle_time = cleaning_mode.get(DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0)
             cycle_time_in_seconds = cycle_time * 60
@@ -518,7 +518,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             seconds_left = 0
             # make sure we check the cleaner state -- if its currently off, leave seconds_left to 0
-            if is_on and expected_cycle_end_time_ts > now_ts:
+            if calculated_state == PWS_STATE_ON and expected_cycle_end_time_ts > now_ts:
                 # still working
                 seconds_left = expected_cycle_end_time_ts - now_ts
 
@@ -634,7 +634,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = device
 
         try:
-            details = self.get_system_status_details(data)
+            details = self._get_system_status_details(data)
 
             debug = data.get(DATA_SECTION_DEBUG, {})
             wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
@@ -685,17 +685,17 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_VACUUM}: {entity_name}"
             )
 
-    async def set_cleaning_mode(self, cleaning_mode):
-        await self.api.set_cleaning_mode(cleaning_mode)
+    def set_cleaning_mode(self, cleaning_mode):
+        self.api.set_cleaning_mode(cleaning_mode)
 
-    async def set_led_mode(self, mode: int):
-        await self.api.set_led_mode(mode)
+    def set_led_mode(self, mode: int):
+        self.api.set_led_mode(mode)
 
-    async def set_led_intensity(self, intensity: int):
-        await self.api.set_led_intensity(intensity)
+    def set_led_intensity(self, intensity: int):
+        self.api.set_led_intensity(intensity)
 
-    async def set_led_enabled(self, is_enabled: bool):
-        await self.api.set_led_enabled(is_enabled)
+    def set_led_enabled(self, is_enabled: bool):
+        self.api.set_led_enabled(is_enabled)
 
     def get_fan_speed(self):
         data = self.api.data
@@ -707,15 +707,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         return mode_details
 
-    async def pickup(self):
-        await self.api.pickup()
+    def pickup(self):
+        self.api.pickup()
 
-    async def set_power_state(self, is_on: bool):
-        await self.api.set_power_state(is_on)
+    def set_power_state(self, is_on: bool):
+        self.api.set_power_state(is_on)
 
-    async def send_command(self,
-                           command: str,
-                           params: dict[str, Any] | list[Any] | None):
+    def send_command(self,
+                     command: str,
+                     params: dict[str, Any] | list[Any] | None):
         validator = SERVICE_VALIDATION.get(command)
         action = self._robot_actions.get(command)
 
@@ -726,33 +726,33 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             try:
                 validator(params)
 
-                await action(params)
+                action(params)
             except MultipleInvalid as ex:
                 _LOGGER.error(ex.msg)
 
-    async def _navigate(self, data: dict[str, Any] | list[Any] | None):
+    def _navigate(self, data: dict[str, Any] | list[Any] | None):
         direction = data.get(CONF_DIRECTION)
 
         if direction is None:
             _LOGGER.error("Direction is mandatory parameter, please provide and try again")
             return
 
-        await self.api.navigate(direction)
+        self.api.navigate(direction)
 
-    async def _set_schedule(self, data: dict[str, Any] | list[Any] | None):
+    def _set_schedule(self, data: dict[str, Any] | list[Any] | None):
         day = data.get(CONF_DAY)
         enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
         cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
         job_time = data.get(CONF_TIME)
 
-        await self.api.set_schedule(day, enabled, cleaning_mode, job_time)
+        self.api.set_schedule(day, enabled, cleaning_mode, job_time)
 
-    async def _set_delay(self, data: dict[str, Any] | list[Any] | None):
+    def _set_delay(self, data: dict[str, Any] | list[Any] | None):
         enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
         cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
         job_time = data.get(CONF_TIME)
 
-        await self.api.set_delay(enabled, cleaning_mode, job_time)
+        self.api.set_delay(enabled, cleaning_mode, job_time)
 
     @staticmethod
     def log_exception(ex, message):
@@ -762,7 +762,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         _LOGGER.error(f"{message}, Error: {str(ex)}, Line: {line_number}")
 
     @staticmethod
-    def get_system_status_details(data: dict):
+    def _get_system_status_details(data: dict):
         system_state = data.get(DATA_SECTION_SYSTEM_STATE, {})
         pws_state = system_state.get(DATA_SYSTEM_STATE_PWS_STATE, PWS_STATE_OFF)
         robot_state = system_state.get(DATA_SYSTEM_STATE_ROBOT_STATE, ROBOT_STATE_NOT_CONNECTED)

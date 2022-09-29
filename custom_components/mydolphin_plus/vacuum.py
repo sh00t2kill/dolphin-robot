@@ -68,30 +68,30 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
         """Return the fan speed of the vacuum cleaner."""
         return self.ha.get_fan_speed()
 
-    async def async_return_to_base(self, **kwargs: Any) -> None:
+    def return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
-        await self.ha.pickup()
+        self.ha.pickup()
 
-    async def async_set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
+    def set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
         """Set fan speed."""
         for key in CLEANING_MODES:
             value = CLEANING_MODES[key]
 
             if value == fan_speed:
-                await self.ha.set_cleaning_mode(key)
+                self.ha.set_cleaning_mode(key)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.ha.set_power_state(True)
+        self.ha.set_power_state(True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self.ha.set_power_state(False)
+        self.ha.set_power_state(False)
 
     async def async_toggle(self, **kwargs: Any) -> None:
         is_on = self.entity.state == PWS_STATE_ON
 
-        await self.ha.set_power_state(not is_on)
+        self.ha.set_power_state(not is_on)
 
-    async def async_send_command(
+    def send_command(
             self,
             command: str,
             params: dict[str, Any] | list[Any] | None = None,
