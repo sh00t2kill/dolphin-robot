@@ -158,12 +158,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_SELECT
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = SelectDescription(
                     key=ATTR_LED_MODE,
                     name=ATTR_LED_MODE,
@@ -220,13 +215,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
                 entity.domain = DOMAIN_BINARY_SENSOR
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = EntityDescription(
                     key=entity.id,
                     name=entity.name,
@@ -287,13 +276,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
                 entity.domain = DOMAIN_BINARY_SENSOR
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = EntityDescription(
                     key=entity.id,
                     name=entity.name,
@@ -345,13 +328,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_BINARY_SENSOR
                 entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = EntityDescription(
                     key=entity.id,
                     name=entity.name,
@@ -413,13 +390,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_device_class = SensorDeviceClass.DURATION
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = EntityDescription(
                     key=entity.id,
                     name=entity.name,
@@ -462,13 +433,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = "mdi:aws"
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = EntityDescription(
                     key=entity.id,
                     name=entity.name,
@@ -547,13 +512,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.sensor_device_class = SensorDeviceClass.DURATION
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = EntityDescription(
                     key=entity.id,
                     name=entity.name,
@@ -605,13 +564,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_LIGHT
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
@@ -664,13 +617,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_VACUUM
 
-            data = {
-                CONF_STATE: (str(entity.state), str(state)),
-                CONF_ATTRIBUTES: (entity.attributes, attributes),
-                CONF_DEVICE_ID: (entity.device_name, device),
-            }
-
-            if created or self.entity_manager.compare_data(entity, data):
+            if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
@@ -789,12 +736,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         elif (pws_on and robot_on) or (pws_programming and not robot_programming):
             calculated_state = PWS_STATE_ON
         else:
-            state_description = f"pwsState: {pws_state}, robotState: {robot_state}"
-            _LOGGER.warning(f"Unhandled mapping, state will be set according to pws_state, {state_description}")
-
             calculated_state = pws_state
 
         state = CALCULATED_STATES.get(calculated_state, UNMAPPED_CALCULATED_STATE)
+
+        state_description = f"pwsState: {pws_state} | robotState: {robot_state}"
+        _LOGGER.info(f"System status recalculated, State: {calculated_state}, Parameters: {state_description}")
 
         result = {
             ATTR_CALCULATED_STATUS: calculated_state,

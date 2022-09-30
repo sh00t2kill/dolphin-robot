@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import sys
 
@@ -140,17 +141,22 @@ class EntityManager:
                 f"Line: {line_number}"
             )
 
-    @staticmethod
-    def compare_data(entity: EntityData, data: dict[str, tuple]) -> bool:
-        modified = False
+    def compare_data(self, entity: EntityData, state: str, attributes: dict, device: str | None = None):
         msgs = []
 
-        for data_key in data:
-            original, latest = data[data_key]
+        if entity.state != state:
+            msgs.append(f"State {entity.state} -> {state}")
 
-            if original != latest:
-                msgs.append(f"{data_key} changed from {original} to {latest}")
-                modified = True
+        if entity.attributes != attributes:
+            from_attributes = self._get_attributes_json(entity.attributes)
+            to_attributes = self._get_attributes_json(attributes)
+
+            msgs.append(f"Attributes {from_attributes} -> {to_attributes}")
+
+        if entity.device_name != device:
+            msgs.append(f"Device name {entity.device_name} -> {device}")
+
+        modified = len(msgs) > 0
 
         if modified:
             full_message = " | ".join(msgs)
@@ -158,6 +164,17 @@ class EntityManager:
             _LOGGER.debug(f"{entity.name} | {entity.domain} | {full_message}")
 
         return modified
+
+    @staticmethod
+    def _get_attributes_json(attributes: dict):
+        new_attributes = {}
+        for key in attributes:
+            value = attributes[key]
+            new_attributes[key] = str(value)
+
+        result = json.dumps(new_attributes)
+
+        return result
 
     @staticmethod
     def get_empty_entity(entry_id: str) -> EntityData:
