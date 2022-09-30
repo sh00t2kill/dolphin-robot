@@ -13,7 +13,7 @@ to test you can run the CLI mode or within the HA.
 
 ### TODO
 - ~~On startup trigger the get topic from MQTT as happens when the mobile app is being opened~~
-- Implement publish commands to the robot (currently stubs that logs the action only)
+- ~~Implement publish commands to the robot (currently stubs that logs the action only)~~
 - ~~Map the select values to the real one from the app (currently available assumed values)~~
 - ~~Align consts to the real values of select~~
 - ~~Map remote commands~~
@@ -75,16 +75,18 @@ Please remove the integration and re-add it to make it work again.
 | DEBUG                | Boolean | False   | Setting to True will present DEBUG log level message while testing the code, False will set the minimum log level to INFO |
 
 ## HA Components
-| Entity Name                      | Type           | Description                                                 | Additional information                                                                                                             |
-|----------------------------------|----------------|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| {Robot Name}                     | Vacuum         | Provides functionality of vacuum to the robot               | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate Schedule, Delay Clean) |
-| {Robot Name} Filter Bag Status   | Binary Sensors | Indicates whether the robot filter bag is full or not       |                                                                                                                                    |
-| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not      | Attributes will hold the mode and delayed time                                                                                     |
-| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not   | Attributes will hold the mode and delayed time                                                                                     |
-| {Robot Name} Led Mode            | Select         | Select led mode                                             | Available options                                                                                                                  |
-| {Robot Name} Cleaning Time       | Sensor         | Indicates the time the robot is cleaning                    |                                                                                                                                    |
-| {Robot Name} Cleaning Time Left  | Sensor         | Indicates the time left for the robot to complete the cycle |                                                                                                                                    |
-| {Robot Name} Led Enabled         | Switch         | Turned on or off the led                                    |                                                                                                                                    |
+| Entity Name                      | Type           | Description                                                    | Additional information                                                                                                              |
+|----------------------------------|----------------|----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| {Robot Name} AWS Broker          | Binary Sensors | Indicates whether the component synchronized with cloud or not |                                                                                                                                     |
+| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not         |                                                                                                                                     |
+| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not      |                                                                                                                                     |
+| {Robot Name} Weekly Schedule     | Binary Sensor  | Indicates whether the weekly scheduler is on or off            |                                                                                                                                     |
+| {Robot Name}                     | Light          | Turned on or off the led                                       |                                                                                                                                     |
+| {Robot Name} Led Mode            | Select         | Select led mode                                                | Blinking, Always on, Disco                                                                                                          |
+| {Robot Name} Filter              | Sensors        | Presents the status of the filter bag                          |                                                                                                                                     |
+| {Robot Name} Cycle Time          | Sensor         | Indicates the time the robot is cleaning                       |                                                                                                                                     |
+| {Robot Name} Cycle Time Left     | Sensor         | Indicates the time left for the robot to complete the cycle    |                                                                                                                                     |
+| {Robot Name}                     | Vacuum         | Provides functionality of vacuum to the robot                  | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate, Schedule, Delay Clean) |
 
 ### Cleaning Modes
 
@@ -118,7 +120,7 @@ target:
 data:
   command: navigate
   params:
-    direction: forward / backward / left / right
+    direction: stop / forward / backward / left / right
 ```
 
 ### Set Daily Schedule

@@ -1,10 +1,13 @@
 # Changelog
 
-## Not yet defined
-- Fix reconnect AWS IOT MQTT broker by publishing messages with QOS=1 (At least once)
-- Add AWS Broker status sensor
+## v0.1.0
+- Major refactor of HA Manager, Entity Manager and API (code cleanup)
+- AWS IOT Broker works with asynchronous operations
+- Publish all messages with QOS=1 (At least once)
+- Add AWS Broker status binary sensor
 - Override Time Left to 0 when robot is not cleaning
 - Send explicit OFF command when toggling robot to off
+- Vacuum state is being calculated from both states of head unit and the robot
 - Add vacuum entity, replacing:
   - Cleaning mode select
   - Connection binary sensor
@@ -18,7 +21,7 @@
 
 ## v0.0.8
 - Add a list of relevant states that also determine if a robot is not actively cleaning
-- Added Mydolpin Plus to the standard HACS repo
+- Added MyDolpin Plus to the standard HACS repo
 
 ## v0.0.7
 - Cycle left time sensor: Add attribute of expected end time

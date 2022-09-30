@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_registry import EntityRegistry, RegistryEntryDisabler
 
 from ...core.helpers.const import *
@@ -141,7 +143,12 @@ class EntityManager:
                 f"Line: {line_number}"
             )
 
-    def compare_data(self, entity: EntityData, state: str, attributes: dict, device: str | None = None):
+    def _compare_data(self,
+                      entity: EntityData,
+                      state: str,
+                      attributes: dict,
+                      device_name: str,
+                      entity_description: EntityDescription | None = None):
         msgs = []
 
         if entity.state != state:
@@ -153,15 +160,18 @@ class EntityManager:
 
             msgs.append(f"Attributes {from_attributes} -> {to_attributes}")
 
-        if entity.device_name != device:
-            msgs.append(f"Device name {entity.device_name} -> {device}")
+        if entity.device_name != device_name:
+            msgs.append(f"Device name {entity.device_name} -> {device_name}")
+
+        if entity_description is not None and entity.entity_description != entity_description:
+            msgs.append(f"Description {str(entity.entity_description)} -> {str(entity_description)}")
 
         modified = len(msgs) > 0
 
         if modified:
             full_message = " | ".join(msgs)
 
-            _LOGGER.debug(f"{entity.name} | {entity.domain} | {full_message}")
+            _LOGGER.debug(f"{entity.entity_description.name} | {entity.domain} | {full_message}")
 
         return modified
 
@@ -176,12 +186,6 @@ class EntityManager:
 
         return result
 
-    @staticmethod
-    def get_empty_entity(entry_id: str) -> EntityData:
-        data = EntityData(entry_id)
-
-        return data
-
     def get(self, domain: str, name: str) -> EntityData | None:
         domain_data = self.get_domain_data(domain)
 
@@ -189,9 +193,48 @@ class EntityManager:
 
         return entity
 
-    def set(self, entity: EntityData, destructors: list[bool] = None):
+    def _set(self, entity: EntityData, destructors: list[bool] = None):
         domain_data = self.get_domain_data(entity.domain)
 
         entity = domain_data.set_entity(entity, destructors)
 
         return entity
+
+    def set_entity(self,
+                   domain: str,
+                   entry_id: str,
+                   state: str | bool,
+                   attributes: dict,
+                   device_name: str,
+                   entity_description: EntityDescription | None,
+                   action: Any = None
+                   ):
+
+        entity_name = entity_description.key
+
+        entity_description.name = entity_name
+
+        domain_data = self.get_domain_data(domain)
+
+        entity = domain_data.get_entity(entity_name)
+
+        if entity is None:
+            entity = EntityData(entry_id, entity_description)
+            entity.domain = domain
+            entity.status = EntityStatus.CREATED
+
+            self._compare_data(entity, state, attributes, device_name)
+
+        else:
+            was_modified = self._compare_data(entity, state, attributes, device_name, entity_description)
+
+            if was_modified:
+                entity.status = EntityStatus.UPDATED
+
+        if entity.status in [EntityStatus.CREATED, EntityStatus.UPDATED]:
+            entity.state = state
+            entity.attributes = attributes
+            entity.device_name = device_name
+            entity.action = action
+
+        self._set(entity)

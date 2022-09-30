@@ -25,7 +25,7 @@ from homeassistant.components.sensor import (
 from homeassistant.components.vacuum import StateVacuumEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory, EntityDescription
+from homeassistant.helpers.entity import EntityCategory
 
 from ...component.api.mydolphin_plus_api import MyDolphinPlusAPI
 from ...component.helpers.const import *
@@ -138,10 +138,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     def _load_select_led_mode(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = f"{device} Led Mode"
+        entity_name = f"{device_name} Led Mode"
 
         try:
             led = data.get(DATA_SECTION_LED, {})
@@ -156,49 +156,33 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_INTENSITY: led_intensity
             }
 
-            icon = ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT)
+            entity_description = SelectDescription(
+                key=entity_name,
+                icon=ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT),
+                device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
+                options=tuple(ICON_LED_MODES.keys()),
+                entity_category=EntityCategory.CONFIG,
+            )
 
-            entity = self.entity_manager.get(DOMAIN_SELECT, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.domain = DOMAIN_SELECT
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = SelectDescription(
-                    key=ATTR_LED_MODE,
-                    name=ATTR_LED_MODE,
-                    icon=icon,
-                    device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
-                    options=tuple(ICON_LED_MODES.keys()),
-                    entity_category=EntityCategory.CONFIG,
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-                entity.action = self.set_led_mode
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_SELECT,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description,
+                                           self._set_led_mode)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_SELECT}: {entity_name}"
             )
 
     def _load_binary_sensor_weekly_timer(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = f"{device} Weekly Schedule"
+        entity_name = f"{device_name} Weekly Schedule"
         try:
             features = data.get(DATA_SECTION_FEATURE, {})
 
@@ -213,42 +197,26 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_STATUS: status
             }
 
-            icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+            entity_description = BinarySensorEntityDescription(
+                key=entity_name,
+                icon="mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+            )
 
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.domain = DOMAIN_BINARY_SENSOR
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = BinarySensorEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=icon
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_BINARY_SENSOR,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
     def _load_binary_sensor_schedules(
             self,
-            device: str,
+            device_name: str,
             day: str,
             data: dict
     ):
@@ -261,7 +229,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, DEFAULT_TIME_PART)
         minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, DEFAULT_TIME_PART)
 
-        entity_name = f"{device} Schedule {day.capitalize()}"
+        entity_name = f"{device_name} Schedule {day.capitalize()}"
 
         job_start_time = None
         if hours < DEFAULT_TIME_PART and minutes < DEFAULT_TIME_PART:
@@ -275,44 +243,29 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_START_TIME: job_start_time
             }
 
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
-            created = entity is None
+            entity_description = BinarySensorEntityDescription(
+                key=entity_name,
+                icon="mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+            )
 
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
-                entity.domain = DOMAIN_BINARY_SENSOR
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = BinarySensorEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=entity.icon
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_BINARY_SENSOR,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
     def _load_sensor_filter_status(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = f"{device} Filter"
+        entity_name = f"{device_name} Filter"
 
         try:
             filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
@@ -326,46 +279,29 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_STATUS: filter_state
             }
 
-            icon = FILTER_BAG_ICONS.get(filter_state)
+            entity_description = SensorEntityDescription(
+                key=entity_name,
+                icon=FILTER_BAG_ICONS.get(filter_state)
+            )
 
-            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = icon
-                entity.domain = DOMAIN_SENSOR
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = SensorEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=icon
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_SENSOR,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
             )
 
     def _load_sensor_cycle_time(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = f"{device} Cycle Time"
+        entity_name = f"{device_name} Cycle Time"
 
         try:
             cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
@@ -388,45 +324,27 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_START_TIME: cycle_start_time
             }
 
-            icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
+            entity_description = SensorEntityDescription(
+                key=entity_name,
+                icon=CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
+                device_class=SensorDeviceClass.DURATION,
+                state_class=SensorStateClass.MEASUREMENT
+            )
 
-            _LOGGER.info(f"{entity_name} - state_hours: {state_hours} -> {state_parts} [{icon}]")
-
-            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.domain = DOMAIN_SENSOR
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = SensorEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=icon,
-                    device_class=SensorDeviceClass.DURATION,
-                    state_class=SensorStateClass.MEASUREMENT
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_SENSOR,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
             )
 
-    def _load_binary_sensor_broker_status(self, device: str):
-        entity_name = f"{device} AWS Broker"
+    def _load_binary_sensor_broker_status(self, device_name: str):
+        entity_name = f"{device_name} AWS Broker"
 
         try:
             state = self.api.awsiot_client_status == ConnectivityStatus.Connected
@@ -436,46 +354,30 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_STATUS: self.api.awsiot_client_status
             }
 
-            icon = "mdi:aws"
+            entity_description = BinarySensorEntityDescription(
+                key=entity_name,
+                icon="mdi:aws",
+                device_class=BinarySensorDeviceClass.CONNECTIVITY
+            )
 
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.domain = DOMAIN_BINARY_SENSOR
-
-            if created or self.entity_manager.compare_data(entity, str(state), attributes, device):
-                entity_description = BinarySensorEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=icon,
-                    device_class=BinarySensorDeviceClass.CONNECTIVITY
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_BINARY_SENSOR,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
     def _load_sensor_cycle_time_left(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = f"{device} Cycle Time Left"
+        entity_name = f"{device_name} Cycle Time Left"
 
         try:
             system_details = self._get_system_status_details(data)
@@ -515,48 +417,30 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_EXPECTED_END_TIME: expected_cycle_end_time
             }
 
-            icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
+            entity_description = SensorEntityDescription(
+                key=entity_name,
+                icon=CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
+                device_class=BinarySensorDeviceClass.CONNECTIVITY
+            )
 
-            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
-            created = entity is None
-
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = icon
-                entity.domain = DOMAIN_SENSOR
-                entity.sensor_device_class = SensorDeviceClass.DURATION
-                entity.sensor_state_class = SensorStateClass.MEASUREMENT
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = SensorEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    icon=icon
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_SENSOR,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
             )
 
     def _load_light_led_enabled(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = device
+        entity_name = device_name
 
         try:
             led = data.get(DATA_SECTION_LED, {})
@@ -571,45 +455,30 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_INTENSITY: led_intensity
             }
 
-            entity = self.entity_manager.get(DOMAIN_LIGHT, entity_name)
-            created = entity is None
+            entity_description = LightEntityDescription(
+                key=entity_name,
+                entity_category=EntityCategory.CONFIG
+            )
 
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_LIGHT
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = LightEntityDescription(
-                    key=entity.id,
-                    name=entity.name,
-                    entity_category=EntityCategory.CONFIG
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.action = self.set_led_enabled
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_LIGHT,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description,
+                                           self._set_led_enabled)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_LIGHT}: {entity_name}"
             )
 
     def _load_vacuum(
             self,
-            device: str,
+            device_name: str,
             data: dict
     ):
-        entity_name = device
+        entity_name = device_name
 
         try:
             details = self._get_system_status_details(data)
@@ -631,48 +500,32 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             for key in details:
                 attributes[key] = details.get(key)
 
-            entity = self.entity_manager.get(DOMAIN_VACUUM, entity_name)
-            created = entity is None
+            entity_description = StateVacuumEntityDescription(
+                key=entity_name
+            )
 
-            if created:
-                entity = self.entity_manager.get_empty_entity(self.entry_id)
-
-                entity.id = entity_name
-                entity.name = entity_name
-                entity.icon = DEFAULT_ICON
-                entity.domain = DOMAIN_VACUUM
-
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = StateVacuumEntityDescription(
-                    key=entity.id,
-                    name=entity.name
-                )
-
-                entity.state = state
-                entity.attributes = attributes
-                entity.device_name = device
-                entity.action = self.set_led_enabled
-                entity.entity_description = entity_description
-
-                entity.set_created_or_updated(created)
-
-            self.entity_manager.set(entity)
+            self.entity_manager.set_entity(DOMAIN_VACUUM,
+                                           self.entry_id,
+                                           state,
+                                           attributes,
+                                           device_name,
+                                           entity_description)
 
         except Exception as ex:
-            self.log_exception(
+            self._log_exception(
                 ex, f"Failed to load {DOMAIN_VACUUM}: {entity_name}"
             )
 
     def set_cleaning_mode(self, cleaning_mode):
         self.api.set_cleaning_mode(cleaning_mode)
 
-    def set_led_mode(self, mode: int):
+    def _set_led_mode(self, mode: int):
         self.api.set_led_mode(mode)
 
     def set_led_intensity(self, intensity: int):
         self.api.set_led_intensity(intensity)
 
-    def set_led_enabled(self, is_enabled: bool):
+    def _set_led_enabled(self, is_enabled: bool):
         self.api.set_led_enabled(is_enabled)
 
     def get_fan_speed(self):
@@ -733,7 +586,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self.api.set_delay(enabled, cleaning_mode, job_time)
 
     @staticmethod
-    def log_exception(ex, message):
+    def _log_exception(ex, message):
         exc_type, exc_obj, tb = sys.exc_info()
         line_number = tb.tb_lineno
 
