@@ -6,12 +6,10 @@ https://github.com/sh00t2kill/dolphin-robot
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import dataclass
 import logging
 
-from homeassistant.components.select import SelectEntity, SelectEntityDescription
+from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 
 from .component.helpers.const import *
 from .component.models.mydolphin_plus_entity import MyDolphinPlusEntity
@@ -60,4 +58,4 @@ class MyDolphinPlusSelect(SelectEntity, MyDolphinPlusEntity, ABC):
 
     async def async_select_option(self, option: str) -> None:
         """Select monitor mode."""
-        await self.entity.action(option)
+        self.entity.action(option)

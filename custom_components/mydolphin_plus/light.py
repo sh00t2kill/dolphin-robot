@@ -26,7 +26,7 @@ CURRENT_DOMAIN = DOMAIN_LIGHT
 async def async_setup_entry(hass, config_entry, async_add_devices):
     """Set up the Switch component."""
     await async_setup_base_entry(
-        hass, config_entry, async_add_devices, CURRENT_DOMAIN, get_switch
+        hass, config_entry, async_add_devices, CURRENT_DOMAIN, get_light
     )
 
 
@@ -36,7 +36,7 @@ async def async_unload_entry(hass, config_entry):
     return True
 
 
-def get_switch(hass: HomeAssistant, entity: EntityData):
+def get_light(hass: HomeAssistant, entity: EntityData):
     switch = MyDolphinPlusLight()
     switch.initialize(hass, entity, CURRENT_DOMAIN)
 
@@ -53,16 +53,8 @@ class MyDolphinPlusLight(LightEntity, MyDolphinPlusEntity):
         """Return the boolean response if the node is on."""
         return self.entity.state
 
-    async def async_turn_on(self, **kwargs):
-        """Turn device on."""
-        await self.set_mode(True)
-
-    async def async_turn_off(self, **kwargs):
-        """Turn device off."""
-        await self.set_mode(False)
-
-    async def set_mode(self, enabled: bool):
-        await self.entity.action(enabled)
+    def set_mode(self, enabled: bool):
+        self.entity.action(enabled)
 
     @property
     def supported_color_modes(self) -> set[ColorMode] | set[str] | None:
@@ -70,10 +62,10 @@ class MyDolphinPlusLight(LightEntity, MyDolphinPlusEntity):
         return set(ColorMode.ONOFF)
 
     def turn_on(self, **kwargs) -> None:
-        pass
+        self.set_mode(True)
 
     def turn_off(self, **kwargs) -> None:
-        pass
+        self.set_mode(False)
 
     async def async_setup(self):
         pass

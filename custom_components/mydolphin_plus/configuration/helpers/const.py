@@ -9,6 +9,7 @@ from homeassistant.components.light import DOMAIN as DOMAIN_LIGHT
 from homeassistant.components.select import DOMAIN as DOMAIN_SELECT
 from homeassistant.components.sensor import DOMAIN as DOMAIN_SENSOR
 from homeassistant.components.switch import DOMAIN as DOMAIN_SWITCH
+from homeassistant.components.vacuum import DOMAIN as DOMAIN_VACUUM
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, STATE_OFF, STATE_ON
 
 MANUFACTURER = "Maytronics"
@@ -19,7 +20,8 @@ SUPPORTED_PLATFORMS = [
     DOMAIN_SELECT,
     DOMAIN_SENSOR,
     DOMAIN_SWITCH,
-    DOMAIN_LIGHT
+    DOMAIN_LIGHT,
+    DOMAIN_VACUUM
 ]
 
 CONFIGURATION_MANAGER = f"cm_{DOMAIN}"
