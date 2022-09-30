@@ -7,11 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 
 from .component.helpers.const import *
@@ -54,13 +50,3 @@ class MyDolphinPlusSensor(SensorEntity, MyDolphinPlusEntity):
 
     async def async_added_to_hass_local(self):
         _LOGGER.info(f"Added new {self.name}")
-
-    @property
-    def device_class(self) -> SensorDeviceClass | str | None:
-        """Return the class of this sensor."""
-        return self.entity.sensor_device_class
-
-    @property
-    def state_class(self) -> SensorStateClass | str | None:
-        """Return the class of this sensor."""
-        return self.entity.sensor_state_class

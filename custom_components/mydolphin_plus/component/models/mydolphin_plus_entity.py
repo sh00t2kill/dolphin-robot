@@ -20,6 +20,8 @@ class MyDolphinPlusEntity(BaseEntity):
         entity: EntityData,
         current_domain: str,
     ):
+        self.entity_description = entity.entity_description
+
         super().initialize(hass, entity, current_domain)
 
         self.ha = get_ha(self.hass, self.entry_id)

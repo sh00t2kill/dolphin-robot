@@ -2,49 +2,37 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.helpers.entity import EntityDescription
 
 from ...core.helpers.const import *
 from ...core.helpers.enums import EntityStatus
-from .select_description import SelectDescription
 
 
 class EntityData:
-    id: str | None
-    name: str | None
-    state: str | None
+    state: str | bool | None
     attributes: dict
-    icon: str | None
     device_name: str | None
     status: EntityStatus
-    sensor_device_class: SensorDeviceClass | None
-    sensor_state_class: SensorDeviceClass | None
-    binary_sensor_device_class: BinarySensorDeviceClass | None
-    details: dict
     disabled: bool
     domain: str | None
     entry_id: str
-    entity_description: SelectDescription | None
+    entity_description: EntityDescription
     action: Any
 
-    def __init__(self, entry_id: str):
-        self.id = None
-        self.name = None
+    def __init__(self, entry_id: str, entity_description: EntityDescription):
+        self.entry_id = entry_id
+        self.entity_description = entity_description
         self.state = None
         self.attributes = {}
-        self.icon = None
         self.device_name = None
         self.status = EntityStatus.CREATED
-        self.sensor_state_class = None
-        self.sensor_device_class = None
-        self.binary_sensor_device_class = None
-        self.details = {}
         self.disabled = False
         self.domain = None
-        self.entry_id = entry_id
-        self.entity_description = None
         self.action = None
+
+    @property
+    def name(self):
+        return self.entity_description.name
 
     @property
     def unique_id(self):
@@ -57,18 +45,12 @@ class EntityData:
 
     def __repr__(self):
         obj = {
-            ENTITY_ID: self.id,
             ENTITY_UNIQUE_ID: self.unique_id,
             ENTITY_NAME: self.name,
             ENTITY_STATE: self.state,
             ENTITY_ATTRIBUTES: self.attributes,
-            ENTITY_ICON: self.icon,
             ENTITY_DEVICE_NAME: self.device_name,
             ENTITY_STATUS: self.status,
-            ENTITY_SENSOR_DEVICE_CLASS: self.sensor_device_class,
-            ENTITY_SENSOR_STATE_CLASS: self.sensor_state_class,
-            ENTITY_BINARY_SENSOR_DEVICE_CLASS: self.binary_sensor_device_class,
-            ENTITY_MONITOR_DETAILS: self.details,
             ENTITY_DISABLED: self.disabled,
             ENTITY_DOMAIN: self.domain,
             ENTITY_CONFIG_ENTRY_ID: self.entry_id
