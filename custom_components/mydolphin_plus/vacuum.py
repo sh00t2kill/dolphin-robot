@@ -55,6 +55,8 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
     """Class for a Shinobi Video switch."""
 
     def __init__(self):
+        super().__init__()
+
         self._attr_supported_features = VACUUM_FEATURES
         self._attr_fan_speed_list = list(CLEANING_MODES.values())
 

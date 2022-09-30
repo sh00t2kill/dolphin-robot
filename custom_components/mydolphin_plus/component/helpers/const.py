@@ -268,30 +268,30 @@ SERVICE_VALIDATION = {
 }
 
 CLOCK_HOURS_ICONS = {
-    "0": "mdi:clock-time-twelve",
-    "1": "mdi:clock-time-one",
-    "2": "mdi:clock-time-two",
-    "3": "mdi:clock-time-three",
-    "4": "mdi:clock-time-four",
-    "5": "mdi:clock-time-five",
-    "6": "mdi:clock-time-six",
-    "7": "mdi:clock-time-seven",
-    "8": "mdi:clock-time-eight",
-    "9": "mdi:clock-time-nine",
-    "10": "mdi:clock-time-ten",
-    "11": "mdi:clock-time-eleven",
-    "12": "mdi:clock-time-twelve",
-    "13": "mdi:clock-time-one",
-    "14": "mdi:clock-time-two",
-    "15": "mdi:clock-time-three",
-    "16": "mdi:clock-time-four",
-    "17": "mdi:clock-time-five",
-    "18": "mdi:clock-time-six",
-    "19": "mdi:clock-time-seven",
-    "20": "mdi:clock-time-eight",
-    "21": "mdi:clock-time-nine",
-    "22": "mdi:clock-time-ten",
-    "23": "mdi:clock-time-eleven"
+    0: "mdi:clock-time-twelve",
+    1: "mdi:clock-time-one",
+    2: "mdi:clock-time-two",
+    3: "mdi:clock-time-three",
+    4: "mdi:clock-time-four",
+    5: "mdi:clock-time-five",
+    6: "mdi:clock-time-six",
+    7: "mdi:clock-time-seven",
+    8: "mdi:clock-time-eight",
+    9: "mdi:clock-time-nine",
+    10: "mdi:clock-time-ten",
+    11: "mdi:clock-time-eleven",
+    12: "mdi:clock-time-twelve",
+    13: "mdi:clock-time-one",
+    14: "mdi:clock-time-two",
+    15: "mdi:clock-time-three",
+    16: "mdi:clock-time-four",
+    17: "mdi:clock-time-five",
+    18: "mdi:clock-time-six",
+    19: "mdi:clock-time-seven",
+    20: "mdi:clock-time-eight",
+    21: "mdi:clock-time-nine",
+    22: "mdi:clock-time-ten",
+    23: "mdi:clock-time-eleven"
 }
 
 PWS_STATE_ON = "on"
@@ -316,4 +316,26 @@ CALCULATED_STATES = {
     ROBOT_STATE_NOT_CONNECTED: "Disconnected",
     PWS_STATE_HOLD_DELAY: "Idle (Delay)",
     PWS_STATE_HOLD_WEEKLY: "Idle (Schedule)",
+}
+
+FILTER_BAG_STATUS = {
+    -1: "Unknown",
+    0: "Empty",
+    1: "Partial full",
+    26: "Getting full",
+    75: "Almost full",
+    100: "Full",
+    101: "Fault",
+    102: "Not available"
+}
+
+FILTER_BAG_ICONS = {
+    -1: "mdi:robot-off",
+    0: "mdi:gauge-empty",
+    1: "mdi:gauge-low",
+    26: "mdi:gauge",
+    75: "mdi:gauge",
+    100: "mdi:gauge-full",
+    101: "mdi:robot-dead",
+    102: "mdi:robot-confused-outline"
 }

@@ -12,8 +12,17 @@ from typing import Any
 
 from voluptuous import MultipleInvalid
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntityDescription,
+)
+from homeassistant.components.light import LightEntityDescription
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntityDescription,
+    SensorStateClass,
+)
+from homeassistant.components.vacuum import StateVacuumEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory, EntityDescription
@@ -110,10 +119,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._load_light_led_enabled(name, data)
 
         # Sensors
-        self._load_binary_sensor_filter_status(name, data)
-        self._load_sensor_cleaning_time(name, data)
-        self._load_sensor_cleaning_time_left(name, data)
-        self._load_sensor_broker_status(name)
+        self._load_sensor_filter_status(name, data)
+        self._load_sensor_cycle_time(name, data)
+        self._load_sensor_cycle_time_left(name, data)
+        self._load_binary_sensor_broker_status(name)
 
         # Scheduling Sensors
         self._load_binary_sensor_weekly_timer(name, data)
@@ -147,6 +156,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_INTENSITY: led_intensity
             }
 
+            icon = ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT)
+
             entity = self.entity_manager.get(DOMAIN_SELECT, entity_name)
             created = entity is None
 
@@ -155,14 +166,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = DEFAULT_ICON
                 entity.domain = DOMAIN_SELECT
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
                 entity_description = SelectDescription(
                     key=ATTR_LED_MODE,
                     name=ATTR_LED_MODE,
-                    icon=LED_MODE_ICON_DEFAULT,
+                    icon=icon,
                     device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
                     options=tuple(ICON_LED_MODES.keys()),
                     entity_category=EntityCategory.CONFIG,
@@ -173,7 +183,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.device_name = device
                 entity.entity_description = entity_description
                 entity.action = self.set_led_mode
-                entity.icon = ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT)
 
                 entity.set_created_or_updated(created)
 
@@ -204,6 +213,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_STATUS: status
             }
 
+            icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+
             entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
             created = entity is None
 
@@ -212,14 +223,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = "mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
                 entity.domain = DOMAIN_BINARY_SENSOR
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = EntityDescription(
+                entity_description = BinarySensorEntityDescription(
                     key=entity.id,
                     name=entity.name,
-                    icon=entity.icon
+                    icon=icon
                 )
 
                 entity.state = state
@@ -277,7 +287,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_BINARY_SENSOR
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = EntityDescription(
+                entity_description = BinarySensorEntityDescription(
                     key=entity.id,
                     name=entity.name,
                     icon=entity.icon
@@ -297,7 +307,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
-    def _load_binary_sensor_filter_status(
+    def _load_sensor_filter_status(
             self,
             device: str,
             data: dict
@@ -306,17 +316,19 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
-            filter_state = filter_bag_indication.get(CONF_STATE, 0)
-            reset_fbi = filter_bag_indication.get(DATA_FILTER_BAG_INDICATION_RESET_FBI, 0)
+            filter_state = filter_bag_indication.get(CONF_STATE, -1)
+            reset_fbi = filter_bag_indication.get(DATA_FILTER_BAG_INDICATION_RESET_FBI, False)
 
-            state = STATE_ON if filter_state != 0 else STATE_OFF
+            state = FILTER_BAG_STATUS.get(filter_state)
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_RESET_FBI: reset_fbi,
                 ATTR_STATUS: filter_state
             }
 
-            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
+            icon = FILTER_BAG_ICONS.get(filter_state)
+
+            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
             created = entity is None
 
             if created:
@@ -324,15 +336,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = "mdi:tray" if state else "mdi:tray-alert"
-                entity.domain = DOMAIN_BINARY_SENSOR
-                entity.binary_sensor_device_class = BinarySensorDeviceClass.OCCUPANCY
+                entity.icon = icon
+                entity.domain = DOMAIN_SENSOR
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = EntityDescription(
+                entity_description = SensorEntityDescription(
                     key=entity.id,
                     name=entity.name,
-                    icon=entity.icon
+                    icon=icon
                 )
 
                 entity.state = state
@@ -346,10 +357,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         except Exception as ex:
             self.log_exception(
-                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
+                ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
             )
 
-    def _load_sensor_cleaning_time(
+    def _load_sensor_cycle_time(
             self,
             device: str,
             data: dict
@@ -369,7 +380,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             state = cycle_time
             state_parts = state.split(":")
-            state_hours = state_parts[0]
+            state_hours = int(state_parts[0])
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
@@ -377,6 +388,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_START_TIME: cycle_start_time
             }
 
+            icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
+
+            _LOGGER.info(f"{entity_name} - state_hours: {state_hours} -> {state_parts} [{icon}]")
+
             entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
             created = entity is None
 
@@ -385,16 +400,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
                 entity.domain = DOMAIN_SENSOR
-                entity.sensor_device_class = SensorDeviceClass.DURATION
-                entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = EntityDescription(
+                entity_description = SensorEntityDescription(
                     key=entity.id,
                     name=entity.name,
-                    icon=entity.icon
+                    icon=icon,
+                    device_class=SensorDeviceClass.DURATION,
+                    state_class=SensorStateClass.MEASUREMENT
                 )
 
                 entity.state = state
@@ -411,17 +425,20 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
             )
 
-    def _load_sensor_broker_status(self, device: str):
+    def _load_binary_sensor_broker_status(self, device: str):
         entity_name = f"{device} AWS Broker"
 
         try:
-            state = str(self.api.awsiot_client_status)
+            state = self.api.awsiot_client_status == ConnectivityStatus.Connected
 
             attributes = {
-                ATTR_FRIENDLY_NAME: entity_name
+                ATTR_FRIENDLY_NAME: entity_name,
+                ATTR_STATUS: self.api.awsiot_client_status
             }
 
-            entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
+            icon = "mdi:aws"
+
+            entity = self.entity_manager.get(DOMAIN_BINARY_SENSOR, entity_name)
             created = entity is None
 
             if created:
@@ -429,15 +446,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.domain = DOMAIN_SENSOR
-                entity.icon = "mdi:aws"
-                entity.sensor_state_class = SensorStateClass.MEASUREMENT
+                entity.domain = DOMAIN_BINARY_SENSOR
 
-            if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = EntityDescription(
+            if created or self.entity_manager.compare_data(entity, str(state), attributes, device):
+                entity_description = BinarySensorEntityDescription(
                     key=entity.id,
                     name=entity.name,
-                    icon=entity.icon
+                    icon=icon,
+                    device_class=BinarySensorDeviceClass.CONNECTIVITY
                 )
 
                 entity.state = state
@@ -451,10 +467,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         except Exception as ex:
             self.log_exception(
-                ex, f"Failed to load {DOMAIN_SENSOR}: {entity_name}"
+                ex, f"Failed to load {DOMAIN_BINARY_SENSOR}: {entity_name}"
             )
 
-    def _load_sensor_cleaning_time_left(
+    def _load_sensor_cycle_time_left(
             self,
             device: str,
             data: dict
@@ -499,6 +515,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ATTR_EXPECTED_END_TIME: expected_cycle_end_time
             }
 
+            icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
+
             entity = self.entity_manager.get(DOMAIN_SENSOR, entity_name)
             created = entity is None
 
@@ -507,16 +525,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
                 entity.id = entity_name
                 entity.name = entity_name
-                entity.icon = CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve")
+                entity.icon = icon
                 entity.domain = DOMAIN_SENSOR
                 entity.sensor_device_class = SensorDeviceClass.DURATION
                 entity.sensor_state_class = SensorStateClass.MEASUREMENT
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
-                entity_description = EntityDescription(
+                entity_description = SensorEntityDescription(
                     key=entity.id,
                     name=entity.name,
-                    icon=entity.icon
+                    icon=icon
                 )
 
                 entity.state = state
@@ -565,10 +583,17 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_LIGHT
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
+                entity_description = LightEntityDescription(
+                    key=entity.id,
+                    name=entity.name,
+                    entity_category=EntityCategory.CONFIG
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
                 entity.action = self.set_led_enabled
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 
@@ -618,10 +643,16 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 entity.domain = DOMAIN_VACUUM
 
             if created or self.entity_manager.compare_data(entity, state, attributes, device):
+                entity_description = StateVacuumEntityDescription(
+                    key=entity.id,
+                    name=entity.name
+                )
+
                 entity.state = state
                 entity.attributes = attributes
                 entity.device_name = device
                 entity.action = self.set_led_enabled
+                entity.entity_description = entity_description
 
                 entity.set_created_or_updated(created)
 

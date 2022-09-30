@@ -9,7 +9,6 @@ import logging
 
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 
 from .component.helpers.const import *
 from .component.models.mydolphin_plus_entity import MyDolphinPlusEntity
@@ -45,8 +44,6 @@ def get_light(hass: HomeAssistant, entity: EntityData):
 
 class MyDolphinPlusLight(LightEntity, MyDolphinPlusEntity):
     """Class for a light."""
-
-    _attr_entity_category = EntityCategory.CONFIG
 
     @property
     def is_on(self) -> bool | None:

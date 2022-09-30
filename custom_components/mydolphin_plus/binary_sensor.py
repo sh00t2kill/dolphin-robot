@@ -7,10 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
-    BinarySensorEntity,
-)
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant
 
 from .component.helpers.const import *
@@ -49,16 +46,6 @@ class MyDolphinPlusBinarySensor(BinarySensorEntity, MyDolphinPlusEntity):
     """Representation a binary sensor that is updated."""
 
     @property
-    def should_poll(self):
-        """Return the polling state."""
-        return False
-
-    @property
     def is_on(self):
         """Return true if the binary sensor is on."""
         return self.entity.state == STATE_ON
-
-    @property
-    def device_class(self) -> BinarySensorDeviceClass | str | None:
-        """Return the class of this sensor."""
-        return self.entity.binary_sensor_device_class
