@@ -789,12 +789,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         elif (pws_on and robot_on) or (pws_programming and not robot_programming):
             calculated_state = PWS_STATE_ON
         else:
-            state_description = f"pwsState: {pws_state}, robotState: {robot_state}"
-            _LOGGER.warning(f"Unhandled mapping, state will be set according to pws_state, {state_description}")
-
             calculated_state = pws_state
 
         state = CALCULATED_STATES.get(calculated_state, UNMAPPED_CALCULATED_STATE)
+
+        state_description = f"pwsState: {pws_state} | robotState: {robot_state}"
+        _LOGGER.info(f"System status recalculated, State: {calculated_state}, Parameters: {state_description}")
 
         result = {
             ATTR_CALCULATED_STATUS: calculated_state,

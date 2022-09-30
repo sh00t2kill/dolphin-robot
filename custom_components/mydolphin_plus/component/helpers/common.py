@@ -7,7 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def get_cleaning_mode_details(mode):
-    details = CLEANING_MODES.get(mode)
+    details = CLEANING_MODES.get(mode, mode)
 
     return details
 

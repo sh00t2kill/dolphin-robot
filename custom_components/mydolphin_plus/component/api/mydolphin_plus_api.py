@@ -252,6 +252,7 @@ class MyDolphinPlusAPI:
                 _LOGGER.debug(f"Device {motor_unit_serial} with token: {token}")
 
                 self.motor_unit_serial = actual_motor_unit_serial
+                self.serial_number = motor_unit_serial
                 self.login_token = token
 
                 self.topic_data = TopicData(self.motor_unit_serial)
@@ -373,7 +374,6 @@ class MyDolphinPlusAPI:
 
             if response_status == "1":
                 data = payload.get("Data", "0")
-                self.serial_number = data.get("SERN")
 
                 for key in DATA_ROBOT_DETAILS:
                     new_key = DATA_ROBOT_DETAILS.get(key)
@@ -402,15 +402,14 @@ class MyDolphinPlusAPI:
             _LOGGER.info(f"Message received for device {self.motor_unit_serial}, Topic: {message_topic}")
 
             if message_topic.endswith(TOPIC_CALLBACK_REJECTED):
-                _LOGGER.warning(f"Rejected message for {message_topic}, Message: {payload}")
+                _LOGGER.warning(f"Rejected message for {message_topic}, Message: {message_payload}")
 
             elif message_topic == self.topic_data.dynamic:
-                _LOGGER.debug(f"Dynamic payload: {payload}")
+                _LOGGER.debug(f"Dynamic payload: {message_payload}")
 
-            elif message_topic == self.topic_data.update_accepted:
-                self._refresh_details(True)
+            elif message_topic.endswith(TOPIC_CALLBACK_ACCEPTED):
+                _LOGGER.debug(f"Payload: {message_payload}")
 
-            elif message_topic == self.topic_data.get_accepted:
                 now = datetime.now().timestamp()
                 server_timestamp = payload.get(DATA_ROOT_TIMESTAMP)
 
@@ -425,20 +424,11 @@ class MyDolphinPlusAPI:
                     category_data = reported.get(category)
 
                     if category_data is not None:
-                        _LOGGER.debug(f"{category} - {category_data}")
                         self.data[category] = category_data
 
                 # self._read_temperature_and_in_water_details()
 
                 if self.callback is not None:
-                    server_time = get_date_time_from_timestamp(self.server_timestamp)
-                    local_time = get_date_time_from_timestamp(now)
-
-                    _LOGGER.debug(f"Server Version: {self.server_version}")
-                    _LOGGER.debug(f"Server Timestamp: {server_time} [{self.server_timestamp}]")
-                    _LOGGER.debug(f"Local Timestamp: {local_time} [{self.server_timestamp}]")
-                    _LOGGER.debug(f"Diff: {self.server_time_diff}")
-
                     self.callback()
 
         except Exception as ex:
@@ -472,26 +462,26 @@ class MyDolphinPlusAPI:
 
         self._publish(self.topic_data.update, data)
 
-    def _send_dynamic_command(self, payload: dict | None):
-        data = {
-            DYNAMIC_CONTENT: payload
-        }
+    def _send_dynamic_command(self, description: str, payload: dict | None):
+        payload[DYNAMIC_TYPE] = DYNAMIC_TYPE_PWS_REQUEST
+        payload[DYNAMIC_DESCRIPTION] = description
 
-        self._publish(self.topic_data.dynamic, data)
+        self._publish(self.topic_data.dynamic, payload)
 
     def _publish(self, topic: str, data: dict | None):
-        payload = data if data is None else json.dumps(data)
+        payload = "" if data is None else json.dumps(data)
 
         if self.status == ConnectivityStatus.Connected:
             try:
-                self.awsiot_client.publish(topic, payload, MQTT_QOS_AT_LEAST_ONCE)
+                self.awsiot_client.publish(topic, payload, MQTT_QOS_1)
+
             except Exception as ex:
                 _LOGGER.error(f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}")
 
         else:
-            _LOGGER.error(f"Failed to publish message: {data} to {topic}")
+            _LOGGER.error(f"Failed to publish message: {data} to {topic}, Broker is not connected")
 
-    async def set_cleaning_mode(self, cleaning_mode):
+    def set_cleaning_mode(self, cleaning_mode):
         data = {
             DATA_SECTION_CYCLE_INFO: {
                 DATA_SCHEDULE_CLEANING_MODE: {
@@ -557,14 +547,14 @@ class MyDolphinPlusAPI:
             DYNAMIC_CONTENT_DIRECTION: direction
         }
 
-        self._send_dynamic_command(request_data)
+        self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def quit_navigation(self):
         request_data = {
             DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
         }
 
-        self._send_dynamic_command(request_data)
+        self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def _read_temperature_and_in_water_details(self):
         request_data = {
@@ -572,7 +562,7 @@ class MyDolphinPlusAPI:
             DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: self.motor_unit_serial
         }
 
-        self._send_dynamic_command(request_data)
+        self._send_dynamic_command(DYNAMIC_DESCRIPTION_TEMPERATURE, request_data)
 
     def pickup(self):
         self.set_cleaning_mode(CLEANING_MODE_PICKUP)
