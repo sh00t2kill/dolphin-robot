@@ -18,7 +18,6 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from ...component.helpers.const import *
 from ...component.helpers.exceptions import APIValidationException
 from ...configuration.models.config_data import ConfigData
-from ..helpers.common import get_date_time_from_timestamp
 from ..helpers.enums import ConnectivityStatus
 from ..models.topic_data import TopicData
 
@@ -48,8 +47,8 @@ class MyDolphinPlusAPI:
     callback: Callable[[], None]
 
     server_version: int | None
-    server_timestamp: int | None
-    server_time_diff: int
+    server_timestamp: float | None
+    server_time_diff: float
 
     topic_data: TopicData | None
     last_update: float | None
@@ -238,14 +237,14 @@ class MyDolphinPlusAPI:
             username = self.config_data.username
             password = self.config_data.password
 
-            request_data = f"Email={username}&Password={password}"
+            request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}&{API_REQUEST_SERIAL_PASSWORD}={password}"
 
             payload = await self._async_post(LOGIN_URL, LOGIN_HEADERS, request_data)
 
-            data = payload.get("Data", {})
+            data = payload.get(API_RESPONSE_DATA, {})
             if data:
-                motor_unit_serial = data.get("Sernum")
-                token = data.get("token")
+                motor_unit_serial = data.get(API_REQUEST_SERIAL_NUMBER)
+                token = data.get(API_REQUEST_HEADER_TOKEN)
 
                 actual_motor_unit_serial = motor_unit_serial[:-2]
 
@@ -276,21 +275,21 @@ class MyDolphinPlusAPI:
 
         try:
             headers = {
-                "token": self.login_token
+                API_REQUEST_HEADER_TOKEN: self.login_token
             }
 
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            request_data = f"Sernum={self.motor_unit_serial}"
+            request_data = f"{API_REQUEST_SERIAL_NUMBER}={self.motor_unit_serial}"
 
             payload = await self._async_post(TOKEN_URL, headers, request_data)
 
-            data = payload.get("Data")
+            data = payload.get(API_RESPONSE_DATA, {})
 
-            self.aws_token = data.get("Token")
-            self.aws_key = data.get("AccessKeyId")
-            self.aws_secret = data.get("SecretAccessKey")
+            self.aws_token = data.get(API_RESPONSE_DATA_TOKEN)
+            self.aws_key = data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
+            self.aws_secret = data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
 
             _LOGGER.debug(f"Logged in to AWS using {self.aws_key}:{self.aws_secret}:{self.aws_token}")
             self.status = ConnectivityStatus.Connected
@@ -326,9 +325,9 @@ class MyDolphinPlusAPI:
         aws_client.onOffline = self._handle_aws_client_offline
 
         for topic in self.topic_data.subscribe:
-            aws_client.subscribe(topic, 0, self._internal_callback)
+            aws_client.subscribeAsync(topic, MQTT_QOS_0, self._ack_callback, self._message_callback)
 
-        connected = aws_client.connect()
+        connected = aws_client.connectAsync(ackCallback=self._ack_callback)
 
         if connected:
             _LOGGER.debug(f"Connected to {AWS_IOT_URL}")
@@ -360,20 +359,20 @@ class MyDolphinPlusAPI:
 
         try:
             headers = {
-                "token": self.login_token
+                API_REQUEST_HEADER_TOKEN: self.login_token
             }
 
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            request_data = f"Sernum={self.motor_unit_serial}"
+            request_data = f"{API_REQUEST_SERIAL_NUMBER}={self.motor_unit_serial}"
 
             payload = await self._async_post(ROBOT_DETAILS_URL, headers, request_data)
 
-            response_status = payload.get("Status", "0")
+            response_status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
 
-            if response_status == "1":
-                data = payload.get("Data", "0")
+            if response_status == API_RESPONSE_STATUS_SUCCESS:
+                data = payload.get(API_RESPONSE_DATA, {})
 
                 for key in DATA_ROBOT_DETAILS:
                     new_key = DATA_ROBOT_DETAILS.get(key)
@@ -392,12 +391,17 @@ class MyDolphinPlusAPI:
     def _handle_aws_client_offline(self):
         self.awsiot_client_status = ConnectivityStatus.Disconnected
 
-    def _internal_callback(self, client, userdata, message):
-        try:
-            message_topic: str = message.topic
-            message_payload = message.payload.decode("utf-8")
+    @staticmethod
+    def _ack_callback(mid, data):
+        _LOGGER.debug(f"ACK packet ID: {mid}, QoS: {data}")
 
-            payload = json.loads(message_payload)
+    def _message_callback(self, client, userdata, message):
+        message_topic: str = message.topic
+        message_payload = message.payload.decode(MQTT_MESSAGE_ENCODING)
+
+        try:
+            has_message = len(message_payload) <= 0
+            payload = {} if has_message else json.loads(message_payload)
 
             _LOGGER.info(f"Message received for device {self.motor_unit_serial}, Topic: {message_topic}")
 
@@ -411,11 +415,11 @@ class MyDolphinPlusAPI:
                 _LOGGER.debug(f"Payload: {message_payload}")
 
                 now = datetime.now().timestamp()
-                server_timestamp = payload.get(DATA_ROOT_TIMESTAMP)
 
                 self.server_version = payload.get(DATA_ROOT_VERSION)
-                self.server_timestamp = server_timestamp
-                self.server_time_diff = now - server_timestamp
+                self.server_timestamp = payload.get(DATA_ROOT_TIMESTAMP)
+
+                self.server_time_diff = now - self.server_timestamp
 
                 state = payload.get(DATA_ROOT_STATE, {})
                 reported = state.get(DATA_STATE_REPORTED, {})
@@ -426,7 +430,8 @@ class MyDolphinPlusAPI:
                     if category_data is not None:
                         self.data[category] = category_data
 
-                # self._read_temperature_and_in_water_details()
+                if message_topic == self.topic_data.get_accepted:
+                    self._read_temperature_and_in_water_details()
 
                 if self.callback is not None:
                     self.callback()
@@ -434,24 +439,10 @@ class MyDolphinPlusAPI:
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
+            message_details = f"Topic: {message_topic}, Data: {message_payload}"
+            error_details = f"Error: {str(ex)}, Line: {line_number}"
 
-            _LOGGER.error(f"Callback parsing failed, Data: {message}, Error: {str(ex)}, Line: {line_number}")
-
-    @staticmethod
-    def _string_join(data_items, delimiter):
-        return delimiter.join(data_items)
-
-    @staticmethod
-    def _get_system_data_attribute(data, key):
-        result = None
-
-        system_data_attributes = data.get("L", [])
-        if key in system_data_attributes:
-            system_data_value = system_data_attributes[key]
-
-            result = system_data_value.get("S")
-
-        return result
+            _LOGGER.error(f"Callback parsing failed, {message_details}, {error_details}")
 
     def _send_desired_command(self, payload: dict | None):
         data = {
@@ -473,7 +464,7 @@ class MyDolphinPlusAPI:
 
         if self.status == ConnectivityStatus.Connected:
             try:
-                self.awsiot_client.publish(topic, payload, MQTT_QOS_1)
+                self.awsiot_client.publishAsync(topic, payload, MQTT_QOS_1)
 
             except Exception as ex:
                 _LOGGER.error(f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}")
