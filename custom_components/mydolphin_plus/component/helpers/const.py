@@ -32,6 +32,8 @@ ATTR_RSSI = "RSSI"
 ATTR_NETWORK_NAME = "network_name"
 ATTR_INTENSITY = "intensity"
 ATTR_EXPECTED_END_TIME = "expected_end_time"
+ATTR_BATTERY_LEVEL = "battery_level"
+
 
 ATTR_CALCULATED_STATUS = "calculated_status"
 ATTR_PWS_STATUS = "pws_status"
@@ -109,6 +111,7 @@ DEFAULT_LED_INTENSITY = 80
 DEFAULT_ENABLE = False
 DEFAULT_TIME_ZONE_NAME = "UTC"
 DEFAULT_TIME_PART = 255
+DEFAULT_BATTERY_LEVEL = "NA"
 
 SCAN_INTERVAL = timedelta(seconds=60)
 HEARTBEAT_INTERVAL_SECONDS = timedelta(seconds=25)
