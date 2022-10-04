@@ -101,7 +101,7 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
     async def async_stop(self, **kwargs: Any) -> None:
         self.ha.set_power_state(False)
 
-    async def pause(self, **kwargs: Any) -> None:
+    async def async_pause(self, **kwargs: Any) -> None:
         self.ha.set_power_state(False)
 
     async def async_toggle(self, **kwargs: Any) -> None:

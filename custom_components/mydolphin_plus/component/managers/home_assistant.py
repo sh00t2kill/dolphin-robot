@@ -494,7 +494,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_RSSI: wifi_rssi,
-                ATTR_NETWORK_NAME: net_name
+                ATTR_NETWORK_NAME: net_name,
+                ATTR_BATTERY_LEVEL: DEFAULT_BATTERY_LEVEL
             }
 
             for key in details:
