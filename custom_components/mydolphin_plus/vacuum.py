@@ -6,9 +6,10 @@ https://github.com/sh00t2kill/dolphin-robot
 from __future__ import annotations
 
 from abc import ABC
-import logging
 from typing import Any
+import logging
 import time
+
 
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeature
 from homeassistant.core import HomeAssistant
