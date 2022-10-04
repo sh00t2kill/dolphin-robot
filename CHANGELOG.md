@@ -1,5 +1,11 @@
 # Changelog
 
+## Pending
+- Add vacuum start,stop,locate,pause service calls
+  - `start` is equivalent to `turn_on` (ie start a cleaning cycle)
+  - `stop` and `pause` are equivalent to `turn_off` (ie stop a cleaning cycle)
+  - locate turns the LED on for 2 seconds and off again
+
 ## v0.1.0
 - Major refactor of HA Manager, Entity Manager and API (code cleanup)
 - AWS IOT Broker works with asynchronous operations

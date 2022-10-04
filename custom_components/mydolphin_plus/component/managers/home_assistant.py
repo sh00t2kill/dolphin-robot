@@ -466,7 +466,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                                            attributes,
                                            device_name,
                                            entity_description,
-                                           self._set_led_enabled)
+                                           self.set_led_enabled)
 
         except Exception as ex:
             self._log_exception(
@@ -525,7 +525,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def set_led_intensity(self, intensity: int):
         self.api.set_led_intensity(intensity)
 
-    def _set_led_enabled(self, is_enabled: bool):
+    def set_led_enabled(self, is_enabled: bool):
         self.api.set_led_enabled(is_enabled)
 
     def get_fan_speed(self):

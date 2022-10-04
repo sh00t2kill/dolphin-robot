@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from abc import ABC
 import logging
+import time
 from typing import Any
 
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeature
@@ -82,6 +83,12 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
             if value == fan_speed:
                 self.ha.set_cleaning_mode(key)
 
+    def locate(self, **kwargs: Any) -> None:
+        self.ha.set_led_enabled(True)
+        time.sleep(2)
+        self.ha.set_led_enabled(False)
+
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         self.ha.set_power_state(True)
 
@@ -92,6 +99,9 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
         self.ha.set_power_state(False)
 
     async def async_stop(self, **kwargs: Any) -> None:
+        self.ha.set_power_state(False)
+
+    async def pause(self, **kwargs: Any) -> None:
         self.ha.set_power_state(False)
 
     async def async_toggle(self, **kwargs: Any) -> None:
