@@ -14,7 +14,7 @@ from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeatu
 from homeassistant.core import HomeAssistant
 
 from .component.helpers.const import *
-from .component.models.mydolphin_plus_entity import MyDolphinPlusEntit
+from .component.models.mydolphin_plus_entity import MyDolphinPlusEntity
 from .core.models.base_entity import async_setup_base_entry
 from .core.models.entity_data import EntityData
 
