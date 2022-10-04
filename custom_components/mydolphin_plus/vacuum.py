@@ -6,8 +6,8 @@ https://github.com/sh00t2kill/dolphin-robot
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any
 import logging
+from typing import Any
 import time
 
 
@@ -15,7 +15,7 @@ from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeatu
 from homeassistant.core import HomeAssistant
 
 from .component.helpers.const import *
-from .component.models.mydolphin_plus_entity import MyDolphinPlusEntity
+from .component.models.mydolphin_plus_entity import MyDolphinPlusEntit
 from .core.models.base_entity import async_setup_base_entry
 from .core.models.entity_data import EntityData
 
