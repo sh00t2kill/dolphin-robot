@@ -7,9 +7,8 @@ from __future__ import annotations
 
 from abc import ABC
 import logging
-from typing import Any
 import time
-
+from typing import Any
 
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeature
 from homeassistant.core import HomeAssistant
