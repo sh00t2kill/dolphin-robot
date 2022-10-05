@@ -275,17 +275,10 @@ class HomeAssistantManager:
 
         return action
 
-    async def get_core_entity_fan_speed(self, entity: EntityData) -> str | None:
-        """ Handles ACTION_GET_CORE_ENTITY_FAN_SPEED. """
-        action = self.get_action(entity.id, ACTION_GET_CORE_ENTITY_FAN_SPEED)
-        value = None
+    def get_core_entity_fan_speed(self, entity: EntityData) -> str | None:
+        pass
 
-        if action is not None:
-            value = await action(entity)
-
-        return value
-
-    def async_core_entity_return_to_base(self, entity: EntityData) -> None:
+    async def async_core_entity_return_to_base(self, entity: EntityData) -> None:
         """ Handles ACTION_CORE_ENTITY_RETURN_TO_BASE. """
         action = self.get_action(entity.id, ACTION_CORE_ENTITY_RETURN_TO_BASE)
 

@@ -49,9 +49,9 @@ class CoreVacuum(StateVacuumEntity, BaseEntity, ABC):
         """Return the fan speed of the vacuum cleaner."""
         return self.ha.get_core_entity_fan_speed(self.entity)
 
-    def async_return_to_base(self, **kwargs: Any) -> None:
+    async def async_return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
-        self.ha.async_core_entity_return_to_base(self.entity)
+        await self.ha.async_core_entity_return_to_base(self.entity)
 
     async def async_set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
         await self.ha.async_core_entity_set_fan_speed(self.entity, fan_speed)
@@ -85,7 +85,7 @@ class CoreVacuum(StateVacuumEntity, BaseEntity, ABC):
 
     async def async_locate(self, **kwargs: Any) -> None:
         """Locate the vacuum cleaner."""
-        self.ha.async_core_entity_locate(self.entity)
+        await self.ha.async_core_entity_locate(self.entity)
 
     @staticmethod
     def get_component(hass: HomeAssistant, entity: EntityData):

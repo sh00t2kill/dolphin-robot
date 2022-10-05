@@ -113,10 +113,6 @@ class IntegrationAPI(BaseAPI):
 
         await self._service_login()
 
-        errors = ConnectivityStatus.get_config_errors(self.status)
-
-        return errors
-
     async def _session_initialize(self, config_data: ConfigData):
         _LOGGER.info("Initializing MyDolphin API Session")
 
@@ -210,7 +206,8 @@ class IntegrationAPI(BaseAPI):
         if self.status == ConnectivityStatus.Failed:
             await self.initialize(self.config_data)
 
-        await self._refresh_details()
+        if self.status == ConnectivityStatus.Connected:
+            await self._refresh_details()
 
     async def _login(self):
         await self._service_login()
@@ -435,7 +432,7 @@ class IntegrationAPI(BaseAPI):
                 if message_topic == self.topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
 
-                await self.fire_data_changed_event()
+                self.hass.async_create_task(self.fire_data_changed_event())
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -465,7 +462,8 @@ class IntegrationAPI(BaseAPI):
 
         if self.status == ConnectivityStatus.Connected:
             try:
-                self.awsiot_client.publishAsync(topic, payload, MQTT_QOS_1)
+                if self.awsiot_client is not None:
+                    self.awsiot_client.publishAsync(topic, payload, MQTT_QOS_1)
 
             except Exception as ex:
                 _LOGGER.error(f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}")

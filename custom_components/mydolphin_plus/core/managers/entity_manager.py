@@ -77,15 +77,15 @@ class EntityManager:
             components: dict[str, list] = {}
             for unique_id in self.entities:
                 entity = self.entities.get(unique_id)
+                domain_manager = self.domain_component_manager.get(entity.domain)
 
-                if entity.status == EntityStatus.CREATED:
+                if entity.status == EntityStatus.CREATED and domain_manager is not None:
                     entity_id = self.entity_registry.async_get_entity_id(
                         entity.domain, DOMAIN, unique_id
                     )
 
                     await self._handle_disabled_entity(entity_id, entity)
 
-                    domain_manager = self.domain_component_manager.get(entity.domain)
                     component = domain_manager.initializer(self.hass, entity)
 
                     await self._handle_restored_entity(entity_id, component)

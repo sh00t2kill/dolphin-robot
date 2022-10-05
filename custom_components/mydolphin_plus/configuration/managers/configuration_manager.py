@@ -63,7 +63,7 @@ class ConfigurationManager:
 
         await self.api.validate(data)
 
-        errors = ConnectivityStatus.get_config_errors(self.api.status)
+        errors = self.get_config_errors()
 
         if errors is None:
             password = data[CONF_PASSWORD]
@@ -84,6 +84,24 @@ class ConfigurationManager:
         }
 
         return fields
+
+    def get_config_errors(self):
+        result = None
+        status_mapping = {
+            str(ConnectivityStatus.NotConnected): "invalid_server_details",
+            str(ConnectivityStatus.Connecting): "invalid_server_details",
+            str(ConnectivityStatus.Failed): "invalid_server_details",
+            str(ConnectivityStatus.NotFound): "invalid_server_details",
+            str(ConnectivityStatus.MissingAPIKey): "missing_permanent_api_key",
+            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials"
+        }
+
+        status_description = status_mapping.get(str(self.api.status))
+
+        if status_description is not None:
+            result = {"base": status_description}
+
+        return result
 
     def get_options_fields(self, user_input: dict[str, Any] | None) -> dict[vol.Marker, Any]:
         if user_input is None:

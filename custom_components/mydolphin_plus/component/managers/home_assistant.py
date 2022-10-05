@@ -567,8 +567,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self.set_action(unique_id, ACTION_CORE_ENTITY_SEND_COMMAND, self._send_command)
             self.set_action(unique_id, ACTION_CORE_ENTITY_RETURN_TO_BASE, self._pickup)
 
-            self.set_action(unique_id, ACTION_GET_CORE_ENTITY_FAN_SPEED, self._get_fan_speed)
-
         except Exception as ex:
             self._log_exception(
                 ex, f"Failed to load {DOMAIN_VACUUM}: {entity_name}"
@@ -598,7 +596,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         if entity.status in [STATE_ON]:
             self.api.set_led_enabled(False)
 
-    def _get_fan_speed(self, entity: EntityData):
+    def get_core_entity_fan_speed(self, entity: EntityData) -> str | None:
         data = self.api.data
 
         cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
