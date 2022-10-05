@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from abc import ABC
 import logging
+import time
 from typing import Any
 
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumEntityFeature
@@ -27,8 +28,8 @@ VACUUM_FEATURES = VacuumEntityFeature.STATE | \
                   VacuumEntityFeature.FAN_SPEED | \
                   VacuumEntityFeature.RETURN_HOME | \
                   VacuumEntityFeature.SEND_COMMAND | \
-                  VacuumEntityFeature.START | \
-                  VacuumEntityFeature.STOP
+                  VacuumEntityFeature.TURN_ON | \
+                  VacuumEntityFeature.TURN_OFF
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
@@ -57,7 +58,7 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
     def __init__(self):
         super().__init__()
 
-        self._attr_supported_features = self.entity_description.features
+        self._attr_supported_features = VACUUM_FEATURES
         self._attr_fan_speed_list = list(CLEANING_MODES.values())
 
     @property
@@ -68,23 +69,45 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
     @property
     def fan_speed(self) -> str | None:
         """Return the fan speed of the vacuum cleaner."""
-        return self.ha.vacuum_get_fan_speed(self.entity)
+        return self.ha.get_fan_speed()
 
     def return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
-        self.ha.vacuum_return_to_base(self.entity)
+        self.ha.pickup()
 
     def set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
-        self.ha.vacuum_set_fan_speed(self.entity, fan_speed)
+        """Set fan speed."""
+        for key in CLEANING_MODES:
+            value = CLEANING_MODES[key]
+
+            if value == fan_speed:
+                self.ha.set_cleaning_mode(key)
+
+    def locate(self, **kwargs: Any) -> None:
+        self.ha.set_led_enabled(True)
+        time.sleep(2)
+        self.ha.set_led_enabled(False)
+
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self.ha.set_power_state(True)
 
     async def async_start(self, **kwargs: Any) -> None:
-        await self.ha.async_vacuum_start(self.entity)
+        self.ha.set_power_state(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self.ha.set_power_state(False)
 
     async def async_stop(self, **kwargs: Any) -> None:
-        await self.ha.async_vacuum_stop(self.entity)
+        self.ha.set_power_state(False)
+
+    async def async_pause(self, **kwargs: Any) -> None:
+        self.ha.set_power_state(False)
 
     async def async_toggle(self, **kwargs: Any) -> None:
-        await self.ha.async_vacuum_toggle(self.entity)
+        is_on = self.entity.state == PWS_STATE_ON
+
+        self.ha.set_power_state(not is_on)
 
     def send_command(
             self,
@@ -93,4 +116,4 @@ class MyDolphinPlusVacuum(StateVacuumEntity, MyDolphinPlusEntity, ABC):
             **kwargs: Any,
     ) -> None:
         """Send a command to a vacuum cleaner."""
-        self.ha.vacuum_send_command(self.entity, command, params)
+        self.ha.send_command(command, params)

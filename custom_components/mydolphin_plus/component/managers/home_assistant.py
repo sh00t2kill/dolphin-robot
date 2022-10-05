@@ -481,7 +481,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                                            attributes,
                                            device_name,
                                            entity_description,
-                                           self._set_led_enabled)
+                                           self.set_led_enabled)
 
         except Exception as ex:
             self._log_exception(
@@ -509,7 +509,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_RSSI: wifi_rssi,
-                ATTR_NETWORK_NAME: net_name
+                ATTR_NETWORK_NAME: net_name,
+                ATTR_BATTERY_LEVEL: DEFAULT_BATTERY_LEVEL
             }
 
             for key in details:
@@ -540,7 +541,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def set_led_intensity(self, intensity: int):
         self.api.set_led_intensity(intensity)
 
-    def _set_led_enabled(self, is_enabled: bool):
+    def set_led_enabled(self, is_enabled: bool):
         self.api.set_led_enabled(is_enabled)
 
     def get_fan_speed(self):
@@ -627,6 +628,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         robot_error = robot_state in [ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
         robot_cleaning = robot_state not in [ROBOT_STATE_INIT, ROBOT_STATE_SCANNING, ROBOT_STATE_NOT_CONNECTED]
+
         robot_programming = robot_state == PWS_STATE_PROGRAMMING
 
         if pws_error or robot_error:
