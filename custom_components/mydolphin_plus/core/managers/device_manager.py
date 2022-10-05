@@ -2,8 +2,6 @@ import logging
 
 from homeassistant.helpers.device_registry import async_get
 
-from ...core.helpers.const import *
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -19,6 +17,10 @@ class DeviceManager:
         title = self._ha.config_data.entry.title
 
         return title
+
+    @property
+    def devices(self):
+        return self._devices
 
     async def async_remove_entry(self, entry_id):
         dr = async_get(self._hass)

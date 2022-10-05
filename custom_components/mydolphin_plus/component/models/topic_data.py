@@ -1,4 +1,4 @@
-from ...component.helpers.const import *
+from ..helpers.const import *
 
 
 class TopicData:

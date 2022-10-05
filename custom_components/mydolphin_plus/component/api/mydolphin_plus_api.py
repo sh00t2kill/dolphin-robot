@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import sys
-from typing import Callable
+from typing import Awaitable, Callable
 import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -15,10 +15,10 @@ from aiohttp import ClientResponseError, ClientSession
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from ...component.helpers.const import *
-from ...component.helpers.exceptions import APIValidationException
 from ...configuration.models.config_data import ConfigData
-from ..helpers.enums import ConnectivityStatus
+from ...core.api.base_api import BaseAPI
+from ...core.helpers.enums import ConnectivityStatus
+from ..helpers.const import *
 from ..models.topic_data import TopicData
 
 REQUIREMENTS = ["aiohttp"]
@@ -26,12 +26,11 @@ REQUIREMENTS = ["aiohttp"]
 _LOGGER = logging.getLogger(__name__)
 
 
-class MyDolphinPlusAPI:
+class IntegrationAPI(BaseAPI):
     session: ClientSession | None
     hass: HomeAssistant
-    config_data: ConfigData
+    config_data: ConfigData | None
     base_url: str | None
-    status: ConnectivityStatus | None
 
     login_token: str | None
     aws_token: str | None
@@ -42,7 +41,6 @@ class MyDolphinPlusAPI:
     aws_secret: str | None
     awsiot_id: str | None
     awsiot_client: AWSIoTMQTTClient | None
-    awsiot_client_status: ConnectivityStatus | None
 
     callback: Callable[[], None]
 
@@ -53,15 +51,21 @@ class MyDolphinPlusAPI:
     topic_data: TopicData | None
     last_update: float | None
 
-    def __init__(self, hass: HomeAssistant | None, config_data: ConfigData, callback: Callable[[], None] | None = None):
+    def __init__(self,
+                 hass: HomeAssistant,
+                 async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
+                 async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
+                 ):
+
+        super().__init__(hass, async_on_data_changed, async_on_status_changed)
+
         try:
             self.hass = hass
-            self.config_data = config_data
+            self.config_data = None
             self.session = None
             self.base_url = None
 
             self.awsiot_id = str(uuid.uuid4())
-            self.status = ConnectivityStatus.NotConnected
 
             self.login_token = None
             self.aws_token = None
@@ -72,10 +76,6 @@ class MyDolphinPlusAPI:
             self.aws_secret = None
             self.awsiot_id = None
             self.awsiot_client = None
-            self.awsiot_client_status = ConnectivityStatus.NotConnected
-
-            self.callback = callback
-            self.data = {}
 
             self.server_version = None
             self.server_timestamp = None
@@ -93,14 +93,35 @@ class MyDolphinPlusAPI:
             )
 
     async def terminate(self):
-        self.status = ConnectivityStatus.Disconnected
+        self.awsiot_client.disconnectAsync(self._ack_callback)
 
-    async def initialize(self, config_data: ConfigData | None = None):
-        _LOGGER.info("Initializing MyDolphin Plus")
+        await self._handle_aws_client_status_changed(ConnectivityStatus.Disconnected)
+
+        await self.set_status(ConnectivityStatus.Disconnected)
+
+    async def initialize(self, config_data: ConfigData):
+        _LOGGER.info("Initializing MyDolphin API")
+
+        await self._session_initialize(config_data)
+
+        await self._login()
+
+    async def validate(self, data: dict | None = None):
+        config_data = ConfigData.from_dict(data)
+
+        await self._session_initialize(config_data)
+
+        await self._service_login()
+
+        errors = ConnectivityStatus.get_config_errors(self.status)
+
+        return errors
+
+    async def _session_initialize(self, config_data: ConfigData):
+        _LOGGER.info("Initializing MyDolphin API Session")
 
         try:
-            if config_data is not None:
-                self.config_data = config_data
+            self.config_data = config_data
 
             if self.hass is None:
                 if self.session is not None:
@@ -109,8 +130,6 @@ class MyDolphinPlusAPI:
                 self.session = aiohttp.client.ClientSession()
             else:
                 self.session = async_create_clientsession(hass=self.hass)
-
-            await self._login()
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -118,31 +137,6 @@ class MyDolphinPlusAPI:
             _LOGGER.error(
                 f"Failed to initialize MyDolphin Plus API ({self.base_url}), error: {ex}, line: {line_number}"
             )
-
-    async def validate(self):
-        _LOGGER.info("Initializing MyDolphin Plus")
-
-        try:
-            if self.hass is None:
-                if self.session is not None:
-                    await self.session.close()
-
-                self.session = aiohttp.client.ClientSession()
-            else:
-                self.session = async_create_clientsession(hass=self.hass)
-
-            await self._service_login()
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to validate login to MyDolphin Plus API ({self.base_url}), error: {ex}, line: {line_number}"
-            )
-
-    def _validate_request(self, endpoint):
-        if not ConnectivityStatus.is_api_request_allowed(endpoint, self.status):
-            raise APIValidationException(endpoint, self.status)
 
     async def _async_post(self, url, headers: dict, request_data: str | dict | None):
         result = None
@@ -163,7 +157,7 @@ class MyDolphinPlusAPI:
             )
 
             if crex.status in [404, 405]:
-                self.status = ConnectivityStatus.NotFound
+                await self.set_status(ConnectivityStatus.NotFound)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -173,7 +167,7 @@ class MyDolphinPlusAPI:
                 f"Failed to post JSON to {url}, Error: {ex}, Line: {line_number}"
             )
 
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
 
         return result
 
@@ -196,7 +190,7 @@ class MyDolphinPlusAPI:
             )
 
             if crex.status in [404, 405]:
-                self.status = ConnectivityStatus.NotFound
+                await self.set_status(ConnectivityStatus.NotFound)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -206,7 +200,7 @@ class MyDolphinPlusAPI:
                 f"Failed to get data from {url}, Error: {ex}, Line: {line_number}"
             )
 
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
 
         return result
 
@@ -214,26 +208,27 @@ class MyDolphinPlusAPI:
         _LOGGER.info(f"Updating data from XXX)")
 
         if self.status == ConnectivityStatus.Failed:
-            await self.initialize()
+            await self.initialize(self.config_data)
 
-        self._refresh_details()
+        await self._refresh_details()
 
     async def _login(self):
         await self._service_login()
         await self._generate_token()
 
-        self._connect_aws_iot_client()
+        await self._connect_aws_iot_client()
 
         await self._load_details()
 
         for key in self.data:
             _LOGGER.info(f"{key}: {self.data[key]}")
 
-        self._refresh_details()
+        await self._refresh_details()
 
     async def _service_login(self):
         try:
-            self.status = ConnectivityStatus.Connecting
+            await self.set_status(ConnectivityStatus.Connecting)
+
             username = self.config_data.username
             password = self.config_data.password
 
@@ -256,21 +251,21 @@ class MyDolphinPlusAPI:
 
                 self.topic_data = TopicData(self.motor_unit_serial)
 
-                self.status = ConnectivityStatus.TemporaryConnected
+                await self.set_status(ConnectivityStatus.TemporaryConnected)
 
             else:
-                self.status = ConnectivityStatus.Failed
+                await self.set_status(ConnectivityStatus.Failed)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
             _LOGGER.error(f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}")
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
 
     async def _generate_token(self):
         if self.status != ConnectivityStatus.TemporaryConnected:
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
             return
 
         try:
@@ -292,18 +287,18 @@ class MyDolphinPlusAPI:
             self.aws_secret = data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
 
             _LOGGER.debug(f"Logged in to AWS using {self.aws_key}:{self.aws_secret}:{self.aws_token}")
-            self.status = ConnectivityStatus.Connected
+            await self.set_status(ConnectivityStatus.Connected)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
             _LOGGER.error(f"Failed  to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}")
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
 
-    def _connect_aws_iot_client(self):
+    async def _connect_aws_iot_client(self):
         if self.status != ConnectivityStatus.Connected:
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
             return
 
         script_dir = os.path.dirname(__file__)
@@ -335,11 +330,11 @@ class MyDolphinPlusAPI:
 
         else:
             _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
 
-    def _refresh_details(self, forced: bool = False):
+    async def _refresh_details(self, forced: bool = False):
         if self.status != ConnectivityStatus.Connected:
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
             return
 
         now = datetime.now().timestamp()
@@ -354,7 +349,7 @@ class MyDolphinPlusAPI:
 
     async def _load_details(self):
         if self.status != ConnectivityStatus.Connected:
-            self.status = ConnectivityStatus.Failed
+            await self.set_status(ConnectivityStatus.Failed)
             return
 
         try:
@@ -379,6 +374,8 @@ class MyDolphinPlusAPI:
 
                     self.data[new_key] = data.get(key)
 
+            await self.fire_data_changed_event()
+
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -386,10 +383,15 @@ class MyDolphinPlusAPI:
             _LOGGER.error(f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}")
 
     def _handle_aws_client_online(self):
-        self.awsiot_client_status = ConnectivityStatus.Connected
+        self.hass.async_create_task(self._handle_aws_client_status_changed(ConnectivityStatus.Connected))
 
     def _handle_aws_client_offline(self):
-        self.awsiot_client_status = ConnectivityStatus.Disconnected
+        self.hass.async_create_task(self._handle_aws_client_status_changed(ConnectivityStatus.Disconnected))
+
+    async def _handle_aws_client_status_changed(self, status: ConnectivityStatus):
+        self.data[ATTR_AWS_IOT_BROKER_STATUS] = status
+
+        await self.fire_data_changed_event()
 
     @staticmethod
     def _ack_callback(mid, data):
@@ -433,8 +435,7 @@ class MyDolphinPlusAPI:
                 if message_topic == self.topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
 
-                if self.callback is not None:
-                    self.callback()
+                await self.fire_data_changed_event()
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()

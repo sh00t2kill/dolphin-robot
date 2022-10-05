@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime
 import logging
 import sys
+from typing import Any
 
 from cryptography.fernet import InvalidToken
 
@@ -15,10 +16,11 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity_registry import EntityRegistry, async_get
 from homeassistant.helpers.event import async_track_time_interval
 
-from ...core.helpers.const import *
-from ...core.managers.device_manager import DeviceManager
-from ...core.managers.entity_manager import EntityManager
-from ...core.managers.storage_manager import StorageManager
+from ..helpers.const import *
+from ..managers.device_manager import DeviceManager
+from ..managers.entity_manager import EntityManager
+from ..managers.storage_manager import StorageManager
+from ..models.entity_data import EntityData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +51,8 @@ class HomeAssistantManager:
 
         self._async_track_time_handlers = []
         self._last_heartbeat = None
+        self._update_lock = False
+        self._actions: dict = {}
 
         def _send_heartbeat(internal_now):
             self._last_heartbeat = internal_now
@@ -59,6 +63,9 @@ class HomeAssistantManager:
 
     @property
     def entity_manager(self) -> EntityManager:
+        if self._entity_manager is None:
+            self._entity_manager = EntityManager(self._hass, self)
+
         return self._entity_manager
 
     @property
@@ -93,7 +100,7 @@ class HomeAssistantManager:
         """ Must be implemented to be able to expose services """
         pass
 
-    async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
+    async def async_initialize_data_providers(self):
         """ Must be implemented to be able to send heartbeat to API """
         pass
 
@@ -106,6 +113,10 @@ class HomeAssistantManager:
         pass
 
     def load_entities(self):
+        """ Must be implemented to be able to send heartbeat to API """
+        pass
+
+    def load_devices(self):
         """ Must be implemented to be able to send heartbeat to API """
         pass
 
@@ -174,7 +185,7 @@ class HomeAssistantManager:
 
             _LOGGER.info(f"Handling ConfigEntry change: {entry.as_dict()}")
 
-        await self.async_initialize_data_providers(entry)
+        await self.async_initialize_data_providers()
 
     async def async_unload(self):
         _LOGGER.info(f"HA was stopped")
@@ -199,14 +210,25 @@ class HomeAssistantManager:
 
         await self._device_manager.async_remove()
 
+        self._entry = None
+        self.entity_manager.entities.clear()
+
         _LOGGER.info(f"Current integration ({entry.title}) removed")
 
     def update(self):
+        if self._update_lock:
+            return
+
+        self._update_lock = True
+
+        self.load_devices()
         self.load_entities()
 
         self.entity_manager.update()
 
         self._hass.async_create_task(self.dispatch_all())
+
+        self._update_lock = False
 
     async def async_update(self, event_time):
         if not self._is_initialized:
@@ -233,40 +255,6 @@ class HomeAssistantManager:
 
         self._is_updating = False
 
-    async def delete_entity(self, domain, name):
-        try:
-            available_domains = self.entity_manager.available_domains
-            domain_data = self.entity_manager.get_domain_data(domain)
-
-            entity = domain_data.get_entity(name)
-            device_name = entity.device_name
-            unique_id = entity.unique_id
-
-            domain_data.delete_entity(name)
-
-            device_in_use = False
-
-            for domain_name in available_domains:
-                if domain_name != domain:
-                    domain_data = self.entity_manager.get_domain_data(domain_name)
-
-                    if device_name in domain_data.entities:
-                        device_in_use = True
-                        break
-
-            entity_id = self.entity_registry.async_get_entity_id(
-                domain, DOMAIN, unique_id
-            )
-            self.entity_registry.async_remove(entity_id)
-
-            if not device_in_use:
-                await self.device_manager.delete_device(device_name)
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(f"Failed to delete_entity, Error: {ex}, Line: {line_number}")
-
     async def dispatch_all(self):
         if not self._is_initialized:
             _LOGGER.info("NOT INITIALIZED - Failed discovering components")
@@ -276,3 +264,126 @@ class HomeAssistantManager:
             signal = PLATFORMS.get(domain)
 
             async_dispatcher_send(self._hass, signal)
+
+    def set_action(self, entity_id: str, action_name: str, action):
+        key = f"{entity_id}:{action_name}"
+        self._actions[key] = action
+
+    def get_action(self, entity_id: str, action_name: str):
+        key = f"{entity_id}:{action_name}"
+        action = self._actions.get(key)
+
+        return action
+
+    async def get_core_entity_fan_speed(self, entity: EntityData) -> str | None:
+        """ Handles ACTION_GET_CORE_ENTITY_FAN_SPEED. """
+        action = self.get_action(entity.id, ACTION_GET_CORE_ENTITY_FAN_SPEED)
+        value = None
+
+        if action is not None:
+            value = await action(entity)
+
+        return value
+
+    def async_core_entity_return_to_base(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_RETURN_TO_BASE. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_RETURN_TO_BASE)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_set_fan_speed(self, entity: EntityData, fan_speed: str) -> None:
+        """ Handles ACTION_CORE_ENTITY_SET_FAN_SPEED. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_SET_FAN_SPEED)
+
+        if action is not None:
+            await action(entity, fan_speed)
+
+    async def async_core_entity_start(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_START. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_START)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_stop(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_STOP. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_STOP)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_pause(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_PAUSE. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_PAUSE)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_turn_on(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_TURN_ON. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_TURN_ON)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_turn_off(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_TURN_OFF. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_TURN_OFF)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_send_command(
+            self,
+            entity: EntityData,
+            command: str,
+            params: dict[str, Any] | list[Any] | None = None
+    ) -> None:
+        """ Handles ACTION_CORE_ENTITY_SEND_COMMAND. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_SEND_COMMAND)
+
+        if action is not None:
+            await action(entity, command, params)
+
+    async def async_core_entity_locate(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_LOCATE. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_LOCATE)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_select_option(self, entity: EntityData, option: str) -> None:
+        """ Handles ACTION_CORE_ENTITY_SELECT_OPTION. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_SELECT_OPTION)
+
+        if action is not None:
+            await action(entity, option)
+
+    async def async_core_entity_toggle(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_TOGGLE. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_TOGGLE)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_enable_motion_detection(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_ENABLE_MOTION_DETECTION. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_ENABLE_MOTION_DETECTION)
+
+        if action is not None:
+            await action(entity)
+
+    async def async_core_entity_disable_motion_detection(self, entity: EntityData) -> None:
+        """ Handles ACTION_CORE_ENTITY_DISABLE_MOTION_DETECTION. """
+        action = self.get_action(entity.id, ACTION_CORE_ENTITY_DISABLE_MOTION_DETECTION)
+
+        if action is not None:
+            await action(entity)
+
+    @staticmethod
+    def log_exception(ex, message):
+        exc_type, exc_obj, tb = sys.exc_info()
+        line_number = tb.tb_lineno
+
+        _LOGGER.error(f"{message}, Error: {str(ex)}, Line: {line_number}")

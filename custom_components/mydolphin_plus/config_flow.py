@@ -9,12 +9,10 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 
+from .component.api.mydolphin_plus_api import IntegrationAPI
 from .component.helpers.const import *
 from .configuration.helpers.exceptions import AlreadyExistsError, LoginError
-from .configuration.managers.configuration_manager import (
-    ConfigurationManager,
-    async_get_configuration_manager,
-)
+from .configuration.managers.configuration_manager import ConfigurationManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +39,8 @@ class DomainFlowHandler(config_entries.ConfigFlow):
         """Handle a flow start."""
         _LOGGER.debug(f"Starting async_step_user of {DEFAULT_NAME}")
 
-        self._config_manager = async_get_configuration_manager(self.hass)
+        api = IntegrationAPI(self.hass)
+        self._config_manager = ConfigurationManager(self.hass, api)
 
         await self._config_manager.initialize()
 
@@ -104,7 +103,9 @@ class DomainOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_mydolphin_plus_additional_settings(self, user_input=None):
         _LOGGER.info(f"Starting additional settings step: {user_input}")
 
-        self._config_manager = async_get_configuration_manager(self.hass)
+        api = IntegrationAPI(self.hass)
+        self._config_manager = ConfigurationManager(self.hass, api)
+
         await self._config_manager.initialize()
 
         errors = None

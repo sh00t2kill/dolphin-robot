@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 from homeassistant.helpers.entity import EntityDescription
+from homeassistant.util import slugify
 
-from ...core.helpers.const import *
-from ...core.helpers.enums import EntityStatus
+from ..helpers.const import *
+from ..helpers.enums import EntityStatus
 
 
 class EntityData:
@@ -18,7 +17,6 @@ class EntityData:
     domain: str | None
     entry_id: str
     entity_description: EntityDescription
-    action: Any
 
     def __init__(self, entry_id: str, entity_description: EntityDescription):
         self.entry_id = entry_id
@@ -30,7 +28,6 @@ class EntityData:
         self.status = EntityStatus.CREATED
         self.disabled = False
         self.domain = None
-        self.action = None
 
     @property
     def id(self):
@@ -40,15 +37,9 @@ class EntityData:
     def name(self):
         return self.entity_description.name
 
-    @property
-    def unique_id(self):
-        unique_id = f"{DOMAIN}-{self.domain}-{self.name}"
-
-        return unique_id
-
     def __repr__(self):
         obj = {
-            ENTITY_UNIQUE_ID: self.unique_id,
+            ENTITY_UNIQUE_ID: self.id,
             ENTITY_STATE: self.state,
             ENTITY_ATTRIBUTES: self.attributes,
             ENTITY_DETAILS: self.details,
@@ -62,3 +53,9 @@ class EntityData:
         to_string = f"{obj}"
 
         return to_string
+
+    @staticmethod
+    def generate_unique_id(domain, name):
+        unique_id = slugify(f"{domain} {name}")
+
+        return unique_id

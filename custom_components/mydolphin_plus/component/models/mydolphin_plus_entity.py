@@ -4,9 +4,9 @@ import logging
 
 from homeassistant.core import HomeAssistant
 
-from ...component.helpers import get_ha
 from ...core.models.base_entity import BaseEntity
 from ...core.models.entity_data import EntityData
+from ..helpers import get_ha
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -8,42 +8,26 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from ...component.api.mydolphin_plus_api import MyDolphinPlusAPI
-from ...component.helpers.enums import ConnectivityStatus
-from ...configuration.helpers.exceptions import LoginError
-from ...configuration.models.config_data import ConfigData
+from ...core.api.base_api import BaseAPI
 from ...core.helpers.const import *
+from ...core.helpers.enums import ConnectivityStatus
 from ...core.managers.password_manager import PasswordManager
+from ..helpers.exceptions import LoginError
+from ..models.config_data import ConfigData
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def async_get_configuration_manager(hass: HomeAssistant) -> ConfigurationManager:
-    data = None
-
-    if hass is not None and hass.data is not None:
-        data = hass.data.get(DATA)
-
-    if data is None or CONFIGURATION_MANAGER not in data:
-        configuration_manager = ConfigurationManager(hass)
-
-        if data is not None:
-            hass.data[DATA][CONFIGURATION_MANAGER] = configuration_manager
-
-    else:
-        configuration_manager: ConfigurationManager = hass.data[DATA][CONFIGURATION_MANAGER]
-
-    return configuration_manager
 
 
 class ConfigurationManager:
     password_manager: PasswordManager
     config: dict[str, ConfigData]
+    api: BaseAPI | None
 
-    def __init__(self, hass: HomeAssistant):
+    def __init__(self, hass: HomeAssistant, api: BaseAPI | None):
         self.hass = hass
         self.config = {}
         self.password_manager = PasswordManager(hass)
+        self.api = api
 
     async def initialize(self):
         await self.password_manager.initialize()
@@ -71,14 +55,15 @@ class ConfigurationManager:
             self.config[entry.entry_id] = config_data
 
     async def validate(self, data: dict[str, Any]):
+        if self.api is None:
+            _LOGGER.error("Validate configuration is not supported through that flow")
+            return
+
         _LOGGER.debug("Validate login")
 
-        config_data = ConfigData.from_dict(data)
+        await self.api.validate(data)
 
-        api = MyDolphinPlusAPI(self.hass, config_data)
-        await api.validate()
-
-        errors = ConnectivityStatus.get_config_errors(api.status)
+        errors = ConnectivityStatus.get_config_errors(self.api.status)
 
         if errors is None:
             password = data[CONF_PASSWORD]
