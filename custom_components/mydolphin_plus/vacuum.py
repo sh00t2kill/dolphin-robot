@@ -7,15 +7,10 @@ from __future__ import annotations
 
 import logging
 
-from .component.helpers.const import *
 from .core.components.vacuum import CoreVacuum
 from .core.helpers.setup_base_entry import async_setup_base_entry
 
 _LOGGER = logging.getLogger(__name__)
-
-DEPENDENCIES = [DOMAIN]
-
-CURRENT_DOMAIN = DOMAIN_VACUUM
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
