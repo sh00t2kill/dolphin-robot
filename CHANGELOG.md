@@ -5,7 +5,11 @@
   - `start` is equivalent to `turn_on` (ie start a cleaning cycle)
   - `stop` and `pause` are equivalent to `turn_off` (ie stop a cleaning cycle)
   - locate turns the LED on for 2 seconds and off again
-- Refactor `Core` all components are now part of the `Core`, implementation should be done in API, HA Manager and Configuration Manager
+
+- Major refactor to `Core`
+  - all components are now part of the `Core`
+  - Implementation should be done only in API, HA Manager and Configuration Manager
+
 - Remapped vacuum status for each action - turn on, turn off, toggle, start, stop, pause
 
 ## v0.1.0
