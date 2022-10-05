@@ -361,4 +361,8 @@ VACUUM_FEATURES = VacuumEntityFeature.STATE | \
                   VacuumEntityFeature.RETURN_HOME | \
                   VacuumEntityFeature.SEND_COMMAND | \
                   VacuumEntityFeature.START | \
-                  VacuumEntityFeature.STOP
+                  VacuumEntityFeature.STOP | \
+                  VacuumEntityFeature.PAUSE | \
+                  VacuumEntityFeature.TURN_ON | \
+                  VacuumEntityFeature.TURN_OFF | \
+                  VacuumEntityFeature.LOCATE
