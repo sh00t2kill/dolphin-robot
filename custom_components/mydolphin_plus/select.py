@@ -15,7 +15,6 @@ from .component.helpers.const import *
 from .component.models.mydolphin_plus_entity import MyDolphinPlusEntity
 from .core.models.base_entity import async_setup_base_entry
 from .core.models.entity_data import EntityData
-from .core.models.select_description import SelectDescription
 
 DEPENDENCIES = [DOMAIN]
 
@@ -38,18 +37,23 @@ async def async_unload_entry(hass, config_entry):
 
 
 def get_select(hass: HomeAssistant, entity: EntityData):
-    select = MyDolphinPlusSelect(entity.entity_description)
+    select = MyDolphinPlusSelect()
     select.initialize(hass, entity, CURRENT_DOMAIN)
 
     return select
 
 
 class MyDolphinPlusSelect(SelectEntity, MyDolphinPlusEntity, ABC):
-    def __init__(self, entity_description: SelectDescription):
-        super().__init__()
+    def initialize(
+        self,
+        hass: HomeAssistant,
+        entity: EntityData,
+        current_domain: str,
+    ):
+        super().initialize(hass, entity, current_domain)
 
-        self.entity_description = entity_description
-        self._attr_options = list(entity_description.options)
+        if hasattr(self.entity_description, ATTR_OPTIONS):
+            self._attr_options = getattr(self.entity_description, ATTR_OPTIONS)
 
     @property
     def current_option(self) -> str:

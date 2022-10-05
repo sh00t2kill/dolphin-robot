@@ -177,6 +177,7 @@ DATA_ROBOT_DETAILS = {
 
 ATTR_CLEANING_MODE = "cleaning_mode"
 ATTR_LED_MODE = "led_mode"
+ATTR_OPTIONS = "options"
 
 CLEANING_MODE_REGULAR = "all"
 CLEANING_MODE_FAST_MODE = "short"
@@ -299,6 +300,8 @@ PWS_STATE_OFF = "off"
 PWS_STATE_HOLD_DELAY = "holdDelay"
 PWS_STATE_HOLD_WEEKLY = "holdWeekly"
 PWS_STATE_PROGRAMMING = "programming"
+PWS_STATE_ERROR = "error"
+PWS_STATE_CLEANING = "cleaning"
 
 ROBOT_STATE_FINISHED = "finished"
 ROBOT_STATE_FAULT = "fault"

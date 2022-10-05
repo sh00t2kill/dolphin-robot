@@ -46,8 +46,6 @@ def get_switch(hass: HomeAssistant, entity: EntityData):
 class MyDolphinPlusSwitch(SwitchEntity, MyDolphinPlusEntity):
     """Class for a Shinobi Video switch."""
 
-    _attr_entity_category = EntityCategory.CONFIG
-
     @property
     def is_on(self) -> bool | None:
         """Return the boolean response if the node is on."""

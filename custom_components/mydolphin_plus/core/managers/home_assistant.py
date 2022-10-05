@@ -1,7 +1,5 @@
 """
-Support for MyDolphin Plus.
-For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/mydolphin_plus/
+Core HA Manager.
 """
 from __future__ import annotations
 

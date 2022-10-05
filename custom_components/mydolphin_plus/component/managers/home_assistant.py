@@ -97,7 +97,24 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         try:
             await self._api.async_update()
 
-            self.device_manager.generate_device(self.api.data)
+            data = self._api.data
+            device_name = data.get("Robot Name")
+            model = data.get("Product Description")
+            versions = data.get("versions", {})
+            pws_version = versions.get("pwsVersion", {})
+            sw_version = pws_version.get("pwsSwVersion")
+            hw_version = pws_version.get("pwsHwVersion")
+
+            device_info = {
+                "identifiers": {(DEFAULT_NAME, device_name)},
+                "name": device_name,
+                "manufacturer": MANUFACTURER,
+                "model": model,
+                "sw_version": sw_version,
+                "hw_version": hw_version
+            }
+
+            self.device_manager.set(device_name, device_info)
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -189,9 +206,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             weekly_timer = features.get(DATA_FEATURE_WEEKLY_TIMER, {})
             status = weekly_timer.get(ATTR_STATUS, ATTR_DISABLED)
 
-            is_enabled = status == ATTR_ENABLE
+            state = status == ATTR_ENABLE
 
-            state = STATE_ON if is_enabled else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_STATUS: status
@@ -199,7 +215,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             entity_description = BinarySensorEntityDescription(
                 key=entity_name,
-                icon="mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+                icon="mdi:calendar-check" if state else "mdi:calendar-remove"
             )
 
             self.entity_manager.set_entity(DOMAIN_BINARY_SENSOR,
@@ -220,7 +236,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             day: str,
             data: dict
     ):
-        is_enabled = data.get(DATA_SCHEDULE_IS_ENABLED, DEFAULT_ENABLE)
+        state = data.get(DATA_SCHEDULE_IS_ENABLED, DEFAULT_ENABLE)
         cleaning_mode = data.get(DATA_SCHEDULE_CLEANING_MODE, {})
         job_time = data.get(DATA_SCHEDULE_TIME, {})
 
@@ -236,7 +252,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             job_start_time = str(datetime.timedelta(hours=hours, minutes=minutes))
 
         try:
-            state = STATE_ON if is_enabled else STATE_OFF
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_MODE: mode_name,
@@ -245,7 +260,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             entity_description = BinarySensorEntityDescription(
                 key=entity_name,
-                icon="mdi:calendar-check" if is_enabled else "mdi:calendar-remove"
+                icon="mdi:calendar-check" if state else "mdi:calendar-remove"
             )
 
             self.entity_manager.set_entity(DOMAIN_BINARY_SENSOR,
@@ -489,7 +504,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             wifi = data.get(DATA_SECTION_WIFI, {})
             net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
 
-            state = details.get(CONF_STATE)
+            state = details.get(ATTR_CALCULATED_STATUS)
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
@@ -603,26 +618,29 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         time_zone = system_state.get(DATA_SYSTEM_STATE_TIME_ZONE, 0)
         time_zone_name = system_state.get(DATA_SYSTEM_STATE_TIME_ZONE_NAME, DEFAULT_TIME_ZONE_NAME)
 
-        pws_on = pws_state in [PWS_STATE_ON]
-        pws_off = pws_state in [PWS_STATE_OFF, PWS_STATE_HOLD_DELAY, PWS_STATE_HOLD_WEEKLY]
+        calculated_state = PWS_STATE_OFF
+
+        pws_on = pws_state in [PWS_STATE_ON, PWS_STATE_HOLD_DELAY, PWS_STATE_HOLD_WEEKLY, PWS_STATE_PROGRAMMING]
+        pws_error = pws_state in [ROBOT_STATE_NOT_CONNECTED]
+        pws_cleaning = pws_state in [PWS_STATE_ON]
         pws_programming = pws_state == PWS_STATE_PROGRAMMING
 
-        robot_on = robot_state not in [ROBOT_STATE_INIT, ROBOT_STATE_SCANNING, ROBOT_STATE_NOT_CONNECTED]
-        robot_off = robot_state not in [ROBOT_STATE_FINISHED, ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
+        robot_error = robot_state in [ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
+        robot_cleaning = robot_state not in [ROBOT_STATE_INIT, ROBOT_STATE_SCANNING, ROBOT_STATE_NOT_CONNECTED]
         robot_programming = robot_state == PWS_STATE_PROGRAMMING
 
-        if pws_off or robot_off:
-            calculated_state = PWS_STATE_OFF
+        if pws_error or robot_error:
+            calculated_state = PWS_STATE_ERROR
+
         elif pws_programming and robot_programming:
             calculated_state = PWS_STATE_PROGRAMMING
-        elif pws_state == PWS_STATE_ON and robot_state == ROBOT_STATE_NOT_CONNECTED:
-            calculated_state = ROBOT_STATE_NOT_CONNECTED
-        elif (pws_on and robot_on) or (pws_programming and not robot_programming):
-            calculated_state = PWS_STATE_ON
-        else:
-            calculated_state = pws_state
 
-        state = CALCULATED_STATES.get(calculated_state, UNMAPPED_CALCULATED_STATE)
+        elif pws_on:
+            if (pws_cleaning and robot_cleaning) or (pws_programming and not robot_programming):
+                calculated_state = PWS_STATE_CLEANING
+
+            else:
+                calculated_state = PWS_STATE_ON
 
         state_description = f"pwsState: {pws_state} | robotState: {robot_state}"
         _LOGGER.info(f"System status recalculated, State: {calculated_state}, Parameters: {state_description}")
@@ -634,8 +652,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             ATTR_ROBOT_TYPE: robot_type,
             ATTR_IS_BUSY: is_busy,
             ATTR_TURN_ON_COUNT: turn_on_count,
-            ATTR_TIME_ZONE: f"{time_zone_name} ({time_zone})",
-            CONF_STATE: state
+            ATTR_TIME_ZONE: f"{time_zone_name} ({time_zone})"
         }
 
         return result

@@ -11,6 +11,7 @@ from ...core.helpers.enums import EntityStatus
 class EntityData:
     state: str | bool | None
     attributes: dict
+    details: dict
     device_name: str | None
     status: EntityStatus
     disabled: bool
@@ -24,11 +25,16 @@ class EntityData:
         self.entity_description = entity_description
         self.state = None
         self.attributes = {}
+        self.details = {}
         self.device_name = None
         self.status = EntityStatus.CREATED
         self.disabled = False
         self.domain = None
         self.action = None
+
+    @property
+    def id(self):
+        return self.entity_description.key
 
     @property
     def name(self):
@@ -40,15 +46,12 @@ class EntityData:
 
         return unique_id
 
-    def set_created_or_updated(self, was_created):
-        self.status = EntityStatus.CREATED if was_created else EntityStatus.UPDATED
-
     def __repr__(self):
         obj = {
             ENTITY_UNIQUE_ID: self.unique_id,
-            ENTITY_NAME: self.name,
             ENTITY_STATE: self.state,
             ENTITY_ATTRIBUTES: self.attributes,
+            ENTITY_DETAILS: self.details,
             ENTITY_DEVICE_NAME: self.device_name,
             ENTITY_STATUS: self.status,
             ENTITY_DISABLED: self.disabled,

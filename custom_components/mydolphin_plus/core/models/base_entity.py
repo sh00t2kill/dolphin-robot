@@ -27,8 +27,7 @@ async def async_setup_base_entry(
     domain: str,
     component: Callable[[HomeAssistant, EntityData], Any],
 ):
-
-    """Set up MyDolphin Plus based off an entry."""
+    """Set up base entity an entry."""
     _LOGGER.debug(f"Starting async_setup_entry {domain}")
 
     try:
@@ -48,7 +47,7 @@ async def async_setup_base_entry(
 
 
 class BaseEntity(Entity):
-    """Representation a binary sensor that is updated by MyDolphin Plus."""
+    """Representation a base entity."""
 
     hass: HomeAssistant = None
     entity: EntityData = None

@@ -48,4 +48,4 @@ class MyDolphinPlusBinarySensor(BinarySensorEntity, MyDolphinPlusEntity):
     @property
     def is_on(self):
         """Return true if the binary sensor is on."""
-        return self.entity.state == STATE_ON
+        return self.entity.state

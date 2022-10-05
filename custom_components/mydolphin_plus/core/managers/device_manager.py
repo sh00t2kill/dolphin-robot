@@ -48,22 +48,3 @@ class DeviceManager:
 
     def set(self, name, device_info):
         self._devices[name] = device_info
-
-    def generate_device(self, data: dict):
-        device_name = data.get("Robot Name")
-        model = data.get("Product Description")
-        versions = data.get("versions", {})
-        pws_version = versions.get("pwsVersion", {})
-        sw_version = pws_version.get("pwsSwVersion")
-        hw_version = pws_version.get("pwsHwVersion")
-
-        device_info = {
-            "identifiers": {(DEFAULT_NAME, device_name)},
-            "name": device_name,
-            "manufacturer": MANUFACTURER,
-            "model": model,
-            "sw_version": sw_version,
-            "hw_version": hw_version
-        }
-
-        self.set(device_name, device_info)

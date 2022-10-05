@@ -1,18 +1,7 @@
 """Test file for indicators."""
+from custom_components.mydolphin_plus.component.helpers.const import *
+
 IS_ROBOT_BUSY = "isBusy"
-PWS_CLOUD_STATUS = "pwsCloudStatus"
-PWS_CLOUD_STATUS_NOT_CONNECTED = "not connected"
-PWS_STATE = "pwsState"
-PWS_STATE_OFF = "off"
-PWS_STATE_ON = "on"
-ROBOT_STATE = "robotState"
-ROBOT_STATE_FAULT = "fault"
-ROBOT_STATE_FINISHED = "finished"
-ROBOT_STATE_INIT = "init"
-ROBOT_STATE_MAPPING = "mapping"
-ROBOT_STATE_NOT_CONNECTED = "notConnected"
-ROBOT_STATE_PROGRAMMING = "programming"
-ROBOT_STATE_SCANNING = "scanning"
 
 
 class IndicatorType:
@@ -26,15 +15,9 @@ class IndicatorType:
     PWS_NOT_CONNECTED_TO_CLOUD = "PWS_NOT_CONNECTED_TO_CLOUD"
 
 
-class Consts:
-    """Consts."""
-
-    HOLD_DELAY = "hold_delay"
-    HOLD_WEEKLY = "hold_weekly"
-    CONNECTED_TO_WIFI = "connected"
-
-
 changeWifiToBleProcess = False
+CONNECTED_TO_WIFI = "wifi"
+available_states = []
 
 
 def indicator(
@@ -78,8 +61,8 @@ def indicator3(
     result = None
     if pws_state in [
         "off",
-        Consts.HOLD_DELAY,
-        Consts.HOLD_WEEKLY,
+        PWS_STATE_HOLD_DELAY,
+        PWS_STATE_HOLD_WEEKLY,
     ] and robot_state not in [
         ROBOT_STATE_FINISHED,
         "fault",
@@ -125,7 +108,7 @@ def indicator5(
     result = None
     if (
         is_busy
-        and connectivity_type in [Consts.CONNECTED_TO_WIFI]
+        and connectivity_type in [CONNECTED_TO_WIFI]
         and not changeWifiToBleProcess
     ):
         result = IndicatorType.ROBOT_IS_BUSY
@@ -142,9 +125,125 @@ def indicator6(
 ):
     """Assumption: Not connected to cloud."""
     result = None
-    if pws_cloud_state in [PWS_CLOUD_STATUS_NOT_CONNECTED] and connectivity_type in [
-        Consts.CONNECTED_TO_WIFI
+    if pws_cloud_state in [ROBOT_STATE_NOT_CONNECTED] and connectivity_type in [
+        CONNECTED_TO_WIFI
     ]:
         result = IndicatorType.PWS_NOT_CONNECTED_TO_CLOUD
 
     print(result)
+
+
+def run(pws_state: str, robot_state: str):
+    """Simulate calculation."""
+    calculated_status = PWS_STATE_OFF
+
+    pws_on = pws_state in [
+        PWS_STATE_ON,
+        PWS_STATE_HOLD_DELAY,
+        PWS_STATE_HOLD_WEEKLY,
+        PWS_STATE_PROGRAMMING,
+    ]
+    pws_error = pws_state in [ROBOT_STATE_NOT_CONNECTED]
+    pws_cleaning = pws_state in [PWS_STATE_ON]
+    pws_programming = pws_state == PWS_STATE_PROGRAMMING
+
+    robot_error = robot_state in [ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
+    robot_cleaning = robot_state not in [
+        ROBOT_STATE_INIT,
+        ROBOT_STATE_SCANNING,
+        ROBOT_STATE_NOT_CONNECTED,
+    ]
+    robot_programming = robot_state == PWS_STATE_PROGRAMMING
+
+    if pws_error or robot_error:
+        calculated_status = PWS_STATE_ERROR
+
+    elif pws_programming and robot_programming:
+        calculated_status = PWS_STATE_PROGRAMMING
+
+    elif pws_on:
+        if (pws_cleaning and robot_cleaning) or (
+            pws_programming and not robot_programming
+        ):
+            calculated_status = PWS_STATE_CLEANING
+
+        else:
+            calculated_status = PWS_STATE_ON
+
+    capabilities = []
+
+    if calculated_status in [PWS_STATE_OFF, PWS_STATE_ERROR]:
+        capabilities.append("Turn On")
+
+    if calculated_status in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]:
+        capabilities.append("Turn Off")
+
+    if calculated_status in [PWS_STATE_ON]:
+        capabilities.append("Start")
+
+    if calculated_status in [PWS_STATE_CLEANING]:
+        capabilities.append("Stop")
+
+    actions = ", ".join(capabilities)
+
+    print(
+        f"| {calculated_status.capitalize().ljust(len(PWS_STATE_PROGRAMMING) + 1, ' ')} "
+        f"| {pws_state.ljust(len(PWS_STATE_PROGRAMMING) + 1, ' ')} "
+        f"| {robot_state.ljust(len(PWS_STATE_PROGRAMMING) + 1, ' ')} "
+        f"| {actions.ljust(16, ' ')} |"
+    )
+
+    if calculated_status.capitalize() not in available_states:
+        available_states.append(calculated_status.capitalize())
+
+
+print(
+    f"| {'State'.ljust(len(PWS_STATE_PROGRAMMING) + 1, ' ')} "
+    f"| {'PWS'.ljust(len(PWS_STATE_PROGRAMMING) + 1, ' ')} "
+    f"| {'Robot'.ljust(len(PWS_STATE_PROGRAMMING) + 1, ' ')} "
+    f"| {'Actions'.ljust(16, ' ')} |"
+)
+
+print(
+    f"| {''.ljust(len(PWS_STATE_PROGRAMMING) + 1, '-')} "
+    f"| {''.ljust(len(PWS_STATE_PROGRAMMING) + 1, '-')} "
+    f"| {''.ljust(len(PWS_STATE_PROGRAMMING) + 1, '-')} "
+    f"| {''.ljust(16, '-')} |"
+)
+
+run(PWS_STATE_OFF, ROBOT_STATE_NOT_CONNECTED)
+run(PWS_STATE_OFF, ROBOT_STATE_FAULT)
+run(PWS_STATE_OFF, PWS_STATE_PROGRAMMING)
+run(PWS_STATE_OFF, ROBOT_STATE_FINISHED)
+run(PWS_STATE_OFF, ROBOT_STATE_INIT)
+run(PWS_STATE_OFF, ROBOT_STATE_SCANNING)
+
+run(PWS_STATE_ON, ROBOT_STATE_NOT_CONNECTED)
+run(PWS_STATE_ON, ROBOT_STATE_FAULT)
+run(PWS_STATE_ON, PWS_STATE_PROGRAMMING)
+run(PWS_STATE_ON, ROBOT_STATE_FINISHED)
+run(PWS_STATE_ON, ROBOT_STATE_INIT)
+run(PWS_STATE_ON, ROBOT_STATE_SCANNING)
+
+run(PWS_STATE_HOLD_DELAY, ROBOT_STATE_NOT_CONNECTED)
+run(PWS_STATE_HOLD_DELAY, ROBOT_STATE_FAULT)
+run(PWS_STATE_HOLD_DELAY, PWS_STATE_PROGRAMMING)
+run(PWS_STATE_HOLD_DELAY, ROBOT_STATE_FINISHED)
+run(PWS_STATE_HOLD_DELAY, ROBOT_STATE_INIT)
+run(PWS_STATE_HOLD_DELAY, ROBOT_STATE_SCANNING)
+
+run(PWS_STATE_HOLD_WEEKLY, ROBOT_STATE_NOT_CONNECTED)
+run(PWS_STATE_HOLD_WEEKLY, ROBOT_STATE_FAULT)
+run(PWS_STATE_HOLD_WEEKLY, PWS_STATE_PROGRAMMING)
+run(PWS_STATE_HOLD_WEEKLY, ROBOT_STATE_FINISHED)
+run(PWS_STATE_HOLD_WEEKLY, ROBOT_STATE_INIT)
+run(PWS_STATE_HOLD_WEEKLY, ROBOT_STATE_SCANNING)
+
+run(PWS_STATE_PROGRAMMING, ROBOT_STATE_NOT_CONNECTED)
+run(PWS_STATE_PROGRAMMING, ROBOT_STATE_FAULT)
+run(PWS_STATE_PROGRAMMING, PWS_STATE_PROGRAMMING)
+run(PWS_STATE_PROGRAMMING, ROBOT_STATE_FINISHED)
+run(PWS_STATE_PROGRAMMING, ROBOT_STATE_INIT)
+run(PWS_STATE_PROGRAMMING, ROBOT_STATE_SCANNING)
+
+print(f"Available states: {', '.join(available_states)}")

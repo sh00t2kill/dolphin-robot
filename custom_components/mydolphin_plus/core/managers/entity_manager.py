@@ -74,6 +74,8 @@ class EntityManager:
 
         entity.status = EntityStatus.READY
 
+        _LOGGER.info(entity_component)
+
         return entity_component
 
     async def _async_update(self):
@@ -148,7 +150,8 @@ class EntityManager:
                       state: str,
                       attributes: dict,
                       device_name: str,
-                      entity_description: EntityDescription | None = None):
+                      entity_description: EntityDescription | None = None,
+                      details: dict | None = None):
         msgs = []
 
         if entity.state != state:
@@ -165,6 +168,12 @@ class EntityManager:
 
         if entity_description is not None and entity.entity_description != entity_description:
             msgs.append(f"Description {str(entity.entity_description)} -> {str(entity_description)}")
+
+        if details is not None and entity.details != details:
+            from_details = self._get_attributes_json(entity.details)
+            to_details = self._get_attributes_json(details)
+
+            msgs.append(f"Details {from_details} -> {to_details}")
 
         modified = len(msgs) > 0
 
@@ -207,12 +216,15 @@ class EntityManager:
                    attributes: dict,
                    device_name: str,
                    entity_description: EntityDescription | None,
-                   action: Any = None
+                   action: Any = None,
+                   details: dict | None = None,
+                   destructors: list[bool] = None
                    ):
 
         entity_name = entity_description.key
 
-        entity_description.name = entity_name
+        if entity_description.name is None:
+            entity_description.name = entity_name
 
         domain_data = self.get_domain_data(domain)
 
@@ -220,21 +232,22 @@ class EntityManager:
 
         if entity is None:
             entity = EntityData(entry_id, entity_description)
-            entity.domain = domain
             entity.status = EntityStatus.CREATED
 
             self._compare_data(entity, state, attributes, device_name)
 
         else:
-            was_modified = self._compare_data(entity, state, attributes, device_name, entity_description)
+            was_modified = self._compare_data(entity, state, attributes, device_name, entity_description, details)
 
             if was_modified:
                 entity.status = EntityStatus.UPDATED
 
         if entity.status in [EntityStatus.CREATED, EntityStatus.UPDATED]:
+            entity.domain = domain
             entity.state = state
             entity.attributes = attributes
             entity.device_name = device_name
             entity.action = action
+            entity.details = details
 
-        self._set(entity)
+        self._set(entity, destructors)
