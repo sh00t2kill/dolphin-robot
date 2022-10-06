@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.2
+- Fix initialization order of API
+
 ## v0.2.1
 - Fix cycle time left sensor - didn't take new vacuum states into account
 - Fix storage API in case file doesn't exist
