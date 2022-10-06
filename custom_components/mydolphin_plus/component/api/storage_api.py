@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Awaitable
+from typing import Awaitable, Callable
 
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store

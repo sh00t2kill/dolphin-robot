@@ -27,7 +27,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
-from ..api.storage_api import StorageAPI
 from ...configuration.managers.configuration_manager import ConfigurationManager
 from ...configuration.models.config_data import ConfigData
 from ...core.helpers.enums import ConnectivityStatus
@@ -36,6 +35,7 @@ from ...core.models.entity_data import EntityData
 from ...core.models.select_description import SelectDescription
 from ...core.models.vacuum_description import VacuumDescription
 from ..api.mydolphin_plus_api import IntegrationAPI
+from ..api.storage_api import StorageAPI
 from ..helpers.common import get_cleaning_mode_name, get_date_time_from_timestamp
 from ..helpers.const import *
 
