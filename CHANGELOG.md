@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.3
+- Fix core issue while deleting entities
+
 ## v0.2.2
 - Fix initialization order of API
 
