@@ -21,7 +21,7 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=hass,alot,datas,dof,dur,ether,farenheit,hist,iff,ines,ist,lightsensor,mut,nd,pres,referer,ser,serie,te,technik,ue,uint,visability,wan,wanna,withing,iam,incomfort
-          - --skip="./.*,*.csv,*.json,*.pem"
+          - --skip="./.*,*.csv,*.json,*.pem,*.svg"
           - --quiet-level=2
         exclude_types: [csv, json]
         exclude: ^tests/fixtures/
