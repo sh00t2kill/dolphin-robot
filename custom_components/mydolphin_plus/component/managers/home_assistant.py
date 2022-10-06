@@ -626,7 +626,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def _vacuum_start(self, entity: EntityData):
         if entity.status in [PWS_STATE_ON, PWS_STATE_OFF]:
             self.api.set_power_state(True)
-        
+
     async def _vacuum_stop(self, entity: EntityData):
         if entity.state in [PWS_STATE_CLEANING, PWS_STATE_ON]:
             self.api.set_power_state(False)
