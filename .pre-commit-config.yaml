@@ -21,9 +21,9 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=hass,alot,datas,dof,dur,ether,farenheit,hist,iff,ines,ist,lightsensor,mut,nd,pres,referer,ser,serie,te,technik,ue,uint,visability,wan,wanna,withing,iam,incomfort
-          - --skip="./.*,*.csv,*.json,*.pem,*.svg"
+          - --skip="./.*,*.csv,*.json,*.pem"
           - --quiet-level=2
-        exclude_types: [csv, json]
+        exclude_types: [csv, json, svg, pem, json]
         exclude: ^tests/fixtures/
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
