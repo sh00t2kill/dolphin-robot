@@ -119,7 +119,7 @@ class EntityManager:
             )
 
     async def _async_delete_components(self):
-        deleted = 0
+        delete_entities = []
         for unique_id in self.entities:
             entity = self.entities.get(unique_id)
 
@@ -135,12 +135,14 @@ class EntityManager:
 
                     self.entity_registry.async_remove(entity_id)
 
-                del self.entities[entity.id]
+                delete_entities.append(entity_id)
 
-                deleted += 1
+        for entity_id in delete_entities:
+            del self.entities[entity_id]
 
-        if deleted > 0:
-            _LOGGER.info(f"{deleted} components deleted")
+        total_delete_entities = len(delete_entities)
+        if total_delete_entities > 0:
+            _LOGGER.info(f"{total_delete_entities} components deleted")
 
     async def _async_update(self):
         _LOGGER.debug("Starting to update entities")
