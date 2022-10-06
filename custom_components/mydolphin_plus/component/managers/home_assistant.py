@@ -698,12 +698,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         calculated_state = PWS_STATE_OFF
 
         pws_on = pws_state in [PWS_STATE_ON, PWS_STATE_HOLD_DELAY, PWS_STATE_HOLD_WEEKLY, PWS_STATE_PROGRAMMING]
-        pws_error = pws_state in [ROBOT_STATE_NOT_CONNECTED]
-        pws_cleaning = pws_state in [PWS_STATE_ON]
+        pws_error = pws_state in [PWS_STATE_ERROR]
+        pws_cleaning = pws_state in [PWS_STATE_ON, ROBOT_STATE_SCANNING]
         pws_programming = pws_state == PWS_STATE_PROGRAMMING
 
-        robot_error = robot_state in [ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
-        robot_cleaning = robot_state not in [ROBOT_STATE_INIT, ROBOT_STATE_SCANNING, ROBOT_STATE_NOT_CONNECTED]
+        robot_error = robot_state in [ROBOT_STATE_FAULT]
+        robot_cleaning = robot_state not in [ROBOT_STATE_INIT, ROBOT_STATE_NOT_CONNECTED]
 
         robot_programming = robot_state == PWS_STATE_PROGRAMMING
 
@@ -718,7 +718,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 calculated_state = PWS_STATE_CLEANING
 
             else:
-                calculated_state = PWS_STATE_ON
+                calculated_state = PWS_STATE_OFF
 
         state_description = f"pwsState: {pws_state} | robotState: {robot_state}"
         _LOGGER.info(f"System status recalculated, State: {calculated_state}, Parameters: {state_description}")
