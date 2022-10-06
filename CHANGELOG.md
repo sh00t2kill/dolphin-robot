@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.2.4
+
+- IOT Class (`iot_class`) changed to `cloud_push`
+- Removed time from cleaning mode select HA component (select, translations and services)
+- Major refactor of HA Manager, Entity Manager and API (code cleanup)
+- AWS IOT Broker works with asynchronous operations
+- Publish all messages with QOS=1 (At least once)
+- Add AWS Broker status binary sensor
+- Override Time Left to 0 when robot is not cleaning
+- Send explicit OFF command when toggling robot to off
+- Vacuum state is being calculated from both states of head unit and the robot
+- Add vacuum entity, replacing:
+  - Cleaning mode select
+  - Connection binary sensor
+  - Power switch
+  - All services
+- Add locate to vacuum
+- Major refactor to `Core`
+  - all components are now part of the `Core`
+  - Implementation should be done only in API, HA Manager and Configuration Manager
+
 ## v0.2.3
 - Fix core issue while deleting entities
 

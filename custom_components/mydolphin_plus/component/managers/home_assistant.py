@@ -491,7 +491,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
 
             state = led_enable
-            
+
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_MODE: led_mode,
