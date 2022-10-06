@@ -174,7 +174,7 @@ logger:
 We have confirmed the robot works with the custom vacuum card, built by denysdovhan
 https://github.com/denysdovhan/vacuum-card
 
-Copy the icons from www on the repository to /config/www. Below is a suggested confguration for the card
+Copy the icons from www on the repository to /config/www. Below is a suggested configuration for the card
 ```yaml
 entity: vacuum.my_vacuum
 image: /local/robot_icon_c.svg
