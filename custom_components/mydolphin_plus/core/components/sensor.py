@@ -23,4 +23,4 @@ class CoreSensor(SensorEntity, BaseEntity):
 
     @staticmethod
     def get_domain():
-        return CoreSensor
+        return DOMAIN_SENSOR
