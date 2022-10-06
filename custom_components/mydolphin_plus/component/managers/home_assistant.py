@@ -27,6 +27,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 
+from ..api.storage_api import StorageAPI
 from ...configuration.managers.configuration_manager import ConfigurationManager
 from ...configuration.models.config_data import ConfigData
 from ...core.helpers.enums import ConnectivityStatus
@@ -43,10 +44,11 @@ _LOGGER = logging.getLogger(__name__)
 
 class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def __init__(self, hass: HomeAssistant):
-        super().__init__(hass, SCAN_INTERVAL, HEARTBEAT_INTERVAL_SECONDS)
+        super().__init__(hass, SCAN_INTERVAL)
 
-        self._api: IntegrationAPI = IntegrationAPI(self._hass, self._data_changed, self._api_status_changed)
+        self._api: IntegrationAPI = IntegrationAPI(self._hass, self._api_data_changed, self._api_status_changed)
         self._config_manager: ConfigurationManager | None = None
+        self._storage_api = StorageAPI(self._hass)
 
         self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
             SERVICE_NAVIGATE: self._command_navigate,
@@ -57,6 +59,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     @property
     def api(self) -> IntegrationAPI:
         return self._api
+
+    @property
+    def storage_api(self) -> StorageAPI:
+        return self._storage_api
 
     @property
     def config_data(self) -> ConfigData:
@@ -74,6 +80,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         await self.api.initialize(self.config_data)
+        await self.storage_api.initialize()
 
     async def async_stop_data_providers(self):
         await self.api.terminate()
@@ -90,7 +97,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def load_devices(self):
         try:
             data = self._api.data
-            device_name = data.get("Robot Name")
+            device_name = data.get(DATA_ROBOT_NAME)
             model = data.get("Product Description")
             versions = data.get("versions", {})
             pws_version = versions.get("pwsVersion", {})
@@ -115,7 +122,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     def load_entities(self):
         data = self._api.data
-        name = data.get("Robot Name")
+        name = data.get(DATA_ROBOT_NAME)
 
         if name is None:
             return
@@ -666,13 +673,23 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self.api.set_power_state(False)
 
     async def _vacuum_locate(self, entity: EntityData):
-        _LOGGER.debug("Locate robot")
+        data = self.api.data
+        device_name = data.get(DATA_ROBOT_NAME)
+        unique_id = EntityData.generate_unique_id(DOMAIN_LIGHT, device_name)
 
-        await self._set_led_enabled(entity)
+        led_light_entity = self.entity_manager.get(unique_id)
 
-        await sleep(2)
+        if led_light_entity.state:
+            _LOGGER.warning(
+                f"Locate will not run as the LED currently on, "
+                f"you should see the robot"
+            )
 
-        await self._set_led_disabled(entity)
+        else:
+            _LOGGER.debug("Locate robot")
+
+            await self.storage_api.set_locating_mode(True)
+            await self._set_led_enabled(led_light_entity)
 
     async def _send_command(self,
                             entity: EntityData,
@@ -775,9 +792,24 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         return result
 
-    async def _data_changed(self):
+    async def _api_data_changed(self):
         if self.api.status == ConnectivityStatus.Connected:
             super().update()
+
+            data = self.api.data
+            device_name = data.get(DATA_ROBOT_NAME)
+            led = data.get(DATA_SECTION_LED, {})
+            led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
+
+            if self.storage_api.is_locating and led_enable:
+                await sleep(LOCATE_OFF_INTERVAL_SECONDS.total_seconds())
+
+                unique_id = EntityData.generate_unique_id(DOMAIN_LIGHT, device_name)
+
+                entity = self.entity_manager.get(unique_id)
+
+                await self.storage_api.set_locating_mode(False)
+                await self._set_led_disabled(entity)
 
     async def _api_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:

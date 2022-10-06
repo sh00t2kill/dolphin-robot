@@ -116,8 +116,7 @@ DEFAULT_TIME_PART = 255
 DEFAULT_BATTERY_LEVEL = "NA"
 
 SCAN_INTERVAL = timedelta(seconds=60)
-HEARTBEAT_INTERVAL_SECONDS = timedelta(seconds=25)
-TRIGGER_INTERVAL = timedelta(seconds=1)
+LOCATE_OFF_INTERVAL_SECONDS = timedelta(seconds=10)
 
 BASE_API = "https://mbapp18.maytronics.com/api"
 LOGIN_URL = f"{BASE_API}/users/Login/"
@@ -169,13 +168,15 @@ TOPIC_CALLBACK_ACCEPTED = "accepted"
 TOPIC_CALLBACK_REJECTED = "rejected"
 TOPIC_CALLBACK_DOCUMENTS = "documents"
 
+DATA_ROBOT_NAME = "Robot Name"
+
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Motor Unit Serial",
     "PARTNAME": "Product Name",
     "PARTDES": "Product Description",
     "AppName": "Application Name",
     "RegDate": "Registration Date",
-    "MyRobotName": "Robot Name",
+    "MyRobotName": DATA_ROBOT_NAME,
     "isReg": "Is Registered",
     "RobotFamily": "Product Family"
 }
@@ -372,3 +373,5 @@ VACUUM_FEATURES = VacuumEntityFeature.STATE | \
                   VacuumEntityFeature.TURN_ON | \
                   VacuumEntityFeature.TURN_OFF | \
                   VacuumEntityFeature.LOCATE
+
+STORAGE_DATA_LOCATING = "locating"
