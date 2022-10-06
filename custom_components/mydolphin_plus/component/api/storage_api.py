@@ -50,6 +50,13 @@ class StorageAPI(BaseAPI):
 
         self.data = await self._storage.async_load()
 
+        if self.data is None:
+            self.data = {
+                STORAGE_DATA_LOCATING: False
+            }
+
+            await self._async_save()
+
         _LOGGER.debug(f"Loaded configuration data: {self.data}")
 
         await self.set_status(ConnectivityStatus.Connected)
