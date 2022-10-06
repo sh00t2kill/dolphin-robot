@@ -5,6 +5,7 @@ https://home-assistant.io/components/mydolphin_plus/
 """
 from __future__ import annotations
 
+from asyncio import sleep
 import datetime
 import logging
 import sys
@@ -528,13 +529,19 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             wifi = data.get(DATA_SECTION_WIFI, {})
             net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
 
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+            mode_name = get_cleaning_mode_name(mode)
+
             state = details.get(ATTR_CALCULATED_STATUS)
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_RSSI: wifi_rssi,
                 ATTR_NETWORK_NAME: net_name,
-                ATTR_BATTERY_LEVEL: DEFAULT_BATTERY_LEVEL
+                ATTR_BATTERY_LEVEL: DEFAULT_BATTERY_LEVEL,
+                ATTR_MODE: mode_name
             }
 
             for key in details:
@@ -563,7 +570,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self.set_action(unique_id, ACTION_CORE_ENTITY_STOP, self._vacuum_stop)
             self.set_action(unique_id, ACTION_CORE_ENTITY_PAUSE, self._vacuum_pause)
             self.set_action(unique_id, ACTION_CORE_ENTITY_SET_FAN_SPEED, self._set_cleaning_mode)
-            self.set_action(unique_id, ACTION_CORE_ENTITY_LOCATE, self._set_cleaning_mode)
+            self.set_action(unique_id, ACTION_CORE_ENTITY_LOCATE, self._vacuum_locate)
             self.set_action(unique_id, ACTION_CORE_ENTITY_SEND_COMMAND, self._send_command)
             self.set_action(unique_id, ACTION_CORE_ENTITY_RETURN_TO_BASE, self._pickup)
 
@@ -573,27 +580,39 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             )
 
     async def _set_cleaning_mode(self, entity: EntityData, fan_speed):
-        if entity.status != fan_speed:
+        current_clean_mode = entity.attributes.get(ATTR_MODE)
+
+        _LOGGER.debug(f"Change cleaning mode, State: {current_clean_mode}, New: {fan_speed}")
+
+        if current_clean_mode != fan_speed:
             for cleaning_mode in CLEANING_MODES_SHORT:
                 value = CLEANING_MODES[cleaning_mode]
 
                 if value == fan_speed:
                     self.api.set_cleaning_mode(cleaning_mode)
 
-    def _set_led_mode(self, entity: EntityData, option: str):
-        if entity.status != option:
-            mode = int(option)
-            self.api.set_led_mode(mode)
+    async def _set_led_mode(self, entity: EntityData, option: str):
+        led_mode_name = LED_MODES_NAMES.get(option)
+        _LOGGER.debug(f"Change led mode, State: {entity.state}, New: {led_mode_name} ({option})")
+
+        if entity.state != led_mode_name:
+            value = int(option)
+
+            self.api.set_led_mode(value)
 
     def set_led_intensity(self, intensity: int):
         self.api.set_led_intensity(intensity)
 
     async def _set_led_enabled(self, entity: EntityData):
-        if entity.status in [STATE_OFF]:
+        _LOGGER.debug(f"Enable LED light, State: {entity.state}")
+
+        if not entity.state:
             self.api.set_led_enabled(True)
 
     async def _set_led_disabled(self, entity: EntityData):
-        if entity.status in [STATE_ON]:
+        _LOGGER.debug(f"Disable LED light, State: {entity.state}")
+
+        if entity.state:
             self.api.set_led_enabled(False)
 
     def get_core_entity_fan_speed(self, entity: EntityData) -> str | None:
@@ -607,33 +626,53 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         return mode_name
 
     async def _pickup(self, entity: EntityData):
+        _LOGGER.debug("Pickup robot")
+
         self.api.pickup()
 
     async def _vacuum_turn_on(self, entity: EntityData):
-        if entity.status in [PWS_STATE_OFF, PWS_STATE_ERROR]:
+        _LOGGER.debug(f"Turn on vacuum, State: {entity.state}")
+        if entity.state in [PWS_STATE_OFF, PWS_STATE_ERROR]:
             self.api.set_power_state(True)
 
     async def _vacuum_turn_off(self, entity: EntityData):
-        if entity.status in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]:
+        _LOGGER.debug(f"Turn off vacuum, State: {entity.state}")
+
+        if entity.state in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]:
             self.api.set_power_state(False)
 
     async def _vacuum_toggle(self, entity: EntityData):
-        is_on = entity.status in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]
+        is_on = entity.state in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]
         toggle_value = not is_on
 
+        _LOGGER.debug(f"Toggle vacuum, State: {entity.state} ({is_on})")
         self.api.set_power_state(toggle_value)
 
     async def _vacuum_start(self, entity: EntityData):
+        _LOGGER.debug(f"Start cleaning, State: {entity.state}")
         if entity.status in [PWS_STATE_ON, PWS_STATE_OFF]:
             self.api.set_power_state(True)
 
     async def _vacuum_stop(self, entity: EntityData):
+        _LOGGER.debug(f"Stop cleaning, State: {entity.state}")
+
         if entity.state in [PWS_STATE_CLEANING, PWS_STATE_ON]:
             self.api.set_power_state(False)
 
     async def _vacuum_pause(self, entity: EntityData):
+        _LOGGER.debug(f"Pause cleaning, State: {entity.state}")
+
         if entity.state in [PWS_STATE_CLEANING, PWS_STATE_ON]:
             self.api.set_power_state(False)
+
+    async def _vacuum_locate(self, entity: EntityData):
+        _LOGGER.debug("Locate robot")
+
+        await self._set_led_enabled(entity)
+
+        await sleep(2)
+
+        await self._set_led_disabled(entity)
 
     async def _send_command(self,
                             entity: EntityData,
@@ -655,6 +694,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     def _command_navigate(self, data: dict[str, Any] | list[Any] | None):
         direction = data.get(CONF_DIRECTION)
+        _LOGGER.debug(f"Navigate robot {direction}")
 
         if direction is None:
             _LOGGER.error("Direction is mandatory parameter, please provide and try again")

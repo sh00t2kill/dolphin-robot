@@ -227,6 +227,12 @@ ICON_LED_MODES = {
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline"
 }
 
+LED_MODES_NAMES = {
+    LED_MODE_BLINKING: "Blinking",
+    LED_MODE_ALWAYS_ON: "Always on",
+    LED_MODE_DISCO: "Disco"
+}
+
 SERVICE_NAVIGATE = "navigate"
 SERVICE_DAILY_SCHEDULE = "daily_schedule"
 SERVICE_DELAYED_CLEAN = "delayed_clean"
