@@ -625,7 +625,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     async def _vacuum_start(self, entity: EntityData):
         if entity.status in [PWS_STATE_ON]:
+            _LOGGER.debug("Starting Vacuum")
             self.api.set_power_state(True)
+        else:
+            _LOGGER.debug("Didnt start vacuum due to existing status: {entity.status}")
 
     async def _vacuum_stop(self, entity: EntityData):
         if entity.state in [PWS_STATE_CLEANING]:
