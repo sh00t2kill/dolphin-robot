@@ -440,7 +440,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             seconds_left = 0
             # make sure we check the cleaner state -- if its currently off, leave seconds_left to 0
-            if calculated_state == PWS_STATE_ON and expected_cycle_end_time_ts > now_ts:
+            if calculated_state in [PWS_STATE_ON, PWS_STATE_CLEANING] and expected_cycle_end_time_ts > now_ts:
                 # still working
                 seconds_left = expected_cycle_end_time_ts - now_ts
 
