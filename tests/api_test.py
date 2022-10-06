@@ -5,9 +5,7 @@ import logging
 import os
 import sys
 
-from custom_components.mydolphin_plus.component.api.mydolphin_plus_api import (
-    MyDolphinPlusAPI,
-)
+from custom_components.mydolphin_plus.component.api.mydolphin_plus_api import IntegrationAPI
 from custom_components.mydolphin_plus.configuration.models.config_data import ConfigData
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
@@ -41,9 +39,9 @@ async def run():
 
     config_data = ConfigData.from_dict(data)
 
-    api = MyDolphinPlusAPI(None, config_data, handle_update)
+    api = IntegrationAPI(None)
 
-    await api.initialize()
+    await api.initialize(config_data)
 
     while True:
         await sleep(1)

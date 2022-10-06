@@ -28,7 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class IntegrationAPI(BaseAPI):
     session: ClientSession | None
-    hass: HomeAssistant
+    hass: HomeAssistant | None
     config_data: ConfigData | None
     base_url: str | None
 
@@ -52,7 +52,7 @@ class IntegrationAPI(BaseAPI):
     last_update: float | None
 
     def __init__(self,
-                 hass: HomeAssistant,
+                 hass: HomeAssistant | None,
                  async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
                  async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
                  ):

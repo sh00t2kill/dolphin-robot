@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.1
+- Fix cycle time left sensor - didn't take new vacuum states into account
+- Fix storage API in case file doesn't exist
+- Fix initialization order of API
+
 ## v0.2.0
 - Add vacuum start,stop,locate,pause service calls
   - `start` is equivalent to `turn_on` (ie start a cleaning cycle)
