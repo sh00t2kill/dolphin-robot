@@ -2,8 +2,6 @@ import logging
 
 from homeassistant.helpers.device_registry import async_get
 
-from ...core.helpers.const import *
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -19,6 +17,10 @@ class DeviceManager:
         title = self._ha.config_data.entry.title
 
         return title
+
+    @property
+    def devices(self):
+        return self._devices
 
     async def async_remove_entry(self, entry_id):
         dr = async_get(self._hass)
@@ -48,22 +50,3 @@ class DeviceManager:
 
     def set(self, name, device_info):
         self._devices[name] = device_info
-
-    def generate_device(self, data: dict):
-        device_name = data.get("Robot Name")
-        model = data.get("Product Description")
-        versions = data.get("versions", {})
-        pws_version = versions.get("pwsVersion", {})
-        sw_version = pws_version.get("pwsSwVersion")
-        hw_version = pws_version.get("pwsHwVersion")
-
-        device_info = {
-            "identifiers": {(DEFAULT_NAME, device_name)},
-            "name": device_name,
-            "manufacturer": MANUFACTURER,
-            "model": model,
-            "sw_version": sw_version,
-            "hw_version": hw_version
-        }
-
-        self.set(device_name, device_info)

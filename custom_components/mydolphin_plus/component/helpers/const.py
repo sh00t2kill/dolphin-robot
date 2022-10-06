@@ -8,6 +8,7 @@ from datetime import timedelta
 
 import voluptuous as vol
 
+from homeassistant.components.vacuum import VacuumEntityFeature
 from homeassistant.const import (
     ATTR_MODE,
     CONF_DEVICE,
@@ -34,6 +35,7 @@ ATTR_INTENSITY = "intensity"
 ATTR_EXPECTED_END_TIME = "expected_end_time"
 ATTR_BATTERY_LEVEL = "battery_level"
 
+ATTR_AWS_IOT_BROKER_STATUS = "aws_iot_broker_status"
 
 ATTR_CALCULATED_STATUS = "calculated_status"
 ATTR_PWS_STATUS = "pws_status"
@@ -180,6 +182,7 @@ DATA_ROBOT_DETAILS = {
 
 ATTR_CLEANING_MODE = "cleaning_mode"
 ATTR_LED_MODE = "led_mode"
+ATTR_OPTIONS = "options"
 
 CLEANING_MODE_REGULAR = "all"
 CLEANING_MODE_FAST_MODE = "short"
@@ -195,6 +198,14 @@ CLEANING_MODES = {
   CLEANING_MODE_FLOOR_ONLY: "Floor only - Cleans the floor only",
   CLEANING_MODE_WATER_LINE: "Water line - Cleans the walls and water line",
   CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline",
+}
+
+CLEANING_MODES_SHORT = {
+  CLEANING_MODE_REGULAR: "Regular",
+  CLEANING_MODE_FAST_MODE: "Fast mode",
+  CLEANING_MODE_FLOOR_ONLY: "Floor only",
+  CLEANING_MODE_WATER_LINE: "Water line",
+  CLEANING_MODE_ULTRA_CLEAN: "Ultra clean",
 }
 
 ICON_CLEANING_MODES = {
@@ -302,6 +313,8 @@ PWS_STATE_OFF = "off"
 PWS_STATE_HOLD_DELAY = "holdDelay"
 PWS_STATE_HOLD_WEEKLY = "holdWeekly"
 PWS_STATE_PROGRAMMING = "programming"
+PWS_STATE_ERROR = "error"
+PWS_STATE_CLEANING = "cleaning"
 
 ROBOT_STATE_FINISHED = "finished"
 ROBOT_STATE_FAULT = "fault"
@@ -342,3 +355,14 @@ FILTER_BAG_ICONS = {
     101: "mdi:robot-dead",
     102: "mdi:robot-confused-outline"
 }
+
+VACUUM_FEATURES = VacuumEntityFeature.STATE | \
+                  VacuumEntityFeature.FAN_SPEED | \
+                  VacuumEntityFeature.RETURN_HOME | \
+                  VacuumEntityFeature.SEND_COMMAND | \
+                  VacuumEntityFeature.START | \
+                  VacuumEntityFeature.STOP | \
+                  VacuumEntityFeature.PAUSE | \
+                  VacuumEntityFeature.TURN_ON | \
+                  VacuumEntityFeature.TURN_OFF | \
+                  VacuumEntityFeature.LOCATE

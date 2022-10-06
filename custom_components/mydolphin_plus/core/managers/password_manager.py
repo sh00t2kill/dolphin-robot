@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import logging
 from os import path, remove
+import sys
 
 from cryptography.fernet import Fernet
 
 from homeassistant.core import HomeAssistant
 
-from ...core.helpers.const import *
-from ...core.managers.storage_manager import StorageManager
-from ...core.models.storage_data import StorageData
+from ..helpers.const import *
+from ..managers.storage_manager import StorageManager
+from ..models.storage_data import StorageData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,25 +25,33 @@ class PasswordManager:
         self.data = None
 
     async def initialize(self):
-        if self.data is None:
-            storage_manager = StorageManager(self.hass)
+        try:
+            if self.data is None:
+                storage_manager = StorageManager(self.hass)
 
-            self.data = await storage_manager.async_load_from_store()
+                self.data = await storage_manager.async_load_from_store()
 
-            if self.data.key is None:
-                legacy_key_path = self.hass.config.path(DOMAIN_KEY_FILE)
+                if self.data.key is None:
+                    legacy_key_path = self.hass.config.path(DOMAIN_KEY_FILE)
 
-                if path.exists(legacy_key_path):
-                    with open(legacy_key_path, "rb") as file:
-                        self.data.key = file.read().decode("utf-8")
+                    if path.exists(legacy_key_path):
+                        with open(legacy_key_path, "rb") as file:
+                            self.data.key = file.read().decode("utf-8")
 
-                    remove(legacy_key_path)
-                else:
-                    self.data.key = Fernet.generate_key().decode("utf-8")
+                        remove(legacy_key_path)
+                    else:
+                        self.data.key = Fernet.generate_key().decode("utf-8")
 
-                await storage_manager.async_save_to_store(self.data)
+                    await storage_manager.async_save_to_store(self.data)
 
-            self.crypto = Fernet(self.data.key.encode())
+                self.crypto = Fernet(self.data.key.encode())
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to initialize Password Manager, error: {ex}, line: {line_number}"
+            )
 
     def set(self, data: str) -> str:
         if data is not None:
