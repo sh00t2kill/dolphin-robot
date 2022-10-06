@@ -61,6 +61,8 @@ class HomeAssistantManager:
 
         self._send_heartbeat = _send_heartbeat
 
+        self._domains = {domain: self.is_domain_supported(domain) for domain in SUPPORTED_PLATFORMS}
+
     @property
     def entity_manager(self) -> EntityManager:
         if self._entity_manager is None:
@@ -147,8 +149,12 @@ class HomeAssistantManager:
     async def _async_load_platforms(self):
         load = self._hass.config_entries.async_forward_entry_setup
 
-        for domain in PLATFORMS:
-            await load(self._entry, domain)
+        for domain in self._domains:
+            if self._domains.get(domain, False):
+                await load(self._entry, domain)
+
+            else:
+                _LOGGER.debug(f"Skip loading {domain}")
 
         self.register_services()
 
@@ -206,7 +212,11 @@ class HomeAssistantManager:
         unload = self._hass.config_entries.async_forward_entry_unload
 
         for domain in PLATFORMS:
-            await unload(entry, domain)
+            if self._domains.get(domain, False):
+                await unload(self._entry, domain)
+
+            else:
+                _LOGGER.debug(f"Skip unloading {domain}")
 
         await self._device_manager.async_remove()
 
@@ -380,3 +390,14 @@ class HomeAssistantManager:
         line_number = tb.tb_lineno
 
         _LOGGER.error(f"{message}, Error: {str(ex)}, Line: {line_number}")
+
+    @staticmethod
+    def is_domain_supported(domain) -> bool:
+        is_supported = True
+
+        try:
+            __import__(f"custom_components.{DOMAIN}.{domain}")
+        except ModuleNotFoundError as mnfe:
+            is_supported = False
+
+        return is_supported

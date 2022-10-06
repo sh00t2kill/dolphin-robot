@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.1
+- Fix cycle time left sensor - didn't take new vacuum states into account
+- Fix storage API in case file doesn't exist
+- Fix initialization order of API
+- Removed unused files and code
+- Core protect unsupported domains
+- IOT Class (`iot_class`) changed to `cloud_push`
+
 ## v0.2.0
 - Add vacuum start,stop,locate,pause service calls
   - `start` is equivalent to `turn_on` (ie start a cleaning cycle)

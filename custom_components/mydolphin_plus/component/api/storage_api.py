@@ -9,7 +9,6 @@ from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
 from ...core.api.base_api import BaseAPI
-from ...core.helpers.const import *
 from ...core.helpers.enums import ConnectivityStatus
 from ..helpers.const import *
 
@@ -49,6 +48,13 @@ class StorageAPI(BaseAPI):
         _LOGGER.info(f"Loading configuration from {self._file_name}")
 
         self.data = await self._storage.async_load()
+
+        if self.data is None:
+            self.data = {
+                STORAGE_DATA_LOCATING: False
+            }
+
+            await self._async_save()
 
         _LOGGER.debug(f"Loaded configuration data: {self.data}")
 

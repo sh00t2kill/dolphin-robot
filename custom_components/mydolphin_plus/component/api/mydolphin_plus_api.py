@@ -28,7 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class IntegrationAPI(BaseAPI):
     session: ClientSession | None
-    hass: HomeAssistant
+    hass: HomeAssistant | None
     config_data: ConfigData | None
     base_url: str | None
 
@@ -52,7 +52,7 @@ class IntegrationAPI(BaseAPI):
     last_update: float | None
 
     def __init__(self,
-                 hass: HomeAssistant,
+                 hass: HomeAssistant | None,
                  async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
                  async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
                  ):
@@ -93,7 +93,8 @@ class IntegrationAPI(BaseAPI):
             )
 
     async def terminate(self):
-        self.awsiot_client.disconnectAsync(self._ack_callback)
+        if self.awsiot_client is not None:
+            self.awsiot_client.disconnectAsync(self._ack_callback)
 
         await self._handle_aws_client_status_changed(ConnectivityStatus.Disconnected)
 
@@ -232,6 +233,9 @@ class IntegrationAPI(BaseAPI):
             request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}&{API_REQUEST_SERIAL_PASSWORD}={password}"
 
             payload = await self._async_post(LOGIN_URL, LOGIN_HEADERS, request_data)
+
+            if payload is None:
+                payload = {}
 
             data = payload.get(API_RESPONSE_DATA, {})
             if data:

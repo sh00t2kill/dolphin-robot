@@ -9,14 +9,7 @@ from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.components.vacuum import VacuumEntityFeature
-from homeassistant.const import (
-    ATTR_MODE,
-    CONF_DEVICE,
-    CONF_DEVICE_ID,
-    CONF_ENABLED,
-    CONF_MODE,
-    CONF_STATE,
-)
+from homeassistant.const import ATTR_MODE, CONF_ENABLED, CONF_MODE, CONF_STATE
 import homeassistant.helpers.config_validation as cv
 
 from ...core.helpers.const import *
