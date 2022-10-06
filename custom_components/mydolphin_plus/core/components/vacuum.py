@@ -66,10 +66,10 @@ class CoreVacuum(StateVacuumEntity, BaseEntity, ABC):
         await self.ha.async_core_entity_pause(self.entity)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.ha.async_core_entity_on(self.entity)
+        await self.ha.async_core_entity_turn_on(self.entity)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self.ha.async_core_entity_off(self.entity)
+        await self.ha.async_core_entity_turn_off(self.entity)
 
     async def async_toggle(self, **kwargs: Any) -> None:
         await self.ha.async_core_entity_toggle(self.entity)
