@@ -5,7 +5,9 @@ import logging
 import os
 import sys
 
-from custom_components.mydolphin_plus.component.api.mydolphin_plus_api import IntegrationAPI
+from custom_components.mydolphin_plus.component.api.mydolphin_plus_api import (
+    IntegrationAPI,
+)
 from custom_components.mydolphin_plus.configuration.models.config_data import ConfigData
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 

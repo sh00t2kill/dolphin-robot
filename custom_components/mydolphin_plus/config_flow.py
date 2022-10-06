@@ -22,7 +22,6 @@ class DomainFlowHandler(config_entries.ConfigFlow):
     """Handle a domain config flow."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
         super().__init__()

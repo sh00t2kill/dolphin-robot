@@ -9,7 +9,6 @@ from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
 from ...core.api.base_api import BaseAPI
-from ...core.helpers.const import *
 from ...core.helpers.enums import ConnectivityStatus
 from ..helpers.const import *
 
