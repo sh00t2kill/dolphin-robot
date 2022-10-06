@@ -464,6 +464,7 @@ class IntegrationAPI(BaseAPI):
             try:
                 if self.awsiot_client is not None:
                     self.awsiot_client.publishAsync(topic, payload, MQTT_QOS_1)
+                    _LOGGER.debug(f"Success:: published message: {data} to {topic}")
 
             except Exception as ex:
                 _LOGGER.error(f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}")
