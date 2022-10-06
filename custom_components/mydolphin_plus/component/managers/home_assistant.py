@@ -563,7 +563,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self.set_action(unique_id, ACTION_CORE_ENTITY_STOP, self._vacuum_stop)
             self.set_action(unique_id, ACTION_CORE_ENTITY_PAUSE, self._vacuum_pause)
             self.set_action(unique_id, ACTION_CORE_ENTITY_SET_FAN_SPEED, self._set_cleaning_mode)
-            self.set_action(unique_id, ACTION_CORE_ENTITY_LOCATE, self._set_cleaning_mode)
+            self.set_action(unique_id, ACTION_CORE_ENTITY_LOCATE, self._vacuum_locate)
             self.set_action(unique_id, ACTION_CORE_ENTITY_SEND_COMMAND, self._send_command)
             self.set_action(unique_id, ACTION_CORE_ENTITY_RETURN_TO_BASE, self._pickup)
 
@@ -634,6 +634,11 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def _vacuum_pause(self, entity: EntityData):
         if entity.state in [PWS_STATE_CLEANING, PWS_STATE_ON]:
             self.api.set_power_state(False)
+
+    async def _vacuum_locate(self, entity: EntityData):
+        await self._set_led_enabled(entity)
+        await sleep(2)
+        await self._set_led_disabled(entity)
 
     async def _send_command(self,
                             entity: EntityData,
