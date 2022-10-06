@@ -216,7 +216,7 @@ class HomeAssistantManager:
                 await unload(self._entry, domain)
 
             else:
-                _LOGGER.debug(f"Skip loading {domain}")
+                _LOGGER.debug(f"Skip unloading {domain}")
 
         await self._device_manager.async_remove()
 
