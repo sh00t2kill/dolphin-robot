@@ -20,6 +20,7 @@
 - Major refactor to `Core`
   - all components are now part of the `Core`
   - Implementation should be done only in API, HA Manager and Configuration Manager
+- Added `init` to vacuum state to show something is happening when a cycle is started
 
 ## v0.2.3
 - Fix core issue while deleting entities
