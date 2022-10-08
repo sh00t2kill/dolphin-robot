@@ -1,5 +1,10 @@
 # Changelog
 
+## Pending
+
+- Fix deleting components when being removed, wrong parameter was sent to be deleted
+- Update `core` to latest
+ 
 ## v0.2.4
 
 - IOT Class (`iot_class`) changed to `cloud_push`
