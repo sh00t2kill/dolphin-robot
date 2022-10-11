@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
+from ...configuration.models.config_data import ConfigData
 from ...core.api.base_api import BaseAPI
 from ...core.helpers.enums import ConnectivityStatus
 from ..helpers.const import *
@@ -16,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class StorageAPI(BaseAPI):
-    _storage: Store
+    _storages: dict[str, Store] | None
 
     def __init__(self,
                  hass: HomeAssistant,
@@ -26,13 +27,19 @@ class StorageAPI(BaseAPI):
 
         super().__init__(hass, async_on_data_changed, async_on_status_changed)
 
-        self._storage = Store(self.hass, STORAGE_VERSION, self._file_name, encoder=JSONEncoder)
+        self._storages = None
 
     @property
-    def _file_name(self):
-        file_name = f"{DOMAIN}.config.json"
+    def _storage_config(self) -> Store:
+        storage = self._storages.get(STORAGE_DATA_FILE_CONFIG)
 
-        return file_name
+        return storage
+
+    @property
+    def _storage_api(self) -> Store:
+        storage = self._storages.get(STORAGE_DATA_FILE_API_DEBUG)
+
+        return storage
 
     @property
     def is_locating(self):
@@ -40,18 +47,33 @@ class StorageAPI(BaseAPI):
 
         return is_locating
 
-    async def initialize(self):
-        await self._async_load()
+    @property
+    def store_debug_data(self):
+        result = self.data.get(STORAGE_DATA_STORE_DEBUG_DATA, False)
 
-    async def _async_load(self):
+        return result
+
+    async def initialize(self, config_data: ConfigData):
+        storages = {}
+        entry_id = config_data.entry.entry_id
+
+        for storage_data_file in STORAGE_DATA_FILES:
+            file_name = f"{DOMAIN}.{entry_id}.{storage_data_file}.json"
+
+            storages[storage_data_file] = Store(self.hass, STORAGE_VERSION, file_name, encoder=JSONEncoder)
+
+        self._storages = storages
+
+        await self._async_load_configuration()
+
+    async def _async_load_configuration(self):
         """Load the retained data from store and return de-serialized data."""
-        _LOGGER.info(f"Loading configuration from {self._file_name}")
-
-        self.data = await self._storage.async_load()
+        self.data = await self._storage_config.async_load()
 
         if self.data is None:
             self.data = {
-                STORAGE_DATA_LOCATING: False
+                STORAGE_DATA_LOCATING: False,
+                STORAGE_DATA_STORE_DEBUG_DATA: False
             }
 
             await self._async_save()
@@ -63,9 +85,9 @@ class StorageAPI(BaseAPI):
 
     async def _async_save(self):
         """Generate dynamic data to store and save it to the filesystem."""
-        _LOGGER.info(f"Save configuration to {self._file_name}, Data: {self.data}")
+        _LOGGER.info(f"Save configuration, Data: {self.data}")
 
-        await self._storage.async_save(self.data)
+        await self._storage_config.async_save(self.data)
 
         await self.fire_data_changed_event()
 
@@ -75,3 +97,14 @@ class StorageAPI(BaseAPI):
         self.data[STORAGE_DATA_LOCATING] = is_on
 
         await self._async_save()
+
+    async def set_store_debug_data(self, enabled: bool):
+        _LOGGER.debug(f"Set store debug data to {enabled}")
+
+        self.data[STORAGE_DATA_STORE_DEBUG_DATA] = enabled
+
+        await self._async_save()
+
+    async def debug_log_api(self, data: dict):
+        if self.store_debug_data:
+            await self._storage_api.async_save(data)
