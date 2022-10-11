@@ -202,12 +202,14 @@ class IntegrationAPI(BaseAPI):
         return result
 
     async def async_update(self):
-        _LOGGER.info(f"Updating data from XXX)")
-
+        _LOGGER.info(f"Updating data from MyDolphin Plus AWSIOTHUB)")
+        _LOGGER.debug("Current status: {self.status}")
         if self.status == ConnectivityStatus.Failed:
+            _LOGGER.debug("Connection failed. Reinitialize")
             await self.initialize(self.config_data)
 
         if self.status == ConnectivityStatus.Connected:
+            _LOGGER.debug("Connected. Refresh details")
             await self._refresh_details()
 
     async def _login(self):
