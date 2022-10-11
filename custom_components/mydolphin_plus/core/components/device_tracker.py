@@ -1,11 +1,13 @@
 """
 Support for device tracker.
 """
+from __future__ import annotations
 
 import logging
 
 from homeassistant.components.device_tracker import ATTR_SOURCE_TYPE, SOURCE_TYPE_ROUTER
 from homeassistant.components.device_tracker.config_entry import ScannerEntity
+from homeassistant.components.device_tracker.const import ATTR_IP, ATTR_MAC
 from homeassistant.core import HomeAssistant
 
 from ..helpers.const import *
@@ -17,6 +19,16 @@ _LOGGER = logging.getLogger(__name__)
 
 class CoreScanner(BaseEntity, ScannerEntity):
     """Represent a tracked device."""
+
+    @property
+    def ip_address(self) -> str | None:
+        """Return the primary ip address of the device."""
+        return self.entity.details.get(ATTR_IP)
+
+    @property
+    def mac_address(self) -> str | None:
+        """Return the mac address of the device."""
+        return self.entity.details.get(ATTR_MAC)
 
     @property
     def is_connected(self):

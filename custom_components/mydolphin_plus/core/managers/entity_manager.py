@@ -174,14 +174,14 @@ class EntityManager:
 
     def _compare_data(self,
                       entity: EntityData,
-                      state: str,
+                      state: str | int | float | bool,
                       attributes: dict,
                       device_name: str,
                       entity_description: EntityDescription | None = None,
                       details: dict | None = None):
         msgs = []
 
-        if entity.state != state:
+        if str(entity.state) != str(state):
             msgs.append(f"State {entity.state} -> {state}")
 
         if entity.attributes != attributes:
@@ -230,7 +230,7 @@ class EntityManager:
     def set_entity(self,
                    domain: str,
                    entry_id: str,
-                   state: str | bool,
+                   state: str | int | float | bool,
                    attributes: dict,
                    device_name: str,
                    entity_description: EntityDescription | None,

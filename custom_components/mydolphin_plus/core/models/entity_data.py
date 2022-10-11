@@ -8,7 +8,7 @@ from ..helpers.enums import EntityStatus
 
 
 class EntityData:
-    state: str | bool | None
+    state: str | int | float | bool | None
     attributes: dict
     details: dict
     device_name: str | None
