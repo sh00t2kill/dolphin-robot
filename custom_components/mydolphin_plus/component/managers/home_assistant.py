@@ -179,7 +179,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 name=entity_name,
                 icon=ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT),
                 device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
-                options=tuple(ICON_LED_MODES.keys()),
+                attr_options=tuple(ICON_LED_MODES.keys()),
                 entity_category=EntityCategory.CONFIG,
             )
 
