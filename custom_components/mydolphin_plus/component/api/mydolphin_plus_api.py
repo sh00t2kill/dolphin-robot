@@ -204,7 +204,11 @@ class IntegrationAPI(BaseAPI):
     async def async_update(self):
         _LOGGER.info(f"Updating data from MyDolphin Plus AWSIOTHUB")
         _LOGGER.debug(f"Current status: {self.status}")
-
+        api_status = self.data.get(ATTR_AWS_IOT_BROKER_STATUS, ConnectivityStatus.NotConnected)
+        _LOGGER.debug(f"Status from API: {api_status}")
+        
+        if api_status != ConnectivityStatus.Connected:
+            await self.set_status(ConnectivityStatus.Failed)
         if self.status == ConnectivityStatus.Failed:
             _LOGGER.debug("Connection failed. Reinitialize")
             await self.initialize(self.config_data)
