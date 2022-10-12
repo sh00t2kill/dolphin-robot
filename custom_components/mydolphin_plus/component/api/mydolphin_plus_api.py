@@ -206,7 +206,7 @@ class IntegrationAPI(BaseAPI):
         _LOGGER.debug(f"Current status: {self.status}")
         api_status = self.data.get(ATTR_AWS_IOT_BROKER_STATUS, ConnectivityStatus.NotConnected)
         _LOGGER.debug(f"Status from API: {api_status}")
-        
+
         if api_status != ConnectivityStatus.Connected:
             await self.set_status(ConnectivityStatus.Failed)
         if self.status == ConnectivityStatus.Failed:
