@@ -37,7 +37,7 @@ class CoreScanner(BaseEntity, ScannerEntity):
 
     @property
     def source_type(self):
-        """Return the source type, eg gps or router, of the device."""
+        """Return the source type."""
         return self.entity.attributes.get(ATTR_SOURCE_TYPE, SOURCE_TYPE_ROUTER)
 
     @staticmethod
