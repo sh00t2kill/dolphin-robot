@@ -368,3 +368,12 @@ VACUUM_FEATURES = VacuumEntityFeature.STATE | \
                   VacuumEntityFeature.LOCATE
 
 STORAGE_DATA_LOCATING = "locating"
+STORAGE_DATA_STORE_DEBUG_DATA = "store-debug-data"
+
+STORAGE_DATA_FILE_CONFIG = "config"
+STORAGE_DATA_FILE_API_DEBUG = "debug.api"
+
+STORAGE_DATA_FILES = [
+    STORAGE_DATA_FILE_CONFIG,
+    STORAGE_DATA_FILE_API_DEBUG
+]
