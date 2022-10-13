@@ -44,6 +44,12 @@ class StorageAPI(BaseAPI):
         return storage
 
     @property
+    def _storage_ws(self) -> Store:
+        storage = self._storages.get(STORAGE_DATA_FILE_WS_DEBUG)
+
+        return storage
+
+    @property
     def is_locating(self):
         is_locating = self.data.get(STORAGE_DATA_LOCATING, False)
 
@@ -110,6 +116,10 @@ class StorageAPI(BaseAPI):
     async def debug_log_api(self, data: dict):
         if self.store_debug_data and data is not None:
             await self._storage_api.async_save(self._get_json_data(data))
+
+    async def debug_log_ws(self, data: dict):
+        if self.store_debug_data and data is not None:
+            await self._storage_ws.async_save(self._get_json_data(data))
 
     def _get_json_data(self, data: dict):
         json_data = json.dumps(data, default=self.json_converter, sort_keys=True, indent=4)

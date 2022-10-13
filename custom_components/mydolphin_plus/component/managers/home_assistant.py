@@ -35,6 +35,7 @@ from ...core.managers.home_assistant import HomeAssistantManager
 from ...core.models.entity_data import EntityData
 from ...core.models.select_description import SelectDescription
 from ...core.models.vacuum_description import VacuumDescription
+from ..api.aws_iot_websocket import IntegrationWS
 from ..api.mydolphin_plus_api import IntegrationAPI
 from ..api.storage_api import StorageAPI
 from ..helpers.common import get_cleaning_mode_name, get_date_time_from_timestamp
@@ -45,11 +46,13 @@ _LOGGER = logging.getLogger(__name__)
 
 class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def __init__(self, hass: HomeAssistant):
-        super().__init__(hass, SCAN_INTERVAL)
+        super().__init__(hass, UPDATE_API_INTERVAL)
 
         self._api: IntegrationAPI = IntegrationAPI(self._hass, self._api_data_changed, self._api_status_changed)
+        self._ws: IntegrationWS = IntegrationWS(self._hass, self._ws_data_changed, self._ws_status_changed)
         self._config_manager: ConfigurationManager | None = None
         self._storage_api = StorageAPI(self._hass)
+        self._can_load_components = False
 
         self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
             SERVICE_NAVIGATE: self._command_navigate,
@@ -62,6 +65,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         return self._api
 
     @property
+    def ws(self) -> IntegrationWS:
+        return self._ws
+
+    @property
     def storage_api(self) -> StorageAPI:
         return self._storage_api
 
@@ -69,10 +76,18 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     def config_data(self) -> ConfigData:
         return self._config_manager.get(self.entry_id)
 
+    @property
+    def robot_name(self):
+        robot_name = self.api.data.get(DATA_ROBOT_NAME)
+
+        return robot_name
+
     async def async_component_initialize(self, entry: ConfigEntry):
         try:
             self._config_manager = ConfigurationManager(self._hass, self.api)
             await self._config_manager.load(entry)
+
+            self.update_intervals(UPDATE_ENTITIES_INTERVAL, UPDATE_API_INTERVAL)
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -82,13 +97,17 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         await self.storage_api.initialize(self.config_data)
         await self.api.initialize(self.config_data)
+        await self.ws.initialize(self.config_data)
 
     async def async_stop_data_providers(self):
         await self.api.terminate()
 
     async def async_update_data_providers(self):
         try:
-            await self._api.async_update()
+            await self.api.async_update()
+
+            await self.ws.async_update()
+
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -96,9 +115,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             _LOGGER.error(f"Failed to async_update_data_providers, Error: {ex}, Line: {line_number}")
 
     def load_devices(self):
+        if not self._can_load_components:
+            return
+
         try:
-            data = self._api.data
-            device_name = data.get(DATA_ROBOT_NAME)
+            data = self.api.data
+            device_name = self.robot_name
             model = data.get("Product Description")
             versions = data.get("versions", {})
             pws_version = versions.get("pwsVersion", {})
@@ -122,11 +144,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             _LOGGER.error(f"Failed to load devices, Error: {ex}, Line: {line_number}")
 
     def load_entities(self):
-        data = self._api.data
-        name = data.get(DATA_ROBOT_NAME)
-
-        if name is None:
+        if not self._can_load_components:
             return
+
+        name = self.robot_name
+
+        data = self.ws.data
 
         # Main Entity
         self._load_vacuum(name, data)
@@ -382,14 +405,11 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device_name} AWS Broker"
 
         try:
-            data = self.api.data
-            aws_iot_broker_status = data.get(ATTR_AWS_IOT_BROKER_STATUS, ConnectivityStatus.NotConnected)
-
-            state = STATE_ON if aws_iot_broker_status == ConnectivityStatus.Connected else STATE_OFF
+            state = STATE_ON if self.ws.status == ConnectivityStatus.Connected else STATE_OFF
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
-                ATTR_STATUS: aws_iot_broker_status
+                ATTR_STATUS: self.ws.status
             }
 
             unique_id = EntityData.generate_unique_id(DOMAIN_BINARY_SENSOR, entity_name)
@@ -635,7 +655,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 value = CLEANING_MODES[cleaning_mode]
 
                 if value == fan_speed:
-                    self.api.set_cleaning_mode(cleaning_mode)
+                    self.ws.set_cleaning_mode(cleaning_mode)
 
     async def _set_led_mode(self, entity: EntityData, option: str):
         led_mode_name = LED_MODES_NAMES.get(option)
@@ -644,25 +664,25 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         if entity.state != led_mode_name:
             value = int(option)
 
-            self.api.set_led_mode(value)
+            self.ws.set_led_mode(value)
 
     def set_led_intensity(self, intensity: int):
-        self.api.set_led_intensity(intensity)
+        self.ws.set_led_intensity(intensity)
 
     async def _set_led_enabled(self, entity: EntityData):
         _LOGGER.debug(f"Enable LED light, State: {entity.state}")
 
         if not entity.state:
-            self.api.set_led_enabled(True)
+            self.ws.set_led_enabled(True)
 
     async def _set_led_disabled(self, entity: EntityData):
         _LOGGER.debug(f"Disable LED light, State: {entity.state}")
 
         if entity.state:
-            self.api.set_led_enabled(False)
+            self.ws.set_led_enabled(False)
 
     def get_core_entity_fan_speed(self, entity: EntityData) -> str | None:
-        data = self.api.data
+        data = self.ws.data
 
         cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
         cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
@@ -674,46 +694,45 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def _pickup(self, entity: EntityData):
         _LOGGER.debug("Pickup robot")
 
-        self.api.pickup()
+        self.ws.pickup()
 
     async def _vacuum_turn_on(self, entity: EntityData):
         _LOGGER.debug(f"Turn on vacuum, State: {entity.state}")
         if entity.state in [PWS_STATE_OFF, PWS_STATE_ERROR]:
-            self.api.set_power_state(True)
+            self.ws.set_power_state(True)
 
     async def _vacuum_turn_off(self, entity: EntityData):
         _LOGGER.debug(f"Turn off vacuum, State: {entity.state}")
 
         if entity.state in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]:
-            self.api.set_power_state(False)
+            self.ws.set_power_state(False)
 
     async def _vacuum_toggle(self, entity: EntityData):
         is_on = entity.state in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]
         toggle_value = not is_on
 
         _LOGGER.debug(f"Toggle vacuum, State: {entity.state} ({is_on})")
-        self.api.set_power_state(toggle_value)
+        self.ws.set_power_state(toggle_value)
 
     async def _vacuum_start(self, entity: EntityData):
         _LOGGER.debug(f"Start cleaning, State: {entity.state}")
         if entity.state in [PWS_STATE_ON, PWS_STATE_OFF]:
-            self.api.set_power_state(True)
+            self.ws.set_power_state(True)
 
     async def _vacuum_stop(self, entity: EntityData):
         _LOGGER.debug(f"Stop cleaning, State: {entity.state}")
 
         if entity.state in [PWS_STATE_CLEANING, PWS_STATE_ON]:
-            self.api.set_power_state(False)
+            self.ws.set_power_state(False)
 
     async def _vacuum_pause(self, entity: EntityData):
         _LOGGER.debug(f"Pause cleaning, State: {entity.state}")
 
         if entity.state in [PWS_STATE_CLEANING, PWS_STATE_ON]:
-            self.api.set_power_state(False)
+            self.ws.set_power_state(False)
 
     async def _vacuum_locate(self, entity: EntityData):
-        data = self.api.data
-        device_name = data.get(DATA_ROBOT_NAME)
+        device_name = self.robot_name
         unique_id = EntityData.generate_unique_id(DOMAIN_LIGHT, device_name)
 
         led_light_entity = self.entity_manager.get(unique_id)
@@ -762,7 +781,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             _LOGGER.error("Direction is mandatory parameter, please provide and try again")
             return
 
-        self.api.navigate(direction)
+        self.ws.navigate(direction)
 
     def _command_set_schedule(self, data: dict[str, Any] | list[Any] | None):
         day = data.get(CONF_DAY)
@@ -770,14 +789,14 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
         job_time = data.get(CONF_TIME)
 
-        self.api.set_schedule(day, enabled, cleaning_mode, job_time)
+        self.ws.set_schedule(day, enabled, cleaning_mode, job_time)
 
     def _command_set_delay(self, data: dict[str, Any] | list[Any] | None):
         enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
         cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
         job_time = data.get(CONF_TIME)
 
-        self.api.set_delay(enabled, cleaning_mode, job_time)
+        self.ws.set_delay(enabled, cleaning_mode, job_time)
 
     @staticmethod
     def _log_exception(ex, message):
@@ -841,10 +860,23 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         if self.api.status == ConnectivityStatus.Connected:
             await self.storage_api.debug_log_api(self.api.data)
 
-            super().update()
+    async def _api_status_changed(self, status: ConnectivityStatus):
+        if status == ConnectivityStatus.Connected:
+            await self.api.async_update()
 
-            data = self.api.data
-            device_name = data.get(DATA_ROBOT_NAME)
+            await self.ws.update_api_data(self.api.data)
+
+            self._update_entities(None)
+
+            await self.ws.initialize(self.config_data)
+
+    async def _ws_data_changed(self):
+        if self.ws.status == ConnectivityStatus.Connected:
+            data = self.ws.data
+
+            await self.storage_api.debug_log_ws(data)
+
+            device_name = self.robot_name
             led = data.get(DATA_SECTION_LED, {})
             led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
 
@@ -858,6 +890,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 await self.storage_api.set_locating_mode(False)
                 await self._set_led_disabled(entity)
 
-    async def _api_status_changed(self, status: ConnectivityStatus):
+    async def _ws_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:
-            await self.async_update(datetime.datetime.now())
+            self._can_load_components = True
+
+            await self.api.async_update()

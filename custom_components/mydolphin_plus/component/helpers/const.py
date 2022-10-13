@@ -16,8 +16,6 @@ from ...core.helpers.const import *
 
 VERSION = "0.0.3"
 
-DEFAULT_ICON = "mdi:alarm-light"
-
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_START_TIME = "start_time"
 ATTR_STATUS = "status"
@@ -41,7 +39,6 @@ ATTR_TIME_ZONE = "time_zone"
 ATTR_ENABLE = "enable"
 ATTR_DISABLED = "disabled"
 
-DYNAMIC_CONTENT = "content"
 DYNAMIC_TYPE = "type"
 DYNAMIC_DESCRIPTION = "description"
 DYNAMIC_DESCRIPTION_JOYSTICK = "joystick"
@@ -58,6 +55,10 @@ ATTR_REMOTE_CONTROL_MODE_EXIT = "exit"
 DATA_ROOT_STATE = "state"
 DATA_ROOT_TIMESTAMP = "timestamp"
 DATA_ROOT_VERSION = "version"
+
+WS_DATA_DIFF = "diff-seconds"
+WS_DATA_TIMESTAMP = "timestamp"
+WS_DATA_VERSION = "version"
 
 DATA_SECTION_LED = "led"
 DATA_SECTION_DEBUG = "debug"
@@ -108,7 +109,8 @@ DEFAULT_TIME_ZONE_NAME = "UTC"
 DEFAULT_TIME_PART = 255
 DEFAULT_BATTERY_LEVEL = "NA"
 
-SCAN_INTERVAL = timedelta(seconds=60)
+UPDATE_API_INTERVAL = timedelta(seconds=60)
+UPDATE_ENTITIES_INTERVAL = timedelta(seconds=1)
 LOCATE_OFF_INTERVAL_SECONDS = timedelta(seconds=10)
 
 BASE_API = "https://mbapp18.maytronics.com/api"
@@ -130,6 +132,10 @@ API_RESPONSE_DATA_TOKEN = "Token"
 API_RESPONSE_DATA_ACCESS_KEY_ID = "AccessKeyId"
 API_RESPONSE_DATA_SECRET_ACCESS_KEY = "SecretAccessKey"
 
+API_DATA_MOTOR_UNIT_SERIAL = "motor_unit_serial"
+API_DATA_SERIAL_NUMBER = "serial_number"
+API_DATA_LOGIN_TOKEN = "login_token"
+
 MQTT_QOS_0 = 0
 MQTT_QOS_1 = 1
 
@@ -147,8 +153,6 @@ LOGIN_HEADERS = {
 }
 CA_FILE_NAME = "AmazonRootCA.pem"
 
-AWS_DATE_FORMAT = "%Y%m%d"
-
 TOPIC_SHADOW = "$aws/things/{}/shadow"
 TOPIC_DYNAMIC = "Maytronics/{}/main"
 
@@ -159,7 +163,6 @@ TOPIC_ACTION_UPDATE = "update"
 
 TOPIC_CALLBACK_ACCEPTED = "accepted"
 TOPIC_CALLBACK_REJECTED = "rejected"
-TOPIC_CALLBACK_DOCUMENTS = "documents"
 
 DATA_ROBOT_NAME = "Robot Name"
 
@@ -174,9 +177,7 @@ DATA_ROBOT_DETAILS = {
     "RobotFamily": "Product Family"
 }
 
-ATTR_CLEANING_MODE = "cleaning_mode"
 ATTR_LED_MODE = "led_mode"
-ATTR_OPTIONS = "options"
 
 CLEANING_MODE_REGULAR = "all"
 CLEANING_MODE_FAST_MODE = "short"
@@ -234,7 +235,6 @@ SERVICE_DELAYED_CLEAN = "delayed_clean"
 CONF_DIRECTION = "direction"
 CONF_DAY = "day"
 CONF_TIME = "time"
-CONF_ATTRIBUTES = "attributes"
 
 JOYSTICK_SPEED = 100
 
@@ -323,8 +323,6 @@ ROBOT_STATE_PROGRAMMING = "programming"
 ROBOT_STATE_INIT = "init"
 ROBOT_STATE_SCANNING = "scanning"
 
-UNMAPPED_CALCULATED_STATE = "Unmapped"
-
 CALCULATED_STATES = {
     PWS_STATE_ON: PWS_STATE_ON,
     PWS_STATE_OFF: PWS_STATE_OFF,
@@ -372,6 +370,7 @@ STORAGE_DATA_STORE_DEBUG_DATA = "store-debug-data"
 
 STORAGE_DATA_FILE_CONFIG = "config"
 STORAGE_DATA_FILE_API_DEBUG = "debug.api"
+STORAGE_DATA_FILE_WS_DEBUG = "debug.ws"
 
 STORAGE_DATA_FILES = [
     STORAGE_DATA_FILE_CONFIG,
