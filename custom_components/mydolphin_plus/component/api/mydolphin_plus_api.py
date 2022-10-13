@@ -217,7 +217,7 @@ class IntegrationAPI(BaseAPI):
             return
 
         try:
-            motor_unit_serial = self.data.get(API_DATA_SERIAL_NUMBER)
+            motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
             login_token = self.data.get(API_DATA_LOGIN_TOKEN)
 
             headers = {
@@ -231,18 +231,14 @@ class IntegrationAPI(BaseAPI):
 
             payload = await self._async_post(TOKEN_URL, headers, request_data)
 
-            _LOGGER.info(payload)
-
             data = payload.get(API_RESPONSE_DATA, {})
             alert = payload.get(API_RESPONSE_ALERT, {})
             status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
 
             if status == API_RESPONSE_STATUS_SUCCESS:
-                self.aws_token = data.get(API_RESPONSE_DATA_TOKEN)
-                self.aws_key = data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
-                self.aws_secret = data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
+                for field in API_TOKEN_FIELDS:
+                    self.data[field] = data.get(field)
 
-                _LOGGER.debug(f"Logged in to AWS using {self.aws_key}:{self.aws_secret}:{self.aws_token}")
                 await self.set_status(ConnectivityStatus.Connected)
 
             else:
@@ -263,7 +259,7 @@ class IntegrationAPI(BaseAPI):
             return
 
         try:
-            motor_unit_serial = self.data.get(API_DATA_SERIAL_NUMBER)
+            motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
             login_token = self.data.get(API_DATA_LOGIN_TOKEN)
 
             headers = {
@@ -278,14 +274,19 @@ class IntegrationAPI(BaseAPI):
             payload = await self._async_post(ROBOT_DETAILS_URL, headers, request_data)
 
             response_status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
+            alert = payload.get(API_RESPONSE_STATUS, API_RESPONSE_ALERT)
 
             if response_status == API_RESPONSE_STATUS_SUCCESS:
+
                 data = payload.get(API_RESPONSE_DATA, {})
 
                 for key in DATA_ROBOT_DETAILS:
                     new_key = DATA_ROBOT_DETAILS.get(key)
 
                     self.data[new_key] = data.get(key)
+
+            else:
+                _LOGGER.error(f"Failed to reload details, Error: {alert}")
 
             await self.fire_data_changed_event()
 

@@ -4,6 +4,8 @@
 
 - Fix deleting components when being removed, wrong parameter was sent to be deleted
 - Update `core` to latest
+- Separate API and WS to different classes
+- Separate timers of update entities and data
 
 ## v0.2.4
 

@@ -53,6 +53,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         self._config_manager: ConfigurationManager | None = None
         self._storage_api = StorageAPI(self._hass)
         self._can_load_components = False
+        self._system_status_details = None
 
         self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
             SERVICE_NAVIGATE: self._command_navigate,
@@ -440,7 +441,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = f"{device_name} Cycle Time Left"
 
         try:
-            system_details = self._get_system_status_details(data)
+            system_details = self._system_status_details
             calculated_state = system_details.get(ATTR_CALCULATED_STATUS)
 
             cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
@@ -550,7 +551,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
         entity_name = device_name
 
         try:
-            details = self._get_system_status_details(data)
+            details = self._system_status_details
 
             debug = data.get(DATA_SECTION_DEBUG, {})
             wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
@@ -804,8 +805,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         _LOGGER.error(f"{message}, Error: {str(ex)}, Line: {line_number}")
 
-    @staticmethod
-    def _get_system_status_details(data: dict):
+    def _set_system_status_details(self, data: dict):
         system_state = data.get(DATA_SECTION_SYSTEM_STATE, {})
         pws_state = system_state.get(DATA_SYSTEM_STATE_PWS_STATE, PWS_STATE_OFF)
         robot_state = system_state.get(DATA_SYSTEM_STATE_ROBOT_STATE, ROBOT_STATE_NOT_CONNECTED)
@@ -840,9 +840,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             else:
                 calculated_state = PWS_STATE_OFF
 
-        state_description = f"pwsState: {pws_state} | robotState: {robot_state}"
-        _LOGGER.info(f"System status recalculated, State: {calculated_state}, Parameters: {state_description}")
-
         result = {
             ATTR_CALCULATED_STATUS: calculated_state,
             ATTR_PWS_STATUS: pws_state,
@@ -853,7 +850,13 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             ATTR_TIME_ZONE: f"{time_zone_name} ({time_zone})"
         }
 
-        return result
+        if self._system_status_details != result:
+            self._can_load_components = True
+
+            state_description = f"pwsState: {pws_state} | robotState: {robot_state}"
+            _LOGGER.debug(f"System status recalculated, State: {calculated_state}, Parameters: {state_description}")
+
+            self._system_status_details = result
 
     async def _api_data_changed(self):
         if self.api.status == ConnectivityStatus.Connected:
@@ -875,6 +878,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             await self.storage_api.debug_log_ws(data)
 
+            self._set_system_status_details(data)
+
             device_name = self.robot_name
             led = data.get(DATA_SECTION_LED, {})
             led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
@@ -891,6 +896,4 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     async def _ws_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:
-            self._can_load_components = True
-
-            await self.api.async_update()
+            await self.async_update_data_providers()

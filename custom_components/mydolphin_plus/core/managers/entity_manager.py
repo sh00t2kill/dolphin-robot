@@ -239,14 +239,17 @@ class EntityManager:
 
         entity = self.entities.get(entity_description.key)
 
+        original_status = None
+
         if entity is None:
-            entity = EntityData(entry_id, entity_description)
+            entity = EntityData(entry_id)
             entity.status = EntityStatus.CREATED
             entity.domain = domain
 
             self._compare_data(entity, state, attributes, device_name)
 
         else:
+            original_status = entity.status
             was_modified = self._compare_data(entity, state, attributes, device_name, entity_description, details)
 
             if was_modified:
@@ -257,6 +260,7 @@ class EntityManager:
             entity.attributes = attributes
             entity.device_name = device_name
             entity.details = details
+            entity.entity_description = entity_description
 
         if destructors is not None and True in destructors:
             if entity.status == EntityStatus.CREATED:
@@ -272,4 +276,4 @@ class EntityManager:
             self.entities[entity_description.key] = entity
 
             if entity.status != EntityStatus.READY:
-                _LOGGER.info(f"{entity.name} ({entity.domain}) {entity.status}, state: {entity.state}")
+                _LOGGER.info(f"{entity.name} ({entity.domain}) {entity.status}, state: {entity.state} | {original_status}")

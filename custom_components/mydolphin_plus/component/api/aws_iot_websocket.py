@@ -27,7 +27,6 @@ class IntegrationWS(BaseAPI):
     _awsiot_client: AWSIoTMQTTClient | None
 
     _topic_data: TopicData | None
-    _last_update: float | None
 
     def __init__(self,
                  hass: HomeAssistant | None,
@@ -50,7 +49,7 @@ class IntegrationWS(BaseAPI):
             line_number = tb.tb_lineno
 
             _LOGGER.error(
-                f"Failed to load MyDolphin Plus API, error: {ex}, line: {line_number}"
+                f"Failed to load MyDolphin Plus WS, error: {ex}, line: {line_number}"
             )
 
     async def terminate(self):
@@ -60,45 +59,62 @@ class IntegrationWS(BaseAPI):
         await self.set_status(ConnectivityStatus.Disconnected)
 
     async def initialize(self, config_data: ConfigData):
-        _LOGGER.info("Initializing MyDolphin AWS IOT WS")
-        self._config_data = config_data
+        try:
+            _LOGGER.info("Initializing MyDolphin AWS IOT WS")
+            self._config_data = config_data
 
-        await self.set_status(ConnectivityStatus.Connecting)
+            await self.set_status(ConnectivityStatus.Connecting)
 
-        awsiot_id = str(uuid.uuid4())
-        aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
-        aws_key = self._api_data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
-        aws_secret = self._api_data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
+            awsiot_id = str(uuid.uuid4())
+            aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
+            aws_key = self._api_data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
+            aws_secret = self._api_data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
 
-        script_dir = os.path.dirname(__file__)
-        ca_file_path = os.path.join(script_dir, CA_FILE_NAME)
+            _LOGGER.debug(f"AWS IAM Credentials {aws_key}:{aws_secret}:{aws_token}")
 
-        _LOGGER.debug(f"Loading CA file from {ca_file_path}")
+            motor_unit_serial = self._api_data.get(API_DATA_MOTOR_UNIT_SERIAL)
 
-        aws_client = AWSIoTMQTTClient(awsiot_id, useWebsocket=True)
-        aws_client.configureEndpoint(AWS_IOT_URL, AWS_IOT_PORT)
-        aws_client.configureCredentials(ca_file_path)
-        aws_client.configureIAMCredentials(aws_key, aws_secret, aws_token)
-        aws_client.configureAutoReconnectBackoffTime(1, 32, 20)
-        aws_client.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
-        aws_client.configureDrainingFrequency(2)  # Draining: 2 Hz
-        aws_client.configureConnectDisconnectTimeout(10)
-        aws_client.configureMQTTOperationTimeout(10)
-        aws_client.enableMetricsCollection()
-        aws_client.onOnline = self._handle_aws_client_online
-        aws_client.onOffline = self._handle_aws_client_offline
+            self._topic_data = TopicData(motor_unit_serial)
 
-        for topic in self._topic_data.subscribe:
-            aws_client.subscribeAsync(topic, MQTT_QOS_0, self._ack_callback, self._message_callback)
+            script_dir = os.path.dirname(__file__)
+            ca_file_path = os.path.join(script_dir, CA_FILE_NAME)
 
-        connected = aws_client.connectAsync(ackCallback=self._ack_callback)
+            _LOGGER.debug(f"Loading CA file from {ca_file_path}")
 
-        if connected:
-            _LOGGER.debug(f"Connected to {AWS_IOT_URL}")
-            self._awsiot_client = aws_client
+            aws_client = AWSIoTMQTTClient(awsiot_id, useWebsocket=True)
+            aws_client.configureEndpoint(AWS_IOT_URL, AWS_IOT_PORT)
+            aws_client.configureCredentials(ca_file_path)
+            aws_client.configureIAMCredentials(aws_key, aws_secret, aws_token)
+            aws_client.configureAutoReconnectBackoffTime(1, 32, 20)
+            aws_client.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
+            aws_client.configureDrainingFrequency(2)  # Draining: 2 Hz
+            aws_client.configureConnectDisconnectTimeout(10)
+            aws_client.configureMQTTOperationTimeout(10)
+            aws_client.enableMetricsCollection()
+            aws_client.onOnline = self._handle_aws_client_online
+            aws_client.onOffline = self._handle_aws_client_offline
 
-        else:
-            _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
+            for topic in self._topic_data.subscribe:
+                aws_client.subscribeAsync(topic, MQTT_QOS_0, self._ack_callback, self._message_callback)
+
+            connected = aws_client.connectAsync(ackCallback=self._ack_callback)
+
+            if connected:
+                _LOGGER.debug(f"Connected to {AWS_IOT_URL}")
+                self._awsiot_client = aws_client
+
+            else:
+                _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
+                await self.set_status(ConnectivityStatus.Failed)
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
+            )
+
             await self.set_status(ConnectivityStatus.Failed)
 
     async def update_api_data(self, api_data: dict):
@@ -114,20 +130,31 @@ class IntegrationWS(BaseAPI):
             await self._refresh_details()
 
     async def _refresh_details(self, forced: bool = False):
-        now = datetime.now().timestamp()
-        last_update = 0 if self._last_update is None else self._last_update
+        try:
+            now = datetime.now().timestamp()
+            last_update = self.data.get(WS_LAST_UPDATE, 0)
 
-        diff_seconds = now - last_update
+            diff_seconds = int(now) - last_update
 
-        if forced or diff_seconds >= UPDATE_API_INTERVAL.total_seconds():
-            self.last_update = now
+            if forced or diff_seconds >= UPDATE_API_INTERVAL.total_seconds():
+                self.data[WS_LAST_UPDATE] = int(now)
 
-            self._publish(self._topic_data.get, None)
+                self._publish(self._topic_data.get, None)
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to refresh MyDolphin Plus WS data, error: {ex}, line: {line_number}"
+            )
 
     def _handle_aws_client_online(self):
+        _LOGGER.debug("AWS IOT Client is Online")
         self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
 
     def _handle_aws_client_offline(self):
+        _LOGGER.debug("AWS IOT Client is Offline")
         self.hass.async_create_task(self.set_status(ConnectivityStatus.Disconnected))
 
     @staticmethod
