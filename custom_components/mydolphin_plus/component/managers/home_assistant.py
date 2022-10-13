@@ -97,7 +97,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         await self.storage_api.initialize(self.config_data)
         await self.api.initialize(self.config_data)
-        await self.ws.initialize(self.config_data)
 
     async def async_stop_data_providers(self):
         await self.api.terminate()

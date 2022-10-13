@@ -231,20 +231,30 @@ class IntegrationAPI(BaseAPI):
 
             payload = await self._async_post(TOKEN_URL, headers, request_data)
 
+            _LOGGER.info(payload)
+
             data = payload.get(API_RESPONSE_DATA, {})
+            alert = payload.get(API_RESPONSE_ALERT, {})
+            status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
 
-            self.aws_token = data.get(API_RESPONSE_DATA_TOKEN)
-            self.aws_key = data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
-            self.aws_secret = data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
+            if status == API_RESPONSE_STATUS_SUCCESS:
+                self.aws_token = data.get(API_RESPONSE_DATA_TOKEN)
+                self.aws_key = data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
+                self.aws_secret = data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
 
-            _LOGGER.debug(f"Logged in to AWS using {self.aws_key}:{self.aws_secret}:{self.aws_token}")
-            await self.set_status(ConnectivityStatus.Connected)
+                _LOGGER.debug(f"Logged in to AWS using {self.aws_key}:{self.aws_secret}:{self.aws_token}")
+                await self.set_status(ConnectivityStatus.Connected)
+
+            else:
+                _LOGGER.error(f"Failed to retrieve AWS token, Error: {alert}")
+
+                await self.set_status(ConnectivityStatus.Failed)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed  to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}")
+            _LOGGER.error(f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}")
             await self.set_status(ConnectivityStatus.Failed)
 
     async def _load_details(self):

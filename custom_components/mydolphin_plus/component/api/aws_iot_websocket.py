@@ -60,7 +60,7 @@ class IntegrationWS(BaseAPI):
         await self.set_status(ConnectivityStatus.Disconnected)
 
     async def initialize(self, config_data: ConfigData):
-        _LOGGER.info("Initializing MyDolphin API")
+        _LOGGER.info("Initializing MyDolphin AWS IOT WS")
         self._config_data = config_data
 
         await self.set_status(ConnectivityStatus.Connecting)

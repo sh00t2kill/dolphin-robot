@@ -157,8 +157,6 @@ class EntityManager:
             )
 
     async def _async_update(self):
-        _LOGGER.debug("Starting to update entities")
-
         try:
             await self._async_add_components()
             await self._async_delete_components()
