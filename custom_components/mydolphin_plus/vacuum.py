@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
-    """Set up the Shinobi Video Switch."""
+    """Set up the  Switch."""
     await async_setup_base_entry(
         hass, config_entry, async_add_devices, CoreVacuum.get_domain(), CoreVacuum.get_component
     )
