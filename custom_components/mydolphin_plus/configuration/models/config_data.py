@@ -4,7 +4,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 
-from ...configuration.helpers.const import *
+from ..helpers.const import *
 
 
 class ConfigData:

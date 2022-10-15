@@ -1,12 +1,88 @@
 # Changelog
 
+## Pending
+
+## v0.3.0
+
+- Fix deleting components when being removed, wrong parameter was sent to be deleted
+- Update `core` to latest
+- Separate API and WS to different classes
+- Separate timers of update entities and data
+- Update time remaining value
+
+## v0.2.4
+
+- IOT Class (`iot_class`) changed to `cloud_push`
+- Removed time from cleaning mode select HA component (select, translations and services)
+- Major refactor of HA Manager, Entity Manager and API (code cleanup)
+- AWS IOT Broker works with asynchronous operations
+- Publish all messages with QOS=1 (At least once)
+- Add AWS Broker status binary sensor
+- Override Time Left to 0 when robot is not cleaning
+- Send explicit OFF command when toggling robot to off
+- Vacuum state is being calculated from both states of head unit and the robot
+- Add vacuum entity, replacing:
+  - Cleaning mode select
+  - Connection binary sensor
+  - Power switch
+  - All services
+- Add locate to vacuum
+- Major refactor to `Core`
+  - all components are now part of the `Core`
+  - Implementation should be done only in API, HA Manager and Configuration Manager
+- Added `init` to vacuum state to show something is happening when a cycle is started
+- Add {Robot Name} Store Debug Data switch - allows to set whether to store API and WebSocket the latest data for debugging
+- Separate API / WS classes
+- Separate timers for API / WS and Entities update
+
+## v0.2.3
+- Fix core issue while deleting entities
+
+## v0.2.2
+- Fix initialization order of API
+
+## v0.2.1
+- Fix cycle time left sensor - didn't take new vacuum states into account
+- Fix storage API in case file doesn't exist
+- Fix initialization order of API
+- Removed unused files and code
+- Core protect unsupported domains
+- IOT Class (`iot_class`) changed to `cloud_push`
+
+## v0.2.0
+- Add vacuum start,stop,locate,pause service calls
+  - `start` is equivalent to `turn_on` (ie start a cleaning cycle)
+  - `stop` and `pause` are equivalent to `turn_off` (ie stop a cleaning cycle)
+  - locate turns the LED on for 10 seconds and off again
+
+- Major refactor to `Core`
+  - all components are now part of the `Core`
+  - Implementation should be done only in API, HA Manager and Configuration Manager
+
+- Remapped vacuum status for each action - turn on, turn off, toggle, start, stop, pause
+
+## v0.1.0
+- Major refactor of HA Manager, Entity Manager and API (code cleanup)
+- AWS IOT Broker works with asynchronous operations
+- Publish all messages with QOS=1 (At least once)
+- Add AWS Broker status binary sensor
+- Override Time Left to 0 when robot is not cleaning
+- Send explicit OFF command when toggling robot to off
+- Vacuum state is being calculated from both states of head unit and the robot
+- Add vacuum entity, replacing:
+  - Cleaning mode select
+  - Connection binary sensor
+  - Power switch
+  - All services
+
+
 ## v0.0.9
 - Removed time from cleaning mode select HA component (select, translations and services)
 - Moved the off_states of switch to constants
 
 ## v0.0.8
 - Add a list of relevant states that also determine if a robot is not actively cleaning
-- Added Mydolpin Plus to the standard HACS repo
+- Added MyDolpin Plus to the standard HACS repo
 
 ## v0.0.7
 - Cycle left time sensor: Add attribute of expected end time

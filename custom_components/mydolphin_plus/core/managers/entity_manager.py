@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+from datetime import datetime
+import json
 import logging
 import sys
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_registry import EntityRegistry, RegistryEntryDisabler
 
-from ...core.helpers.const import *
-from ...core.helpers.enums import EntityStatus
-from ...core.models.domain_data import DomainData
-from ...core.models.entity_data import EntityData
+from ..helpers.const import *
+from ..helpers.enums import EntityStatus
+from ..models.domain_data import DomainData
+from ..models.entity_data import EntityData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,11 +22,13 @@ class EntityManager:
 
     hass: HomeAssistant
     domain_component_manager: dict[str, DomainData]
+    entities: dict[str, EntityData]
 
     def __init__(self, hass, ha):
         self.hass: HomeAssistant = hass
         self._ha = ha
         self.domain_component_manager: dict[str, DomainData] = {}
+        self.entities = {}
 
     @property
     def entity_registry(self) -> EntityRegistry:
@@ -37,14 +42,14 @@ class EntityManager:
         self.domain_component_manager[domain_data.name] = domain_data
 
     def get_domain_data(self, domain: str) -> DomainData | None:
-        domain_data = self.domain_component_manager.get(domain)
+        domain_data = self.domain_component_manager[domain]
 
         return domain_data
 
     def update(self):
         self.hass.async_create_task(self._async_update())
 
-    async def _handle_created_entities(self, entity_id, entity: EntityData, domain_component):
+    async def _handle_disabled_entity(self, entity_id, entity: EntityData):
         entity_item = self.entity_registry.async_get(entity_id)
 
         if entity_item is not None:
@@ -57,77 +62,104 @@ class EntityManager:
             else:
                 entity.disabled = entity_item.disabled
 
-        entity_component = domain_component(self.hass, entity)
-
+    async def _handle_restored_entity(self, entity_id, component):
         if entity_id is not None:
-            entity_component.entity_id = entity_id
+            component.entity_id = entity_id
             state = self.hass.states.get(entity_id)
 
             if state is not None:
                 restored = state.attributes.get("restored", False)
 
                 if restored:
-                    _LOGGER.info(f"Restored {entity_id} ({entity.name})")
+                    _LOGGER.debug(f"Restored {entity_id} ({component.name})")
 
-        entity.status = EntityStatus.READY
-
-        return entity_component
-
-    async def _async_update(self):
-        _LOGGER.debug("Starting to update entities")
-
-        last_handled_domain = None
-
+    async def _async_add_components(self):
         try:
-            for domain in self.domain_component_manager:
-                last_handled_domain = domain
-                domain_data = self.domain_component_manager.get(domain)
-                entities_to_add = []
-                entities_to_delete = {}
+            components: dict[str, list] = {}
+            for unique_id in self.entities:
+                entity = self.entities.get(unique_id)
+                domain_manager = self.domain_component_manager.get(entity.domain)
 
-                if domain_data is None:
-                    _LOGGER.error(f"Failed to get domain manager for {domain}")
-
-                for name in domain_data.entities:
-                    entity = domain_data.entities.get(name)
-
+                if entity.status == EntityStatus.CREATED and domain_manager is not None:
                     entity_id = self.entity_registry.async_get_entity_id(
-                        domain, DOMAIN, entity.unique_id
+                        entity.domain, DOMAIN, unique_id
                     )
 
-                    if entity.status == EntityStatus.CREATED:
-                        entity_component = await self._handle_created_entities(entity_id,
-                                                                               entity,
-                                                                               domain_data.initializer)
+                    await self._handle_disabled_entity(entity_id, entity)
 
-                        if entity_component is not None:
-                            entities_to_add.append(entity_component)
+                    component = domain_manager.initializer(self.hass, entity)
 
-                    elif entity.status == EntityStatus.DELETED:
-                        entities_to_delete[entity_id] = entity
+                    await self._handle_restored_entity(entity_id, component)
 
-                entities_count = len(entities_to_add)
+                    domain_components = components.get(entity.domain, [])
+                    domain_components.append(component)
 
-                if entities_count > 0:
-                    domain_data.async_add_devices(entities_to_add)
+                    components[entity.domain] = domain_components
 
-                    _LOGGER.info(f"{entities_count} {domain} components created")
+                    entity.status = EntityStatus.READY
 
-                deleted_count = len(entities_to_delete.keys())
-                if deleted_count > 0:
-                    for entity_id in entities_to_delete:
-                        entity = entities_to_delete[entity_id]
+            for domain in self.domain_component_manager:
+                domain_manager = self.domain_component_manager.get(domain)
 
-                        entity_item = self.entity_registry.async_get(entity_id)
+                domain_components = components.get(domain, [])
+                components_count = len(domain_components)
 
-                        if entity_item is not None:
-                            _LOGGER.info(f"Removed {entity_id} ({entity.name})")
+                if components_count > 0:
+                    domain_manager.async_add_devices(domain_components)
 
-                            self.entity_registry.async_remove(entity_id)
+                    _LOGGER.info(f"{components_count} {domain} components created")
 
-                        domain_data.delete_entity(entity.name)
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
 
-                    _LOGGER.info(f"{deleted_count} {domain} components deleted")
+            _LOGGER.error(
+                f"Failed to add component, "
+                f"Error: {str(ex)}, "
+                f"Line: {line_number}"
+            )
+
+    async def _async_delete_components(self):
+        try:
+            delete_entities = []
+            for unique_id in self.entities:
+                entity = self.entities.get(unique_id)
+
+                if entity.status == EntityStatus.DELETED:
+                    entity_id = self.entity_registry.async_get_entity_id(
+                        entity.domain, DOMAIN, unique_id
+                    )
+
+                    entity_item = self.entity_registry.async_get(entity_id)
+
+                    if entity_item is not None:
+                        _LOGGER.info(f"Removed {entity_id} ({entity.name})")
+
+                        self.entity_registry.async_remove(entity_id)
+
+                    delete_entities.append(unique_id)
+
+            for unique_id in delete_entities:
+                self.entities.pop(unique_id, None)
+
+            total_delete_entities = len(delete_entities)
+            if total_delete_entities > 0:
+                _LOGGER.info(f"{total_delete_entities} components deleted")
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to delete components, "
+                f"Error: {str(ex)}, "
+                f"Line: {line_number}"
+            )
+
+    async def _async_update(self):
+        try:
+            await self._async_add_components()
+            await self._async_delete_components()
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -135,46 +167,117 @@ class EntityManager:
 
             _LOGGER.error(
                 f"Failed to update, "
-                f"Last handled domain: {last_handled_domain}, "
                 f"Error: {str(ex)}, "
                 f"Line: {line_number}"
             )
 
-    @staticmethod
-    def compare_data(entity: EntityData, data: dict[str, tuple]) -> bool:
-        modified = False
+    def _compare_data(self,
+                      entity_name: str,
+                      entity: EntityData,
+                      state: str | int | float | bool,
+                      attributes: dict,
+                      device_name: str,
+                      entity_description: EntityDescription | None = None,
+                      details: dict | None = None):
         msgs = []
 
-        for data_key in data:
-            original, latest = data[data_key]
+        if str(entity.state) != str(state):
+            msgs.append(f"State {entity.state} -> {state}")
 
-            if original != latest:
-                msgs.append(f"{data_key} changed from {original} to {latest}")
-                modified = True
+        if entity.attributes != attributes:
+            from_attributes = self._get_attributes_json(entity.attributes)
+            to_attributes = self._get_attributes_json(attributes)
+
+            msgs.append(f"Attributes {from_attributes} -> {to_attributes}")
+
+        if entity.device_name != device_name:
+            msgs.append(f"Device name {entity.device_name} -> {device_name}")
+
+        if entity_description is not None and entity.entity_description != entity_description:
+            msgs.append(f"Description {str(entity.entity_description)} -> {str(entity_description)}")
+
+        if details is not None and entity.details != details:
+            from_details = self._get_attributes_json(entity.details)
+            to_details = self._get_attributes_json(details)
+
+            msgs.append(f"Details {from_details} -> {to_details}")
+
+        modified = len(msgs) > 0
 
         if modified:
             full_message = " | ".join(msgs)
 
-            _LOGGER.debug(f"{entity.name} | {entity.domain} | {full_message}")
+            _LOGGER.debug(f"{entity_name} | {entity.domain} | {full_message}")
 
         return modified
 
     @staticmethod
-    def get_empty_entity(entry_id: str) -> EntityData:
-        data = EntityData(entry_id)
+    def _get_attributes_json(attributes: dict):
+        new_attributes = {}
+        for key in attributes:
+            value = attributes[key]
+            new_attributes[key] = str(value)
 
-        return data
+        result = json.dumps(new_attributes)
 
-    def get(self, domain: str, name: str) -> EntityData | None:
-        domain_data = self.get_domain_data(domain)
+        return result
 
-        entity = domain_data.get_entity(name)
-
-        return entity
-
-    def set(self, entity: EntityData, destructors: list[bool] = None):
-        domain_data = self.get_domain_data(entity.domain)
-
-        entity = domain_data.set_entity(entity, destructors)
+    def get(self, unique_id: str) -> EntityData | None:
+        entity = self.entities.get(unique_id)
 
         return entity
+
+    def set_entity(self,
+                   domain: str,
+                   entry_id: str,
+                   state: str | int | float | bool | datetime,
+                   attributes: dict,
+                   device_name: str,
+                   entity_description: EntityDescription | None,
+                   details: dict | None = None,
+                   destructors: list[bool] = None
+                   ):
+
+        entity = self.entities.get(entity_description.key)
+        entity_name = entity_description.name
+        original_status = None
+
+        if entity is None:
+            entity = EntityData(entry_id)
+            entity.status = EntityStatus.CREATED
+            entity.domain = domain
+
+            self._compare_data(entity_name, entity, state, attributes, device_name)
+
+        else:
+            original_status = entity.status
+            was_modified = self._compare_data(entity_name, entity, state, attributes, device_name, entity_description, details)
+
+            if was_modified:
+                entity.status = EntityStatus.UPDATED
+
+        if entity.status in [EntityStatus.CREATED, EntityStatus.UPDATED]:
+            entity.state = state
+            entity.attributes = attributes
+            entity.device_name = device_name
+            entity.details = details
+            entity.entity_description = entity_description
+
+        if destructors is not None and True in destructors:
+            if entity.status == EntityStatus.CREATED:
+                entity = None
+
+            else:
+                entity.status = EntityStatus.DELETED
+
+        if entity is None:
+            _LOGGER.debug(f"{entity_description.name} ignored")
+
+        else:
+            self.entities[entity_description.key] = entity
+
+            if entity.status != EntityStatus.READY:
+                _LOGGER.info(
+                    f"{entity_name} ({entity.domain}) {entity.status}, "
+                    f"state: {entity.state} | {original_status}"
+                )

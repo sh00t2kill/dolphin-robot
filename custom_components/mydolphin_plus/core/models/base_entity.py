@@ -2,56 +2,24 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Any, Callable
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from ...core.helpers import get_ha
-from ...core.helpers.const import *
-from ...core.managers.device_manager import DeviceManager
-from ...core.managers.entity_manager import EntityManager
-from ...core.models.domain_data import DomainData
-from ...core.models.entity_data import EntityData
+from ..helpers.const import *
+from ..managers.device_manager import DeviceManager
+from ..managers.entity_manager import EntityManager
+from ..models.entity_data import EntityData
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_base_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_devices: AddEntitiesCallback,
-    domain: str,
-    component: Callable[[HomeAssistant, EntityData], Any],
-):
-
-    """Set up MyDolphin Plus based off an entry."""
-    _LOGGER.debug(f"Starting async_setup_entry {domain}")
-
-    try:
-        ha = get_ha(hass, entry.entry_id)
-        entity_manager = ha.entity_manager
-
-        domain_data = DomainData(domain, async_add_devices, component)
-
-        _LOGGER.debug(f"{domain} domain data: {domain_data}")
-
-        entity_manager.set_domain_data(domain_data)
-    except Exception as ex:
-        exc_type, exc_obj, tb = sys.exc_info()
-        line_number = tb.tb_lineno
-
-        _LOGGER.error(f"Failed to load {domain}, error: {ex}, line: {line_number}")
-
-
 class BaseEntity(Entity):
-    """Representation a binary sensor that is updated by MyDolphin Plus."""
+    """Representation a base entity."""
 
-    hass: HomeAssistant = None
-    entity: EntityData = None
+    hass: HomeAssistant | None = None
+    entity: EntityData | None = None
     remove_dispatcher = None
     current_domain: str = None
 
@@ -65,14 +33,29 @@ class BaseEntity(Entity):
         entity: EntityData,
         current_domain: str,
     ):
-        self.hass = hass
-        self.entity = entity
-        self.remove_dispatcher = None
-        self.current_domain = current_domain
+        try:
+            self.hass = hass
+            self.entity = entity
+            self.remove_dispatcher = None
+            self.current_domain = current_domain
 
-        self.ha = get_ha(self.hass, self.entry_id)
-        self.entity_manager = self.ha.entity_manager
-        self.device_manager = self.ha.device_manager
+            ha_data = hass.data.get(DATA, dict())
+
+            self.ha = ha_data.get(entity.entry_id)
+
+            if self.ha is None:
+                _LOGGER.warning("Failed to initialize BaseEntity without HA manager")
+                return
+
+            self.entity_manager = self.ha.entity_manager
+            self.device_manager = self.ha.device_manager
+            self.entity_description = entity.entity_description
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(f"Failed to initialize BaseEntity, Error: {ex}, Line: {line_number}")
 
     @property
     def entry_id(self) -> str | None:
@@ -82,7 +65,7 @@ class BaseEntity(Entity):
     @property
     def unique_id(self) -> str | None:
         """Return the name of the node."""
-        return self.entity.unique_id
+        return self.entity.id
 
     @property
     def device_info(self):
@@ -92,11 +75,6 @@ class BaseEntity(Entity):
     def name(self):
         """Return the name of the node."""
         return self.entity.name
-
-    @property
-    def should_poll(self):
-        """Return the polling state."""
-        return False
 
     @property
     def extra_state_attributes(self):
@@ -116,6 +94,10 @@ class BaseEntity(Entity):
             self.remove_dispatcher()
             self.remove_dispatcher = None
 
+        _LOGGER.debug(f"Removing component: {self.unique_id}")
+
+        self.entity = None
+
         await self.async_will_remove_from_hass_local()
 
     @callback
@@ -129,10 +111,7 @@ class BaseEntity(Entity):
             )
         else:
             if self.entity is not None:
-                previous_state = self.entity.state
-
-                domain_data = self.entity_manager.get_domain_data(self.current_domain)
-                entity = domain_data.get_entity(self.name)
+                entity = self.entity_manager.get(self.unique_id)
 
                 if entity is None:
                     _LOGGER.debug(f"Skip updating {self.name}, Entity is None")
@@ -143,13 +122,10 @@ class BaseEntity(Entity):
                 else:
                     self.entity = entity
                     if self.entity is not None:
-                        self._immediate_update(previous_state)
+                        self.async_schedule_update_ha_state(True)
 
     async def async_added_to_hass_local(self):
         pass
 
     async def async_will_remove_from_hass_local(self):
         pass
-
-    def _immediate_update(self, previous_state: str):
-        self.async_schedule_update_ha_state(True)

@@ -1,77 +1,52 @@
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.helpers.entity import EntityDescription
+from homeassistant.util import slugify
 
-from ...core.helpers.const import *
-from ...core.helpers.enums import EntityStatus
-from .select_description import SelectDescription
+from ..helpers.const import *
+from ..helpers.enums import EntityStatus
 
 
 class EntityData:
-    id: str | None
-    name: str | None
-    state: str | None
+    state: str | int | float | bool | datetime | None
     attributes: dict
-    icon: str | None
+    details: dict
     device_name: str | None
     status: EntityStatus
-    sensor_device_class: SensorDeviceClass | None
-    sensor_state_class: SensorDeviceClass | None
-    binary_sensor_device_class: BinarySensorDeviceClass | None
-    details: dict
     disabled: bool
     domain: str | None
     entry_id: str
-    entity_description: SelectDescription | None
-    action: Any
-    icon_set: dict | None
-    default_icon: str | None
+    entity_description: EntityDescription | None
 
     def __init__(self, entry_id: str):
-        self.id = None
-        self.name = None
-        self.state = None
-        self.attributes = {}
-        self.icon = None
-        self.device_name = None
-        self.status = EntityStatus.CREATED
-        self.sensor_state_class = None
-        self.sensor_device_class = None
-        self.binary_sensor_device_class = None
-        self.details = {}
-        self.disabled = False
-        self.domain = None
         self.entry_id = entry_id
         self.entity_description = None
-        self.action = None
-        self.default_icon = None
+        self.state = None
+        self.attributes = {}
+        self.details = {}
+        self.device_name = None
+        self.status = EntityStatus.CREATED
+        self.disabled = False
+        self.domain = None
 
     @property
-    def unique_id(self):
-        unique_id = f"{DOMAIN}-{self.domain}-{self.name}"
+    def id(self):
+        return self.entity_description.key
 
-        return unique_id
-
-    def set_created_or_updated(self, was_created):
-        self.status = EntityStatus.CREATED if was_created else EntityStatus.UPDATED
+    @property
+    def name(self):
+        return self.entity_description.name
 
     def __repr__(self):
         obj = {
-            ENTITY_ID: self.id,
-            ENTITY_UNIQUE_ID: self.unique_id,
-            ENTITY_NAME: self.name,
+            ENTITY_UNIQUE_ID: self.id,
             ENTITY_STATE: self.state,
             ENTITY_ATTRIBUTES: self.attributes,
-            ENTITY_ICON: self.icon,
+            ENTITY_DETAILS: self.details,
             ENTITY_DEVICE_NAME: self.device_name,
             ENTITY_STATUS: self.status,
-            ENTITY_SENSOR_DEVICE_CLASS: self.sensor_device_class,
-            ENTITY_SENSOR_STATE_CLASS: self.sensor_state_class,
-            ENTITY_BINARY_SENSOR_DEVICE_CLASS: self.binary_sensor_device_class,
-            ENTITY_MONITOR_DETAILS: self.details,
             ENTITY_DISABLED: self.disabled,
             ENTITY_DOMAIN: self.domain,
             ENTITY_CONFIG_ENTRY_ID: self.entry_id
@@ -80,3 +55,9 @@ class EntityData:
         to_string = f"{obj}"
 
         return to_string
+
+    @staticmethod
+    def generate_unique_id(domain, name):
+        unique_id = slugify(f"{domain} {name}")
+
+        return unique_id
