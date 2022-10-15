@@ -2,10 +2,13 @@
 
 ## Pending
 
+## v0.3.0
+
 - Fix deleting components when being removed, wrong parameter was sent to be deleted
 - Update `core` to latest
 - Separate API and WS to different classes
 - Separate timers of update entities and data
+- Update time remaining value
 
 ## v0.2.4
 
