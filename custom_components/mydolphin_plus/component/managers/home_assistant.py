@@ -466,7 +466,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 # still working
                 seconds_left = expected_cycle_end_time_ts - now_ts
 
-            state = str(datetime.timedelta(seconds=seconds_left))
+            delta = str(datetime.timedelta(seconds=seconds_left)).split(".")
+            state = delta[0]
+
 
             state_parts = state.split(":")
             state_hours = state_parts[0]
