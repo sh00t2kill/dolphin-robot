@@ -4,6 +4,8 @@
 
 - Fix deleting components when being removed, wrong parameter was sent to be deleted
 - Update `core` to latest
+- Separate API and WS to different classes
+- Separate timers of update entities and data
 
 ## v0.2.4
 
@@ -27,6 +29,8 @@
   - Implementation should be done only in API, HA Manager and Configuration Manager
 - Added `init` to vacuum state to show something is happening when a cycle is started
 - Add {Robot Name} Store Debug Data switch - allows to set whether to store API and WebSocket the latest data for debugging
+- Separate API / WS classes
+- Separate timers for API / WS and Entities update
 
 ## v0.2.3
 - Fix core issue while deleting entities
