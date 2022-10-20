@@ -200,4 +200,3 @@ stats:
     - entity_id: binary_sensor.my_vacuum_aws_broker
       subtitle: AWS
 ```
-
