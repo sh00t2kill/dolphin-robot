@@ -169,3 +169,35 @@ logger:
   logs:
     custom_components.mydolphin_plus: debug
 ```
+## Lovelace cards.
+
+We have confirmed the robot works with the custom vacuum card, built by denysdovhan
+https://github.com/denysdovhan/vacuum-card
+
+Copy the icons from www on the repository to /config/www. Below is a suggested configuration for the card
+```yaml
+entity: vacuum.my_vacuum
+image: /local/robot_icon_c.svg
+type: custom:vacuum-card
+compact_view: false
+stats:
+  default:
+    - attribute: turn_on_count
+      subtitle: Run Count
+    - entity_id: sensor.my_vacuum_filter
+      subtitle: Filter Status
+    - attribute: pws_status
+      subtitle: Base Status
+    - entity_id: binary_sensor.jmy_vacuum_broker
+      subtitle: AWS
+  cleaning:
+    - entity_id: sensor.my_vacuum_cycle_time_left
+      subtitle: Time Remaining
+    - attribute: robot_status
+      subtitle: Status
+          - attribute: pws_status
+      subtitle: Base Status
+    - entity_id: binary_sensor.my_vacuum_aws_broker
+      subtitle: AWS
+```
+
