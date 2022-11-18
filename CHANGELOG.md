@@ -4,7 +4,7 @@
 
 - Core alignment
 - Constants cleanup
-- Additional fix for AWS token
+- Add retry mechanism for AWS token encryption process
 
 ## v0.3.1
 
