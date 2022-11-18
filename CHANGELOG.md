@@ -1,6 +1,9 @@
 # Changelog
 
-## Pending
+## v0.3.1
+
+- Fix get token API (API changed and new one requires encryption of data) [#76](https://github.com/sh00t2kill/dolphin-robot/issues/76)
+- Add generate AWS token test file
 
 ## v0.3.0
 

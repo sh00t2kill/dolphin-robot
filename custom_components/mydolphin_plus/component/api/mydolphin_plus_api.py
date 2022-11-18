@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from base64 import b64encode
+import hashlib
 import logging
+import secrets
 import sys
 from typing import Awaitable, Callable
 
 import aiohttp
 from aiohttp import ClientResponseError, ClientSession
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -44,6 +49,11 @@ class IntegrationAPI(BaseAPI):
             self.server_timestamp = None
             self.server_time_diff = 0
 
+            self._iv = secrets.token_bytes(BLOCK_SIZE)
+
+            self._mode = modes.CBC(self._iv)
+            self._aes_key = None
+
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -59,6 +69,8 @@ class IntegrationAPI(BaseAPI):
         _LOGGER.info("Initializing MyDolphin API")
 
         await self._session_initialize(config_data)
+
+        self._load_aes_key()
 
         await self._login()
 
@@ -227,7 +239,9 @@ class IntegrationAPI(BaseAPI):
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            request_data = f"{API_REQUEST_SERIAL_NUMBER}={motor_unit_serial}"
+            encrypted_motor_unit_serial = self._encrypt(motor_unit_serial)
+
+            request_data = f"{API_REQUEST_SERIAL_NUMBER}={encrypted_motor_unit_serial}"
 
             payload = await self._async_post(TOKEN_URL, headers, request_data)
 
@@ -295,3 +309,51 @@ class IntegrationAPI(BaseAPI):
             line_number = tb.tb_lineno
 
             _LOGGER.error(f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}")
+
+    def _encrypt(self, sn: str) -> str | None:
+        _LOGGER.debug(f"ENCRYPT: Serial number: {sn}")
+
+        data = self._pad(sn).encode()
+
+        cipher = self._get_cipher()
+        encryptor = cipher.encryptor()
+        ct = encryptor.update(data) + encryptor.finalize()
+
+        result_b64 = self._iv + ct
+
+        result = b64encode(result_b64).decode()
+
+        return result
+
+    def _get_cipher(self):
+        backend = default_backend()
+
+        cipher = Cipher(algorithms.AES(self._aes_key), self._mode, backend=backend)
+
+        return cipher
+
+    @staticmethod
+    def _pad(text) -> str:
+        text_length = len(text)
+        amount_to_pad = BLOCK_SIZE - (text_length % BLOCK_SIZE)
+
+        if amount_to_pad == 0:
+            amount_to_pad = BLOCK_SIZE
+
+        pad = chr(amount_to_pad)
+
+        result = text + pad * amount_to_pad
+
+        return result
+
+    def _load_aes_key(self):
+        email_beginning = self.config_data.username[:2]
+
+        password = f"{email_beginning}ha".lower()
+
+        password_bytes = password.encode()
+
+        encryption_hash = hashlib.md5(password_bytes)
+        encryption_key = encryption_hash.digest()
+
+        self._aes_key = encryption_key
