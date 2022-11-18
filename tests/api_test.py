@@ -35,8 +35,8 @@ def handle_update():
 async def run():
     """Test API."""
     data = {
-        CONF_USERNAME: os.environ.get("TEST_USERNAME"),
-        CONF_PASSWORD: os.environ.get("TEST_PASSWORD"),
+        CONF_USERNAME: os.environ.get(CONF_USERNAME),
+        CONF_PASSWORD: os.environ.get(CONF_PASSWORD),
     }
 
     config_data = ConfigData.from_dict(data)
