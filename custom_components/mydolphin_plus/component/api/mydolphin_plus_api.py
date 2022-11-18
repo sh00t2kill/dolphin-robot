@@ -27,6 +27,7 @@ class IntegrationAPI(BaseAPI):
     hass: HomeAssistant | None
     config_data: ConfigData | None
     base_url: str | None
+    aws_token_encrypted_key: str | None
 
     def __init__(self,
                  hass: HomeAssistant | None,
@@ -45,11 +46,6 @@ class IntegrationAPI(BaseAPI):
             self.server_timestamp = None
             self.server_time_diff = 0
 
-            self._iv = secrets.token_bytes(BLOCK_SIZE)
-
-            self._mode = modes.CBC(self._iv)
-            self._aes_key = None
-
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -58,14 +54,19 @@ class IntegrationAPI(BaseAPI):
                 f"Failed to load MyDolphin Plus API, error: {ex}, line: {line_number}"
             )
 
-    async def initialize(self, config_data: ConfigData):
+    @property
+    def aws_token_encrypted_key(self) -> str | None:
+        key = self.data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
+
+        return key
+
+    async def initialize(self, config_data: ConfigData, aws_token_encrypted_key: str | None):
         _LOGGER.info("Initializing MyDolphin API")
 
+        self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = aws_token_encrypted_key
         self.config_data = config_data
 
         await super().initialize_session()
-
-        self._load_aes_key()
 
         await self._login()
 
@@ -147,7 +148,7 @@ class IntegrationAPI(BaseAPI):
     async def async_update(self):
         if self.status == ConnectivityStatus.Failed:
             _LOGGER.debug("Connection failed. Reinitialize")
-            await self.initialize(self.config_data)
+            await self.initialize(self.config_data, self.aws_token_encrypted_key)
 
         if self.status == ConnectivityStatus.Connected:
             _LOGGER.debug("Connected. Refresh details")
@@ -205,7 +206,7 @@ class IntegrationAPI(BaseAPI):
             return
 
         try:
-            get_token_attempts = 1
+            get_token_attempts = 0
             motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
             login_token = self.data.get(API_DATA_LOGIN_TOKEN)
 
@@ -217,9 +218,10 @@ class IntegrationAPI(BaseAPI):
                 headers[key] = LOGIN_HEADERS[key]
 
             while get_token_attempts < MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
-                encrypted_motor_unit_serial = self._encrypt(motor_unit_serial)
+                if self.aws_token_encrypted_key is None:
+                    self._generate_aws_token_encrypted_key(motor_unit_serial)
 
-                request_data = f"{API_REQUEST_SERIAL_NUMBER}={encrypted_motor_unit_serial}"
+                request_data = f"{API_REQUEST_SERIAL_NUMBER}={self.aws_token_encrypted_key}"
 
                 payload = await self._async_post(TOKEN_URL, headers, request_data)
 
@@ -238,13 +240,12 @@ class IntegrationAPI(BaseAPI):
                     get_token_attempts = MAXIMUM_ATTEMPTS_GET_AWS_TOKEN
 
                 else:
+                    self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = None
+
                     if get_token_attempts + 1 >= MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
                         _LOGGER.error(f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}")
 
                         await self.set_status(ConnectivityStatus.Failed)
-
-                    else:
-                        self._load_aes_key()
 
                 get_token_attempts += 1
 
@@ -298,27 +299,25 @@ class IntegrationAPI(BaseAPI):
 
             _LOGGER.error(f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}")
 
-    def _encrypt(self, sn: str) -> str | None:
+    def _generate_aws_token_encrypted_key(self, sn: str):
         _LOGGER.debug(f"ENCRYPT: Serial number: {sn}")
 
-        data = self._pad(sn).encode()
+        backend = default_backend()
+        iv = secrets.token_bytes(BLOCK_SIZE)
+        mode = modes.CBC(iv)
+        aes_key = self._get_aes_key()
 
-        cipher = self._get_cipher()
+        cipher = Cipher(algorithms.AES(aes_key), mode, backend=backend)
         encryptor = cipher.encryptor()
+
+        data = self._pad(sn).encode()
         ct = encryptor.update(data) + encryptor.finalize()
 
-        result_b64 = self._iv + ct
+        result_b64 = iv + ct
 
         result = b64encode(result_b64).decode()
 
-        return result
-
-    def _get_cipher(self):
-        backend = default_backend()
-
-        cipher = Cipher(algorithms.AES(self._aes_key), self._mode, backend=backend)
-
-        return cipher
+        self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = result
 
     @staticmethod
     def _pad(text) -> str:
@@ -334,7 +333,7 @@ class IntegrationAPI(BaseAPI):
 
         return result
 
-    def _load_aes_key(self):
+    def _get_aes_key(self):
         email_beginning = self.config_data.username[:2]
 
         password = f"{email_beginning}ha".lower()
@@ -344,4 +343,4 @@ class IntegrationAPI(BaseAPI):
         encryption_hash = hashlib.md5(password_bytes)
         encryption_key = encryption_hash.digest()
 
-        self._aes_key = encryption_key
+        return encryption_key

@@ -120,7 +120,7 @@ LOGIN_URL = f"{BASE_API}/users/Login/"
 TOKEN_URL = f"{BASE_API}/IOT/getToken_DecryptSN/"
 ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
 
-MAXIMUM_ATTEMPTS_GET_AWS_TOKEN = 3
+MAXIMUM_ATTEMPTS_GET_AWS_TOKEN = 5
 
 API_REQUEST_HEADER_TOKEN = "token"
 API_REQUEST_SERIAL_EMAIL = "Email"
@@ -380,6 +380,7 @@ VACUUM_FEATURES = VacuumEntityFeature.STATE | \
 
 STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_STORE_DEBUG_DATA = "store-debug-data"
+STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
 
 STORAGE_DATA_FILE_CONFIG = "config"
 STORAGE_DATA_FILE_API_DEBUG = "debug.api"
