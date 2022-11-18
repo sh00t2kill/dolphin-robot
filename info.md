@@ -70,8 +70,8 @@ Please remove the integration and re-add it to make it work again.
 ###### Environment variables
 | Environment Variable | Type    | Default | Description                                                                                                               |
 |----------------------|---------|---------|---------------------------------------------------------------------------------------------------------------------------|
-| TEST_USERNANE        | String  | -       | Username used for MyDolphin Plus                                                                                          |
-| TEST_PASSWORD        | String  | -       | Password used for MyDolphin Plus                                                                                          |
+| Username             | String  | -       | Username used for MyDolphin Plus                                                                                          |
+| Password             | String  | -       | Password used for MyDolphin Plus                                                                                          |
 | DEBUG                | Boolean | False   | Setting to True will present DEBUG log level message while testing the code, False will set the minimum log level to INFO |
 
 ## HA Components
@@ -87,7 +87,6 @@ Please remove the integration and re-add it to make it work again.
 | {Robot Name} Cycle Time          | Sensor         | Indicates the time the robot is cleaning                          |                                                                                                                                     |
 | {Robot Name} Cycle Time Left     | Sensor         | Indicates the time left for the robot to complete the cycle       |                                                                                                                                     |
 | {Robot Name}                     | Vacuum         | Provides functionality of vacuum to the robot                     | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate, Schedule, Delay Clean) |
-| {Robot Name} Store Debug Data    | Switch         | Sets whether to store API and WebSocket latest data for debugging |                                                                                                                                     |
 
 ### Cleaning Modes
 
@@ -159,6 +158,44 @@ data:
       mode: all
 ```
 
+## API
+
+| Endpoint Name                      | Method | Description                                                                                         |
+|------------------------------------|--------|-----------------------------------------------------------------------------------------------------|
+| /api/mydolphin_plus/list           | GET    | List all the endpoints available (supporting multiple integrations), available once for integration |
+| /api/mydolphin_plus/{ENTRY_ID}/api | GET    | JSON of all raw data from the MyDolphin Plus API, per integration                                   |
+| /api/mydolphin_plus/{ENTRY_ID}/ws  | GET    | JSON of all raw data from the MyDolphin Plus WebSocket, per integration                             |
+
+**Authentication: Requires long-living token from HA**
+
+### Examples
+
+#### List
+
+*Request*
+```bash
+curl https://ha_url:8123/api/mydolphin_plus/list
+   -H "Accept: application/json"
+   -H "Authorization: Bearer {token}"
+```
+
+#### WebSockets Data
+
+*Request*
+```bash
+curl https://ha_url:8123/api/mydolphin_plus/{ENTRY_ID}/ws
+   -H "Accept: application/json"
+   -H "Authorization: Bearer {token}"
+```
+
+#### API Data
+
+```bash
+curl https://ha_url:8123/api/mydolphin_plus/{ENTRY_ID}/api
+   -H "Accept: application/json"
+   -H "Authorization: Bearer {token}"
+```
+
 ## Troubleshooting
 
 Before opening an issue, please provide logs related to the issue,
@@ -168,4 +205,35 @@ logger:
   default: warning
   logs:
     custom_components.mydolphin_plus: debug
+```
+## Lovelace cards.
+
+We have confirmed the robot works with the custom vacuum card, built by denysdovhan
+https://github.com/denysdovhan/vacuum-card
+
+Copy the icons from www on the repository to /config/www. Below is a suggested configuration for the card
+```yaml
+entity: vacuum.my_vacuum
+image: /local/robot_icon_c.svg
+type: custom:vacuum-card
+compact_view: false
+stats:
+  default:
+    - attribute: turn_on_count
+      subtitle: Run Count
+    - entity_id: sensor.my_vacuum_filter
+      subtitle: Filter Status
+    - attribute: pws_status
+      subtitle: Base Status
+    - entity_id: binary_sensor.jmy_vacuum_broker
+      subtitle: AWS
+  cleaning:
+    - entity_id: sensor.my_vacuum_cycle_time_left
+      subtitle: Time Remaining
+    - attribute: robot_status
+      subtitle: Status
+          - attribute: pws_status
+      subtitle: Base Status
+    - entity_id: binary_sensor.my_vacuum_aws_broker
+      subtitle: AWS
 ```
