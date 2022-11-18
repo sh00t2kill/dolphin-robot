@@ -7,13 +7,11 @@ import secrets
 import sys
 from typing import Awaitable, Callable
 
-import aiohttp
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientResponseError
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from ...configuration.models.config_data import ConfigData
 from ...core.api.base_api import BaseAPI
@@ -26,7 +24,6 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class IntegrationAPI(BaseAPI):
-    session: ClientSession | None
     hass: HomeAssistant | None
     config_data: ConfigData | None
     base_url: str | None
@@ -42,7 +39,6 @@ class IntegrationAPI(BaseAPI):
         try:
             self.hass = hass
             self.config_data = None
-            self.session = None
             self.base_url = None
 
             self.server_version = None
@@ -62,13 +58,12 @@ class IntegrationAPI(BaseAPI):
                 f"Failed to load MyDolphin Plus API, error: {ex}, line: {line_number}"
             )
 
-    async def terminate(self):
-        await self.set_status(ConnectivityStatus.Disconnected)
-
     async def initialize(self, config_data: ConfigData):
         _LOGGER.info("Initializing MyDolphin API")
 
-        await self._session_initialize(config_data)
+        self.config_data = config_data
+
+        await super().initialize_session()
 
         self._load_aes_key()
 
@@ -77,30 +72,11 @@ class IntegrationAPI(BaseAPI):
     async def validate(self, data: dict | None = None):
         config_data = ConfigData.from_dict(data)
 
-        await self._session_initialize(config_data)
+        self.config_data = config_data
+
+        await super().initialize_session()
 
         await self._service_login()
-
-    async def _session_initialize(self, config_data: ConfigData):
-        _LOGGER.info("Initializing MyDolphin API Session")
-
-        try:
-            self.config_data = config_data
-
-            if self.hass is None:
-                if self.session is not None:
-                    await self.session.close()
-
-                self.session = aiohttp.client.ClientSession()
-            else:
-                self.session = async_create_clientsession(hass=self.hass)
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to initialize MyDolphin Plus API ({self.base_url}), error: {ex}, line: {line_number}"
-            )
 
     async def _async_post(self, url, headers: dict, request_data: str | dict | None):
         result = None
@@ -229,6 +205,7 @@ class IntegrationAPI(BaseAPI):
             return
 
         try:
+            get_token_attempts = 1
             motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
             login_token = self.data.get(API_DATA_LOGIN_TOKEN)
 
@@ -239,26 +216,37 @@ class IntegrationAPI(BaseAPI):
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            encrypted_motor_unit_serial = self._encrypt(motor_unit_serial)
+            while get_token_attempts < MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
+                encrypted_motor_unit_serial = self._encrypt(motor_unit_serial)
 
-            request_data = f"{API_REQUEST_SERIAL_NUMBER}={encrypted_motor_unit_serial}"
+                request_data = f"{API_REQUEST_SERIAL_NUMBER}={encrypted_motor_unit_serial}"
 
-            payload = await self._async_post(TOKEN_URL, headers, request_data)
+                payload = await self._async_post(TOKEN_URL, headers, request_data)
 
-            data = payload.get(API_RESPONSE_DATA, {})
-            alert = payload.get(API_RESPONSE_ALERT, {})
-            status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
+                data = payload.get(API_RESPONSE_DATA, {})
+                alert = payload.get(API_RESPONSE_ALERT, {})
+                status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
 
-            if status == API_RESPONSE_STATUS_SUCCESS:
-                for field in API_TOKEN_FIELDS:
-                    self.data[field] = data.get(field)
+                if status == API_RESPONSE_STATUS_SUCCESS:
+                    for field in API_TOKEN_FIELDS:
+                        self.data[field] = data.get(field)
 
-                await self.set_status(ConnectivityStatus.Connected)
+                    await self.set_status(ConnectivityStatus.Connected)
 
-            else:
-                _LOGGER.error(f"Failed to retrieve AWS token, Error: {alert}")
+                    _LOGGER.debug(f"Retrieved AWS token after {get_token_attempts} attempts")
 
-                await self.set_status(ConnectivityStatus.Failed)
+                    get_token_attempts = MAXIMUM_ATTEMPTS_GET_AWS_TOKEN
+
+                else:
+                    if get_token_attempts + 1 >= MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
+                        _LOGGER.error(f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}")
+
+                        await self.set_status(ConnectivityStatus.Failed)
+
+                    else:
+                        self._load_aes_key()
+
+                get_token_attempts += 1
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()

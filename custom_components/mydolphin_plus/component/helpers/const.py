@@ -120,6 +120,8 @@ LOGIN_URL = f"{BASE_API}/users/Login/"
 TOKEN_URL = f"{BASE_API}/IOT/getToken_DecryptSN/"
 ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
 
+MAXIMUM_ATTEMPTS_GET_AWS_TOKEN = 3
+
 API_REQUEST_HEADER_TOKEN = "token"
 API_REQUEST_SERIAL_EMAIL = "Email"
 API_REQUEST_SERIAL_PASSWORD = "Password"
