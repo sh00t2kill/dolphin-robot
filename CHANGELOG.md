@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.2
+
+- Core alignment
+- Constants cleanup
+- Add retry mechanism for AWS token encryption process
+
 ## v0.3.1
 
 - Fix get token API (API changed and new one requires encryption of data) [#76](https://github.com/sh00t2kill/dolphin-robot/issues/76)
