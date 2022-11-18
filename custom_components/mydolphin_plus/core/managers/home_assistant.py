@@ -35,7 +35,6 @@ class HomeAssistantManager:
         self._hass = hass
 
         self._is_initialized = False
-        self._is_updating = False
         self._update_entities_interval = scan_interval
         self._update_data_providers_interval = scan_interval
         self._heartbeat_interval = heartbeat_interval
@@ -247,8 +246,15 @@ class HomeAssistantManager:
 
         self._update_lock = True
 
-        self.load_devices()
-        self.load_entities()
+        try:
+            self.load_devices()
+            self.load_entities()
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(f"Failed to update devices and entities, Error: {ex}, Line: {line_number}")
 
         self.entity_manager.update()
 
@@ -262,9 +268,10 @@ class HomeAssistantManager:
             return
 
         for domain in PLATFORMS:
-            signal = PLATFORMS.get(domain)
+            if self._domains.get(domain, False):
+                signal = PLATFORMS.get(domain)
 
-            async_dispatcher_send(self._hass, signal)
+                async_dispatcher_send(self._hass, signal)
 
     def set_action(self, entity_id: str, action_name: str, action):
         key = f"{entity_id}:{action_name}"
