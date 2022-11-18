@@ -324,8 +324,19 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
             filter_state = filter_bag_indication.get(CONF_STATE, -1)
             reset_fbi = filter_bag_indication.get(DATA_FILTER_BAG_INDICATION_RESET_FBI, False)
+            state = None
 
-            state = FILTER_BAG_STATUS.get(filter_state)
+            for state_name in FILTER_BAG_STATUS:
+                state_range = FILTER_BAG_STATUS.get(state_name)
+                state_range_min = int(state_range[0])
+                state_range_max = int(state_range[1])
+
+                is_in_range = state_range_max >= filter_state >= state_range_min
+
+                if is_in_range:
+                    state = state_name
+                    break
+
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_RESET_FBI: reset_fbi,

@@ -2,6 +2,7 @@
 
 ## v0.3.2
 
+- Fix Filter Bag sensor
 - Replaced `store debug data` switch and the feature of storing debug data to `/config/.storage` with debug API
 
 **Endpoints**
