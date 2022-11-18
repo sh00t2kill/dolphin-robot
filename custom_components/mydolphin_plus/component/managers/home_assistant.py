@@ -97,7 +97,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
     async def async_initialize_data_providers(self, entry: ConfigEntry | None = None):
         await self.storage_api.initialize(self.config_data)
-        await self.api.initialize(self.config_data)
+
+        aws_token_encrypted_key = self.storage_api.aws_token_encrypted_key
+
+        await self.api.initialize(self.config_data, aws_token_encrypted_key)
 
     async def async_stop_data_providers(self):
         await self.api.terminate()
@@ -860,12 +863,20 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             self._system_status_details = result
 
+    async def _set_aws_token_encrypted_key(self):
+        aws_token_encrypted_key = self.api.aws_token_encrypted_key
+
+        if self.storage_api.aws_token_encrypted_key != aws_token_encrypted_key:
+            await self.storage_api.set_aws_token_encrypted_key(aws_token_encrypted_key)
+
     async def _api_data_changed(self):
         if self.api.status == ConnectivityStatus.Connected:
             await self.storage_api.debug_log_api(self.api.data)
 
     async def _api_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:
+            await self._set_aws_token_encrypted_key()
+
             await self.api.async_update()
 
             await self.ws.update_api_data(self.api.data)
@@ -873,6 +884,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             self._update_entities(None)
 
             await self.ws.initialize(self.config_data)
+
+        elif status == ConnectivityStatus.Failed:
+            await self._set_aws_token_encrypted_key()
 
     async def _ws_data_changed(self):
         if self.ws.status == ConnectivityStatus.Connected:

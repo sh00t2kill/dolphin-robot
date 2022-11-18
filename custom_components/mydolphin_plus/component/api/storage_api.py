@@ -22,7 +22,7 @@ class StorageAPI(BaseAPI):
     _storages: dict[str, Store] | None
 
     def __init__(self,
-                 hass: HomeAssistant,
+                 hass: HomeAssistant | None,
                  async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
                  async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
                  ):
@@ -50,8 +50,14 @@ class StorageAPI(BaseAPI):
         return storage
 
     @property
-    def is_locating(self):
+    def is_locating(self) -> bool:
         is_locating = self.data.get(STORAGE_DATA_LOCATING, False)
+
+        return is_locating
+
+    @property
+    def aws_token_encrypted_key(self) -> str | None:
+        is_locating = self.data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY, False)
 
         return is_locating
 
@@ -110,6 +116,13 @@ class StorageAPI(BaseAPI):
         _LOGGER.debug(f"Set store debug data to {enabled}")
 
         self.data[STORAGE_DATA_STORE_DEBUG_DATA] = enabled
+
+        await self._async_save()
+
+    async def set_aws_token_encrypted_key(self, key: str):
+        _LOGGER.debug(f"Set AWS Token encrypted key to {key}")
+
+        self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = key
 
         await self._async_save()
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 import json
 import logging
@@ -53,10 +54,10 @@ class IntegrationWS(BaseAPI):
             )
 
     async def terminate(self):
+        await super().terminate()
+
         if self._awsiot_client is not None:
             self._awsiot_client.disconnectAsync(self._ack_callback)
-
-        await self.set_status(ConnectivityStatus.Disconnected)
 
     async def initialize(self, config_data: ConfigData):
         try:
@@ -151,11 +152,23 @@ class IntegrationWS(BaseAPI):
 
     def _handle_aws_client_online(self):
         _LOGGER.debug("AWS IOT Client is Online")
-        self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
+
+        if self.is_home_assistant:
+            self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
+
+        else:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.set_status(ConnectivityStatus.Connected))
 
     def _handle_aws_client_offline(self):
         _LOGGER.debug("AWS IOT Client is Offline")
-        self.hass.async_create_task(self.set_status(ConnectivityStatus.Disconnected))
+
+        if self.is_home_assistant:
+            self.hass.async_create_task(self.set_status(ConnectivityStatus.Disconnected))
+
+        else:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.set_status(ConnectivityStatus.Disconnected))
 
     @staticmethod
     def _ack_callback(mid, data):
@@ -203,7 +216,12 @@ class IntegrationWS(BaseAPI):
                 if message_topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
 
-                self.hass.async_create_task(self.fire_data_changed_event())
+                if self.is_home_assistant:
+                    self.hass.async_create_task(self.fire_data_changed_event())
+
+                else:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(self.fire_data_changed_event())
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
