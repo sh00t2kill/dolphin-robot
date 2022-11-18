@@ -10,6 +10,7 @@
 
 - Fix get token API (API changed and new one requires encryption of data) [#76](https://github.com/sh00t2kill/dolphin-robot/issues/76)
 - Add generate AWS token test file
+- Store encrypted data within config file to avoid re-generating the file on every startup
 
 ## v0.3.0
 
