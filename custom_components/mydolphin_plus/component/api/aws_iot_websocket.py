@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 import json
 import logging
 import os
 import sys
-from typing import Awaitable, Callable
 import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient

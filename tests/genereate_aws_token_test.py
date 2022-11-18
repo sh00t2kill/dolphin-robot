@@ -46,7 +46,7 @@ class AWSTokenGenerator:
         password_bytes = password.encode()
         print(f"password_bytes: {password_bytes}")
 
-        encryption_hash = hashlib.md5(password_bytes)
+        encryption_hash = hashlib.md5(password_bytes, usedforsecurity=False)
         encryption_key = encryption_hash.digest()
         print(f"encryption_key: {encryption_key}")
 

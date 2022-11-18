@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from base64 import b64encode
+from collections.abc import Awaitable, Callable
 import hashlib
 import logging
 import secrets
 import sys
-from typing import Awaitable, Callable
 
 from aiohttp import ClientResponseError
 from cryptography.hazmat.backends import default_backend
