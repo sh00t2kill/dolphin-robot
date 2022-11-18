@@ -346,25 +346,25 @@ CALCULATED_STATES = {
 }
 
 FILTER_BAG_STATUS = {
-    -1: "Unknown",
-    0: "Empty",
-    1: "Partial full",
-    26: "Getting full",
-    75: "Almost full",
-    100: "Full",
-    101: "Fault",
-    102: "Not available"
+    "Unknown": (-1, -1),
+    "Empty": (0, 0),
+    "Partial full": (1, 25),
+    "Getting full": (26, 74),
+    "Almost full": (75, 99),
+    "Full": (100, 100),
+    "Fault": (101, 101),
+    "Not available": (102, 102)
 }
 
 FILTER_BAG_ICONS = {
-    -1: "mdi:robot-off",
-    0: "mdi:gauge-empty",
-    1: "mdi:gauge-low",
-    26: "mdi:gauge",
-    75: "mdi:gauge",
-    100: "mdi:gauge-full",
-    101: "mdi:robot-dead",
-    102: "mdi:robot-confused-outline"
+    "Unknown": "mdi:robot-off",
+    "Empty": "mdi:gauge-empty",
+    "Partial full": "mdi:gauge-low",
+    "Getting full": "mdi:gauge",
+    "Almost full": "mdi:gauge",
+    "Full": "mdi:gauge-full",
+    "Fault": "mdi:robot-dead",
+    "Not available": "mdi:robot-confused-outline"
 }
 
 VACUUM_FEATURES = VacuumEntityFeature.STATE | \
