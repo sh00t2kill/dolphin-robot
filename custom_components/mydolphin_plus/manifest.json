@@ -4,7 +4,9 @@
     "documentation": "https://github.com/sh00t2kill/dolphin-robot",
     "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
     "after_dependencies": [],
-    "dependencies": [],
+    "dependencies": [
+        "http"
+    ],
     "codeowners": [
         "@sh00t2kill",
         "@lordlala",
@@ -14,6 +16,6 @@
         "AWSIoTPythonSDK"
     ],
     "config_flow": true,
-    "version": "0.3.1",
+    "version": "0.3.2",
     "iot_class": "cloud_push"
 }

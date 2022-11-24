@@ -346,25 +346,25 @@ CALCULATED_STATES = {
 }
 
 FILTER_BAG_STATUS = {
-    -1: "Unknown",
-    0: "Empty",
-    1: "Partial full",
-    26: "Getting full",
-    75: "Almost full",
-    100: "Full",
-    101: "Fault",
-    102: "Not available"
+    "Unknown": (-1, -1),
+    "Empty": (0, 0),
+    "Partial full": (1, 25),
+    "Getting full": (26, 74),
+    "Almost full": (75, 99),
+    "Full": (100, 100),
+    "Fault": (101, 101),
+    "Not available": (102, 102)
 }
 
 FILTER_BAG_ICONS = {
-    -1: "mdi:robot-off",
-    0: "mdi:gauge-empty",
-    1: "mdi:gauge-low",
-    26: "mdi:gauge",
-    75: "mdi:gauge",
-    100: "mdi:gauge-full",
-    101: "mdi:robot-dead",
-    102: "mdi:robot-confused-outline"
+    "Unknown": "mdi:robot-off",
+    "Empty": "mdi:gauge-empty",
+    "Partial full": "mdi:gauge-low",
+    "Getting full": "mdi:gauge",
+    "Almost full": "mdi:gauge",
+    "Full": "mdi:gauge-full",
+    "Fault": "mdi:robot-dead",
+    "Not available": "mdi:robot-confused-outline"
 }
 
 VACUUM_FEATURES = VacuumEntityFeature.STATE | \
@@ -379,15 +379,18 @@ VACUUM_FEATURES = VacuumEntityFeature.STATE | \
                   VacuumEntityFeature.LOCATE
 
 STORAGE_DATA_LOCATING = "locating"
-STORAGE_DATA_STORE_DEBUG_DATA = "store-debug-data"
 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
 
 STORAGE_DATA_FILE_CONFIG = "config"
-STORAGE_DATA_FILE_API_DEBUG = "debug.api"
-STORAGE_DATA_FILE_WS_DEBUG = "debug.ws"
+STORAGE_API_LIST = "list"
+STORAGE_API_DATA_API = "api"
+STORAGE_API_DATA_WS = "ws"
 
 STORAGE_DATA_FILES = [
-    STORAGE_DATA_FILE_CONFIG,
-    STORAGE_DATA_FILE_API_DEBUG,
-    STORAGE_DATA_FILE_WS_DEBUG
+    STORAGE_DATA_FILE_CONFIG
+]
+
+STORAGE_API_DATA = [
+    STORAGE_API_DATA_API,
+    STORAGE_API_DATA_WS,
 ]

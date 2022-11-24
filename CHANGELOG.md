@@ -2,12 +2,26 @@
 
 ## v0.3.2
 
-- Core alignment
-- Constants cleanup
-- Add retry mechanism for AWS token encryption process
+- Fix Filter Bag sensor
+- Core fix: wrongfully reported logs of entities getting updated when no update perform
+- Replaced `store debug data` switch and the feature of storing debug data to `/config/.storage` with debug API
+
+**Endpoints**
+
+| Endpoint Name                      | Method | Description                                                                                         |
+|------------------------------------|--------|-----------------------------------------------------------------------------------------------------|
+| /api/mydolphin_plus/list           | GET    | List all the endpoints available (supporting multiple integrations), available once for integration |
+| /api/mydolphin_plus/{ENTRY_ID}/api | GET    | JSON of all raw data from the MyDolphin Plus API, per integration                                   |
+| /api/mydolphin_plus/{ENTRY_ID}/ws  | GET    | JSON of all raw data from the MyDolphin Plus WebSocket, per integration                             |
+
+**Authentication: Requires long-living token from HA**
+
 
 ## v0.3.1
 
+- Core alignment
+- Constants cleanup
+- Add retry mechanism for AWS token encryption process
 - Fix get token API (API changed and new one requires encryption of data) [#76](https://github.com/sh00t2kill/dolphin-robot/issues/76)
 - Add generate AWS token test file
 - Store encrypted data within config file to avoid re-generating the file on every startup

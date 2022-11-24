@@ -23,7 +23,6 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.components.switch import SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
@@ -156,7 +155,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         # Main Entity
         self._load_vacuum(name, data)
-        self._load_store_debug_data_switch(name)
 
         # LED Settings
         self._load_select_led_mode(name, data)
@@ -326,8 +324,19 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
             filter_state = filter_bag_indication.get(CONF_STATE, -1)
             reset_fbi = filter_bag_indication.get(DATA_FILTER_BAG_INDICATION_RESET_FBI, False)
+            state = None
 
-            state = FILTER_BAG_STATUS.get(filter_state)
+            for state_name in FILTER_BAG_STATUS:
+                state_range = FILTER_BAG_STATUS.get(state_name)
+                state_range_min = int(state_range[0])
+                state_range_max = int(state_range[1])
+
+                is_in_range = state_range_max >= filter_state >= state_range_min
+
+                if is_in_range:
+                    state = state_name
+                    break
+
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 ATTR_RESET_FBI: reset_fbi,
@@ -614,42 +623,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 ex, f"Failed to load {DOMAIN_VACUUM}: {entity_name}"
             )
 
-    def _load_store_debug_data_switch(self, device_name: str):
-        entity_name = f"{device_name} Store Debug Data"
-
-        try:
-            state = self.storage_api.store_debug_data
-
-            attributes = {
-                ATTR_FRIENDLY_NAME: entity_name
-            }
-
-            unique_id = EntityData.generate_unique_id(DOMAIN_SWITCH, entity_name)
-
-            icon = "mdi:file-download"
-
-            entity_description = SwitchEntityDescription(
-                key=unique_id,
-                name=entity_name,
-                icon=icon,
-                entity_category=EntityCategory.CONFIG
-            )
-
-            self.entity_manager.set_entity(DOMAIN_SWITCH,
-                                           self.entry_id,
-                                           state,
-                                           attributes,
-                                           device_name,
-                                           entity_description)
-
-            self.set_action(unique_id, ACTION_CORE_ENTITY_TURN_ON, self._enable_store_debug_data)
-            self.set_action(unique_id, ACTION_CORE_ENTITY_TURN_OFF, self._disable_store_debug_data)
-
-        except Exception as ex:
-            self.log_exception(
-                ex, f"Failed to load store debug data switch for {entity_name}"
-            )
-
     async def _set_cleaning_mode(self, entity: EntityData, fan_speed):
         current_clean_mode = entity.attributes.get(ATTR_MODE)
 
@@ -753,12 +726,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             await self.storage_api.set_locating_mode(True)
             await self._set_led_enabled(led_light_entity)
-
-    async def _enable_store_debug_data(self, entity: EntityData):
-        await self.storage_api.set_store_debug_data(True)
-
-    async def _disable_store_debug_data(self, entity: EntityData):
-        await self.storage_api.set_store_debug_data(False)
 
     async def _send_command(self,
                             entity: EntityData,
