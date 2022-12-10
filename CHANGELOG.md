@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.3
+
+- Add AWS Broker disconnection recovery process
+
 ## v0.3.2
 
 - Fix Filter Bag sensor

@@ -122,10 +122,6 @@ class IntegrationWS(BaseAPI):
         self._api_data = api_data
 
     async def async_update(self):
-        if self.status == ConnectivityStatus.Failed:
-            _LOGGER.debug("Connection failed. Reinitialize")
-            await self.initialize(self._config_data)
-
         if self.status == ConnectivityStatus.Connected:
             _LOGGER.debug("Connected. Refresh details")
             await self._refresh_details()
@@ -164,11 +160,11 @@ class IntegrationWS(BaseAPI):
         _LOGGER.debug("AWS IOT Client is Offline")
 
         if self.is_home_assistant:
-            self.hass.async_create_task(self.set_status(ConnectivityStatus.Disconnected))
+            self.hass.async_create_task(self.set_status(ConnectivityStatus.Failed))
 
         else:
             loop = asyncio.get_running_loop()
-            loop.create_task(self.set_status(ConnectivityStatus.Disconnected))
+            loop.create_task(self.set_status(ConnectivityStatus.Failed))
 
     @staticmethod
     def _ack_callback(mid, data):
