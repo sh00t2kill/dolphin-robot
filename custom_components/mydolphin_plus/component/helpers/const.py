@@ -120,6 +120,7 @@ BASE_API = "https://mbapp18.maytronics.com/api"
 LOGIN_URL = f"{BASE_API}/users/Login/"
 TOKEN_URL = f"{BASE_API}/IOT/getToken_DecryptSN/"
 ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
+ROBOT_DETAILS_BY_SN_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbyrobotsn/"
 
 MAXIMUM_ATTEMPTS_GET_AWS_TOKEN = 5
 
@@ -133,6 +134,7 @@ API_RESPONSE_STATUS = "Status"
 API_RESPONSE_ALERT = "Alert"
 API_RESPONSE_STATUS_FAILURE = "0"
 API_RESPONSE_STATUS_SUCCESS = "1"
+API_RESPONSE_UNIT_SERIAL_NUMBER = "eSERNUM"
 
 API_RESPONSE_DATA_TOKEN = "Token"
 API_RESPONSE_DATA_ACCESS_KEY_ID = "AccessKeyId"

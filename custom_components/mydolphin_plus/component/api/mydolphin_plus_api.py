@@ -60,6 +60,24 @@ class IntegrationAPI(BaseAPI):
 
         return key
 
+    @property
+    def _serial_serial(self):
+        serial_serial = self.data.get(API_DATA_SERIAL_NUMBER)
+
+        return serial_serial
+
+    @property
+    def _login_token(self):
+        login_token = self.data.get(API_DATA_LOGIN_TOKEN)
+
+        return login_token
+
+    @property
+    def _motor_unit_serial(self):
+        motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
+
+        return motor_unit_serial
+
     async def initialize(self, config_data: ConfigData, aws_token_encrypted_key: str | None):
         _LOGGER.info("Initializing MyDolphin API")
 
@@ -177,23 +195,50 @@ class IntegrationAPI(BaseAPI):
 
             data = payload.get(API_RESPONSE_DATA, {})
             if data:
-                _LOGGER.debug(f"Logged in to user {username}, Data: {data}")
+                _LOGGER.info(f"Logged in to user {username}")
 
                 motor_unit_serial = data.get(API_REQUEST_SERIAL_NUMBER)
                 token = data.get(API_REQUEST_HEADER_TOKEN)
 
-                actual_motor_unit_serial = motor_unit_serial[:-2]
-
-                _LOGGER.debug(f"Device {motor_unit_serial} with token: {token}")
-
-                self.data[API_DATA_MOTOR_UNIT_SERIAL] = actual_motor_unit_serial
                 self.data[API_DATA_SERIAL_NUMBER] = motor_unit_serial
                 self.data[API_DATA_LOGIN_TOKEN] = token
 
-                await self.set_status(ConnectivityStatus.TemporaryConnected)
+                await self._set_actual_motor_unit_serial()
 
             else:
                 await self.set_status(ConnectivityStatus.Failed)
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}")
+            await self.set_status(ConnectivityStatus.Failed)
+
+    async def _set_actual_motor_unit_serial(self):
+        try:
+            headers = {
+                API_REQUEST_HEADER_TOKEN: self._login_token
+            }
+
+            for key in LOGIN_HEADERS:
+                headers[key] = LOGIN_HEADERS[key]
+
+            request_data = f"{API_REQUEST_SERIAL_NUMBER}={self._serial_serial}"
+
+            payload = await self._async_post(ROBOT_DETAILS_BY_SN_URL, headers, request_data)
+
+            if payload is None:
+                payload = {}
+
+            data = payload.get(API_RESPONSE_DATA, {})
+
+            if data is not None:
+                _LOGGER.info(f"Successfully retrieved details for device {self._serial_serial}")
+
+                self.data[API_DATA_MOTOR_UNIT_SERIAL] = data.get(API_RESPONSE_UNIT_SERIAL_NUMBER)
+
+                await self.set_status(ConnectivityStatus.TemporaryConnected)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -209,11 +254,9 @@ class IntegrationAPI(BaseAPI):
 
         try:
             get_token_attempts = 0
-            motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
-            login_token = self.data.get(API_DATA_LOGIN_TOKEN)
 
             headers = {
-                API_REQUEST_HEADER_TOKEN: login_token
+                API_REQUEST_HEADER_TOKEN: self._login_token
             }
 
             for key in LOGIN_HEADERS:
@@ -221,7 +264,7 @@ class IntegrationAPI(BaseAPI):
 
             while get_token_attempts < MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
                 if self.aws_token_encrypted_key is None:
-                    self._generate_aws_token_encrypted_key(motor_unit_serial)
+                    self._generate_aws_token_encrypted_key()
 
                 request_data = f"{API_REQUEST_SERIAL_NUMBER}={self.aws_token_encrypted_key}"
 
@@ -264,17 +307,14 @@ class IntegrationAPI(BaseAPI):
             return
 
         try:
-            motor_unit_serial = self.data.get(API_DATA_MOTOR_UNIT_SERIAL)
-            login_token = self.data.get(API_DATA_LOGIN_TOKEN)
-
             headers = {
-                API_REQUEST_HEADER_TOKEN: login_token
+                API_REQUEST_HEADER_TOKEN: self._login_token
             }
 
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
-            request_data = f"{API_REQUEST_SERIAL_NUMBER}={motor_unit_serial}"
+            request_data = f"{API_REQUEST_SERIAL_NUMBER}={self._motor_unit_serial}"
 
             payload = await self._async_post(ROBOT_DETAILS_URL, headers, request_data)
 
@@ -301,8 +341,8 @@ class IntegrationAPI(BaseAPI):
 
             _LOGGER.error(f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}")
 
-    def _generate_aws_token_encrypted_key(self, sn: str):
-        _LOGGER.debug(f"ENCRYPT: Serial number: {sn}")
+    def _generate_aws_token_encrypted_key(self):
+        _LOGGER.debug(f"ENCRYPT: Serial number: {self._motor_unit_serial}")
 
         backend = default_backend()
         iv = secrets.token_bytes(BLOCK_SIZE)
@@ -312,7 +352,7 @@ class IntegrationAPI(BaseAPI):
         cipher = Cipher(algorithms.AES(aes_key), mode, backend=backend)
         encryptor = cipher.encryptor()
 
-        data = self._pad(sn).encode()
+        data = self._pad(self._motor_unit_serial).encode()
         ct = encryptor.update(data) + encryptor.finalize()
 
         result_b64 = iv + ct
