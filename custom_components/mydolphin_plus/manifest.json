@@ -16,6 +16,6 @@
         "AWSIoTPythonSDK"
     ],
     "config_flow": true,
-    "version": "0.3.2",
+    "version": "0.3.3",
     "iot_class": "cloud_push"
 }
