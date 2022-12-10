@@ -177,6 +177,8 @@ class IntegrationAPI(BaseAPI):
 
             data = payload.get(API_RESPONSE_DATA, {})
             if data:
+                _LOGGER.debug(f"Logged in to user {username}, Data: {data}")
+
                 motor_unit_serial = data.get(API_REQUEST_SERIAL_NUMBER)
                 token = data.get(API_REQUEST_HEADER_TOKEN)
 
