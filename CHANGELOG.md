@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.3
+
+- Add AWS Broker disconnection recovery process
+- Collect the Motor Unit Serial Number from API instead of try to calculate it
+
 ## v0.3.2
 
 - Fix Filter Bag sensor
