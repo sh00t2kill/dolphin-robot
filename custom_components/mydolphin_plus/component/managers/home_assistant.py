@@ -398,7 +398,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 name=entity_name,
                 icon=CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
                 device_class=SensorDeviceClass.DURATION,
-                state_class=SensorStateClass.MEASUREMENT
+                state_class=SensorStateClass.MEASUREMENT,
+                unit_of_measurement="h"
             )
 
             self.entity_manager.set_entity(DOMAIN_SENSOR,
