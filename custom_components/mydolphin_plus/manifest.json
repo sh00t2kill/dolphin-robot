@@ -8,12 +8,12 @@
         "@elad-bar"
     ],
     "config_flow": true,
-    "documentation": "https://github.com/sh00t2kill/dolphin-robot",
     "dependencies": [
         "http"
     ],
-    "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
+    "documentation": "https://github.com/sh00t2kill/dolphin-robot",
     "iot_class": "cloud_push",
+    "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
     "requirements": [
         "AWSIoTPythonSDK"
     ],
