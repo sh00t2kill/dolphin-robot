@@ -1,21 +1,21 @@
 {
     "domain": "mydolphin_plus",
     "name": "MyDolphin Plus",
-    "documentation": "https://github.com/sh00t2kill/dolphin-robot",
-    "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
     "after_dependencies": [],
-    "dependencies": [
-        "http"
-    ],
     "codeowners": [
         "@sh00t2kill",
         "@lordlala",
         "@elad-bar"
     ],
+    "config_flow": true,
+    "documentation": "https://github.com/sh00t2kill/dolphin-robot",
+    "dependencies": [
+        "http"
+    ],
+    "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
+    "iot_class": "cloud_push",
     "requirements": [
         "AWSIoTPythonSDK"
     ],
-    "config_flow": true,
-    "version": "0.3.3",
-    "iot_class": "cloud_push"
+    "version": "0.3.4"
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.4
+
+- Fix attempt to handle messages from AWS MQTT Broker after restart process began and loop is not available
+
 ## v0.3.3
 
 - Add AWS Broker disconnection recovery process
