@@ -289,38 +289,6 @@ class IntegrationAPI(BaseAPI):
             )
             await self.set_status(ConnectivityStatus.Failed)
 
-    async def _set_actual_motor_unit_serial(self):
-        try:
-            headers = {
-                API_REQUEST_HEADER_TOKEN: self._login_token
-            }
-
-            for key in LOGIN_HEADERS:
-                headers[key] = LOGIN_HEADERS[key]
-
-            request_data = f"{API_REQUEST_SERIAL_NUMBER}={self._serial_serial}"
-
-            payload = await self._async_post(ROBOT_DETAILS_BY_SN_URL, headers, request_data)
-
-            if payload is None:
-                payload = {}
-
-            data = payload.get(API_RESPONSE_DATA, {})
-
-            if data is not None:
-                _LOGGER.info(f"Successfully retrieved details for device {self._serial_serial}")
-
-                self.data[API_DATA_MOTOR_UNIT_SERIAL] = data.get(API_RESPONSE_UNIT_SERIAL_NUMBER)
-
-                await self.set_status(ConnectivityStatus.TemporaryConnected)
-
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}")
-            await self.set_status(ConnectivityStatus.Failed)
-
     async def _generate_token(self):
         if self.status != ConnectivityStatus.TemporaryConnected:
             await self.set_status(ConnectivityStatus.Failed)
