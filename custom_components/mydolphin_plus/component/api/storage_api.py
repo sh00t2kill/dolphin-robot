@@ -9,10 +9,21 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
+from ...configuration.helpers.const import DOMAIN, MAIN_VIEW
 from ...configuration.models.config_data import ConfigData
 from ...core.api.base_api import BaseAPI
+from ...core.helpers.const import DATA, STORAGE_VERSION
 from ...core.helpers.enums import ConnectivityStatus
-from ..helpers.const import *
+from ..helpers.const import (
+    STORAGE_API_DATA,
+    STORAGE_API_DATA_API,
+    STORAGE_API_DATA_WS,
+    STORAGE_API_LIST,
+    STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
+    STORAGE_DATA_FILE_CONFIG,
+    STORAGE_DATA_FILES,
+    STORAGE_DATA_LOCATING,
+)
 from ..models.base_view import MyDolphinPlusBaseView
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,12 +34,13 @@ class StorageAPI(BaseAPI):
     _config_data: ConfigData | None
     _data: dict
 
-    def __init__(self,
-                 hass: HomeAssistant | None,
-                 async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
-                 async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
-                 ):
-
+    def __init__(
+        self,
+        hass: HomeAssistant | None,
+        async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
+        async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]]
+        | None = None,
+    ):
         super().__init__(hass, async_on_data_changed, async_on_status_changed)
 
         self._config_data = None
@@ -69,7 +81,9 @@ class StorageAPI(BaseAPI):
         for storage_data_file in STORAGE_DATA_FILES:
             file_name = f"{DOMAIN}.{entry_id}.{storage_data_file}.json"
 
-            stores[storage_data_file] = Store(self.hass, STORAGE_VERSION, file_name, encoder=JSONEncoder)
+            stores[storage_data_file] = Store(
+                self.hass, STORAGE_VERSION, file_name, encoder=JSONEncoder
+            )
 
         self._stores = stores
 
@@ -88,7 +102,9 @@ class StorageAPI(BaseAPI):
             main_view = self.hass.data.get(MAIN_VIEW)
 
             if main_view is None:
-                main_view = MyDolphinPlusBaseView(self.hass, STORAGE_API_LIST, self._get_data)
+                main_view = MyDolphinPlusBaseView(
+                    self.hass, STORAGE_API_LIST, self._get_data
+                )
 
                 self.hass.http.register_view(main_view)
                 self.hass.data[MAIN_VIEW] = main_view
@@ -99,7 +115,9 @@ class StorageAPI(BaseAPI):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed to async_component_initialize, error: {ex}, line: {line_number}")
+            _LOGGER.error(
+                f"Failed to async_component_initialize, error: {ex}, line: {line_number}"
+            )
 
     async def _async_load_configuration(self):
         """Load the retained data from store and return de-serialized data."""
@@ -108,7 +126,7 @@ class StorageAPI(BaseAPI):
         if self.data is None:
             self.data = {
                 STORAGE_DATA_LOCATING: False,
-                STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None
+                STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None,
             }
 
             await self._async_save()

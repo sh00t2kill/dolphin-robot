@@ -2,14 +2,12 @@ from homeassistant.components.binary_sensor import DOMAIN as DOMAIN_BINARY_SENSO
 from homeassistant.components.camera import DOMAIN as DOMAIN_CAMERA
 from homeassistant.components.device_tracker import DOMAIN as DOMAIN_DEVICE_TRACKER
 from homeassistant.components.light import DOMAIN as DOMAIN_LIGHT
-from homeassistant.components.media_source import DOMAIN as DOMAIN_MEDIA_SOURCE
 from homeassistant.components.select import DOMAIN as DOMAIN_SELECT
 from homeassistant.components.sensor import DOMAIN as DOMAIN_SENSOR
-from homeassistant.components.stream import DOMAIN as DOMAIN_STREAM
 from homeassistant.components.switch import DOMAIN as DOMAIN_SWITCH
 from homeassistant.components.vacuum import DOMAIN as DOMAIN_VACUUM
 
-from ...configuration.helpers.const import *
+from ...configuration.helpers.const import DOMAIN
 
 SUPPORTED_PLATFORMS = [
     DOMAIN_BINARY_SENSOR,
@@ -19,10 +17,12 @@ SUPPORTED_PLATFORMS = [
     DOMAIN_VACUUM,
     DOMAIN_SENSOR,
     DOMAIN_LIGHT,
-    DOMAIN_DEVICE_TRACKER
+    DOMAIN_DEVICE_TRACKER,
 ]
 
-PLATFORMS = {domain: f"{DOMAIN}_{domain}_UPDATE_SIGNAL" for domain in SUPPORTED_PLATFORMS}
+PLATFORMS = {
+    domain: f"{DOMAIN}_{domain}_UPDATE_SIGNAL" for domain in SUPPORTED_PLATFORMS
+}
 
 ENTITY_STATE = "state"
 ENTITY_ATTRIBUTES = "attributes"
@@ -44,7 +44,7 @@ DATA = f"data_{DOMAIN}"
 
 DOMAIN_KEY_FILE = f"{DOMAIN}.key"
 
-ATTR_OPTIONS = "attr_options"
+ATTR_OPTIONS = "options"
 
 CONF_STILL_IMAGE_URL = "still_image_url"
 CONF_STREAM_SOURCE = "stream_source"
@@ -71,3 +71,6 @@ ACTION_CORE_ENTITY_LOCATE = "locate"
 ACTION_CORE_ENTITY_SELECT_OPTION = "select_option"
 ACTION_CORE_ENTITY_ENABLE_MOTION_DETECTION = "enable_motion_detection"
 ACTION_CORE_ENTITY_DISABLE_MOTION_DETECTION = "disable_motion_detection"
+
+SINGLE_FRAME_PS = 1
+EMPTY_STRING = ""

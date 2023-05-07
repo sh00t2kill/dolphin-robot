@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-
-from ..helpers.const import *
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
 
 class ConfigData:
@@ -28,10 +27,7 @@ class ConfigData:
         return result
 
     def to_dict(self):
-        obj = {
-            CONF_USERNAME: self.username,
-            CONF_PASSWORD: self.password
-        }
+        obj = {CONF_USERNAME: self.username, CONF_PASSWORD: self.password}
 
         return obj
 
