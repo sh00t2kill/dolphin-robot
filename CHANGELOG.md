@@ -14,13 +14,12 @@
 **Endpoints**
 
 | Endpoint Name                      | Method | Description                                                                                         |
-|------------------------------------|--------|-----------------------------------------------------------------------------------------------------|
+| ---------------------------------- | ------ | --------------------------------------------------------------------------------------------------- |
 | /api/mydolphin_plus/list           | GET    | List all the endpoints available (supporting multiple integrations), available once for integration |
 | /api/mydolphin_plus/{ENTRY_ID}/api | GET    | JSON of all raw data from the MyDolphin Plus API, per integration                                   |
 | /api/mydolphin_plus/{ENTRY_ID}/ws  | GET    | JSON of all raw data from the MyDolphin Plus WebSocket, per integration                             |
 
 **Authentication: Requires long-living token from HA**
-
 
 ## v0.3.1
 
@@ -65,12 +64,15 @@
 - Separate timers for API / WS and Entities update
 
 ## v0.2.3
+
 - Fix core issue while deleting entities
 
 ## v0.2.2
+
 - Fix initialization order of API
 
 ## v0.2.1
+
 - Fix cycle time left sensor - didn't take new vacuum states into account
 - Fix storage API in case file doesn't exist
 - Fix initialization order of API
@@ -79,18 +81,22 @@
 - IOT Class (`iot_class`) changed to `cloud_push`
 
 ## v0.2.0
+
 - Add vacuum start,stop,locate,pause service calls
+
   - `start` is equivalent to `turn_on` (ie start a cleaning cycle)
   - `stop` and `pause` are equivalent to `turn_off` (ie stop a cleaning cycle)
   - locate turns the LED on for 10 seconds and off again
 
 - Major refactor to `Core`
+
   - all components are now part of the `Core`
   - Implementation should be done only in API, HA Manager and Configuration Manager
 
 - Remapped vacuum status for each action - turn on, turn off, toggle, start, stop, pause
 
 ## v0.1.0
+
 - Major refactor of HA Manager, Entity Manager and API (code cleanup)
 - AWS IOT Broker works with asynchronous operations
 - Publish all messages with QOS=1 (At least once)
@@ -104,25 +110,29 @@
   - Power switch
   - All services
 
-
 ## v0.0.9
+
 - Removed time from cleaning mode select HA component (select, translations and services)
 - Moved the off_states of switch to constants
 
 ## v0.0.8
+
 - Add a list of relevant states that also determine if a robot is not actively cleaning
 - Added MyDolpin Plus to the standard HACS repo
 
 ## v0.0.7
+
 - Cycle left time sensor: Add attribute of expected end time
 - API: Add logs for server version, time and diff (compared to local time)
 - API: change AWS connectivity request parameter of now, from UTC to local time
 - API: Add connection validation on each step of the initialization process (for better debugging)
 
 ## v0.0.6
+
 - Changed LED `switch` to `light` component
 
 ## v0.0.5
+
 - Update the HA when `$aws/things/SERIAL/shadow/update/accepted` event received
 - Fix `select` and `switch` state extraction
 - Implement and test the following actions:
@@ -132,9 +142,11 @@
   - Cleaning mode
 
 ## v0.0.4
+
 - HA is working with all components as READONLY (action not tested yet)
 
 ## v0.0.3
+
 - Update todo in [README](README.md)
 - Update `service.yaml`
 - On load call topic `$aws/things/SERIAL/shadow/get` to load all details, this simulates loading the mobile app
@@ -164,6 +176,7 @@
 Initial changes - functionality changes, refactor and restructuring of based code to match needs for HA custom component
 
 Functionality:
+
 - Add additional API call to retrieve robot details from `api/serialnumbers/getrobotdetailsbymusn`
 - Subscribe to following MQTT topic to get all details from device
   - $aws/things/{}/shadow/get/#
@@ -171,6 +184,7 @@ Functionality:
   - Maytronics/{}/main
 
 Refactor / Restructure:
+
 - Add boilerplate of HA custom component (based on Shinobi Video NVR)
 - Add pre-commit
 - Switch HTTP requests to async by changing all `requests` to `aiohttp`
@@ -182,12 +196,13 @@ Refactor / Restructure:
 - Add testing environment variables
 
 | Environment Variable | Type    | Default | Description                                                                                                               |
-|----------------------|---------|---------|---------------------------------------------------------------------------------------------------------------------------|
+| -------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
 | TEST_USERNANE        | String  | -       | Username used for MyDolphin Plus                                                                                          |
 | TEST_PASSWORD        | String  | -       | Password used for MyDolphin Plus                                                                                          |
 | DEBUG                | Boolean | False   | Setting to True will present DEBUG log level message while testing the code, False will set the minimum log level to INFO |
 
 TODO:
+
 - Create sensors and binary sensors based on data retrieved from the MyDolphin Plus app and cloud
 - Test the solution within HA
 - Add custom component to HACS
