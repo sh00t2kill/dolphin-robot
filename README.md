@@ -97,8 +97,8 @@ Please remove the integration and re-add it to make it work again.
 | {Robot Name}                     | Light          | Turned on or off the led                                       |                                                                                                                                     |
 | {Robot Name} Led Mode            | Select         | Select led mode                                                | Blinking, Always on, Disco                                                                                                          |
 | {Robot Name} Filter              | Sensors        | Presents the status of the filter bag                          |                                                                                                                                     |
-| {Robot Name} Cycle Time          | Sensor         | Indicates the time the robot is cleaning                       |                                                                                                                                     |
-| {Robot Name} Cycle Time Left     | Sensor         | Indicates the time left for the robot to complete the cycle    |                                                                                                                                     |
+| {Robot Name} Cycle Time          | Sensor         | Indicates the time the robot is cleaning                       | Measurement of duration in minutes                                                                                                  |
+| {Robot Name} Cycle Time Left     | Sensor         | Indicates the time left for the robot to complete the cycle    | Measurement of duration in seconds                                                                                                  |
 | {Robot Name}                     | Vacuum         | Provides functionality of vacuum to the robot                  | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate, Schedule, Delay Clean) |
 
 ### Cleaning Modes
@@ -252,8 +252,6 @@ stats:
     - entity_id: sensor.my_vacuum_cycle_time_left
       subtitle: Time Remaining
     - attribute: robot_status
-      subtitle: Status
-          - attribute: pws_status
       subtitle: Base Status
     - entity_id: binary_sensor.my_vacuum_aws_broker
       subtitle: AWS

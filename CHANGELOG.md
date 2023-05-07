@@ -3,6 +3,8 @@
 ## v0.3.4
 
 - Fix error upon restart caused by attempt to handle message from AWS MQTT Broker during restart of HA
+- Fix Cycle Time sensor to represent minutes of the current program
+- Fix Cycle Time Left sensor to represent seconds left for the current program to be completed
 
 ## v0.3.3
 
