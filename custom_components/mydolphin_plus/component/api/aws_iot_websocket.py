@@ -116,6 +116,10 @@ class IntegrationWS(BaseAPI):
                 f"Failed to load MyDolphin Plus WS, error: {ex}, line: {line_number}"
             )
 
+    @property
+    def has_running_loop(self):
+        return self.hass.loop is not None and not self.hass.loop.is_closed()
+
     async def terminate(self):
         await super().terminate()
 
@@ -217,7 +221,8 @@ class IntegrationWS(BaseAPI):
         _LOGGER.debug("AWS IOT Client is Online")
 
         if self.is_home_assistant:
-            self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
+            if self.has_running_loop:
+                self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
 
         else:
             loop = asyncio.get_running_loop()
@@ -227,7 +232,8 @@ class IntegrationWS(BaseAPI):
         _LOGGER.debug("AWS IOT Client is Offline")
 
         if self.is_home_assistant:
-            self.hass.async_create_task(self.set_status(ConnectivityStatus.Failed))
+            if self.has_running_loop:
+                self.hass.async_create_task(self.set_status(ConnectivityStatus.Failed))
 
         else:
             loop = asyncio.get_running_loop()
@@ -284,7 +290,8 @@ class IntegrationWS(BaseAPI):
                     self._read_temperature_and_in_water_details()
 
                 if self.is_home_assistant:
-                    self.hass.async_create_task(self.fire_data_changed_event())
+                    if self.has_running_loop:
+                        self.hass.async_create_task(self.fire_data_changed_event())
 
                 else:
                     loop = asyncio.get_running_loop()
