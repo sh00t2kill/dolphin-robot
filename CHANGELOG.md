@@ -7,6 +7,7 @@
 - Fix Cycle Time Left sensor to represent seconds left for the current program to be completed
 - Remove debugging API
 - Add diagnostics support (Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics)
+- Fix LED Mode select values
 
 ## v0.3.3
 
