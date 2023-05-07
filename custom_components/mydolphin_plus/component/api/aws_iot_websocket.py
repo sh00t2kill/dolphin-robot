@@ -222,7 +222,9 @@ class IntegrationWS(BaseAPI):
 
         if self.is_home_assistant:
             if self.has_running_loop:
-                self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
+                self.hass.async_create_task(
+                    self.set_status(ConnectivityStatus.Connected)
+                )
 
         else:
             loop = asyncio.get_running_loop()
