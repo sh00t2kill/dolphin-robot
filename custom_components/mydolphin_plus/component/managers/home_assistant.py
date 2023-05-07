@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from asyncio import sleep
 import calendar
-import datetime
+from datetime import datetime, timedelta
 import logging
 import sys
 from typing import Any
@@ -32,6 +32,7 @@ from homeassistant.const import (
     CONF_STATE,
     STATE_OFF,
     STATE_ON,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
@@ -398,7 +399,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         job_start_time = None
         if hours < DEFAULT_TIME_PART and minutes < DEFAULT_TIME_PART:
-            job_start_time = str(datetime.timedelta(hours=hours, minutes=minutes))
+            job_start_time = str(timedelta(hours=hours, minutes=minutes))
 
         try:
             attributes = {
@@ -487,15 +488,15 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             cycle_time_minutes = cleaning_mode.get(
                 DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0
             )
+            cycle_time = timedelta(minutes=cycle_time_minutes)
+            cycle_time_hours = cycle_time / timedelta(hours=1)
+
             cycle_start_time_ts = cycle_info.get(
                 DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
             )
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
-            cycle_time = str(datetime.timedelta(minutes=cycle_time_minutes))
 
-            state = cycle_time
-            state_parts = state.split(":")
-            state_hours = int(state_parts[0])
+            state = cycle_time_minutes
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
@@ -508,9 +509,10 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             entity_description = SensorEntityDescription(
                 key=unique_id,
                 name=entity_name,
-                icon=CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
+                icon=CLOCK_HOURS_ICONS.get(cycle_time_hours, "mdi:clock-time-twelve"),
                 device_class=SensorDeviceClass.DURATION,
                 state_class=SensorStateClass.MEASUREMENT,
+                native_unit_of_measurement=UnitOfTime.MINUTES,
             )
 
             self.entity_manager.set_entity(
@@ -580,7 +582,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             )
             cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
 
-            now_ts = datetime.datetime.now().timestamp()
+            now = datetime.now()
+            now_ts = now.timestamp()
 
             expected_cycle_end_time_ts = cycle_time_in_seconds + cycle_start_time_ts
             expected_cycle_end_time = get_date_time_from_timestamp(
@@ -596,11 +599,8 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 # still working
                 seconds_left = expected_cycle_end_time_ts - now_ts
 
-            delta = str(datetime.timedelta(seconds=seconds_left)).split(".")
-            state = delta[0]
-
-            state_parts = state.split(":")
-            state_hours = state_parts[0]
+            state = timedelta(seconds=seconds_left).total_seconds()
+            state_hours = int((expected_cycle_end_time - now) / timedelta(hours=1))
 
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
@@ -615,6 +615,9 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                 key=unique_id,
                 name=entity_name,
                 icon=CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
+                device_class=SensorDeviceClass.DURATION,
+                state_class=SensorStateClass.MEASUREMENT,
+                native_unit_of_measurement=UnitOfTime.SECONDS,
             )
 
             self.entity_manager.set_entity(
