@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.4
+
+- Fix error upon restart caused by attempt to handle message from AWS MQTT Broker during restart of HA
+
 ## v0.3.3
 
 - Add AWS Broker disconnection recovery process
