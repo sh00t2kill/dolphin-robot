@@ -10,6 +10,4 @@ MANUFACTURER = "Maytronics"
 DEFAULT_NAME = "MyDolphin Plus"
 DOMAIN = "mydolphin_plus"
 
-MAIN_VIEW = f"main_view_{DOMAIN}"
-
 DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]

@@ -43,7 +43,7 @@ async def run():
 
     api = IntegrationAPI(None)
 
-    await api.initialize(config_data)
+    await api.initialize(config_data, None)
 
     while True:
         await sleep(1)
