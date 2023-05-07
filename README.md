@@ -174,46 +174,6 @@ data:
     mode: all
 ```
 
-## API
-
-| Endpoint Name                      | Method | Description                                                                                         |
-| ---------------------------------- | ------ | --------------------------------------------------------------------------------------------------- |
-| /api/mydolphin_plus/list           | GET    | List all the endpoints available (supporting multiple integrations), available once for integration |
-| /api/mydolphin_plus/{ENTRY_ID}/api | GET    | JSON of all raw data from the MyDolphin Plus API, per integration                                   |
-| /api/mydolphin_plus/{ENTRY_ID}/ws  | GET    | JSON of all raw data from the MyDolphin Plus WebSocket, per integration                             |
-
-**Authentication: Requires long-living token from HA**
-
-### Examples
-
-#### List
-
-_Request_
-
-```bash
-curl https://ha_url:8123/api/mydolphin_plus/list
-   -H "Accept: application/json"
-   -H "Authorization: Bearer {token}"
-```
-
-#### WebSockets Data
-
-_Request_
-
-```bash
-curl https://ha_url:8123/api/mydolphin_plus/{ENTRY_ID}/ws
-   -H "Accept: application/json"
-   -H "Authorization: Bearer {token}"
-```
-
-#### API Data
-
-```bash
-curl https://ha_url:8123/api/mydolphin_plus/{ENTRY_ID}/api
-   -H "Accept: application/json"
-   -H "Authorization: Bearer {token}"
-```
-
 ## Troubleshooting
 
 Before opening an issue, please provide logs related to the issue,
@@ -225,6 +185,9 @@ logger:
   logs:
     custom_components.mydolphin_plus: debug
 ```
+
+Please attach also diagnostic details of the integration, available in:
+Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics
 
 ## Lovelace cards.
 

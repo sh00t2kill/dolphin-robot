@@ -985,8 +985,7 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
             await self.storage_api.set_aws_token_encrypted_key(aws_token_encrypted_key)
 
     async def _api_data_changed(self):
-        if self.api.status == ConnectivityStatus.Connected:
-            await self.storage_api.debug_log_api(self.api.data)
+        pass
 
     async def _api_status_changed(self, status: ConnectivityStatus):
         _LOGGER.info(
@@ -1010,8 +1009,6 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
     async def _ws_data_changed(self):
         if self.ws.status == ConnectivityStatus.Connected:
             data = self.ws.data
-
-            await self.storage_api.debug_log_ws(data)
 
             self._set_system_status_details(data)
 

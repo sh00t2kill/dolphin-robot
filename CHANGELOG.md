@@ -5,6 +5,8 @@
 - Fix error upon restart caused by attempt to handle message from AWS MQTT Broker during restart of HA
 - Fix Cycle Time sensor to represent minutes of the current program
 - Fix Cycle Time Left sensor to represent seconds left for the current program to be completed
+- Remove debugging API
+- Add diagnostics support (Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics)
 
 ## v0.3.3
 
