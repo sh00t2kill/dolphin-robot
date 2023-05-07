@@ -19,6 +19,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.components.light import LightEntityDescription
+from homeassistant.components.select import SelectEntityDescription
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntityDescription,
@@ -61,7 +62,6 @@ from ...core.helpers.const import (
 from ...core.helpers.enums import ConnectivityStatus
 from ...core.managers.home_assistant import HomeAssistantManager
 from ...core.models.entity_data import EntityData
-from ...core.models.select_description import SelectDescription
 from ...core.models.vacuum_description import VacuumDescription
 from ..api.aws_iot_websocket import IntegrationWS
 from ..api.mydolphin_plus_api import IntegrationAPI
@@ -310,11 +310,11 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
         try:
             led = data.get(DATA_SECTION_LED, {})
-            led_mode = led.get(DATA_LED_MODE, LED_MODE_BLINKING)
+            led_mode = str(led.get(DATA_LED_MODE, LED_MODE_BLINKING))
             led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
             led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
 
-            state = led_mode
+            state = LED_MODES_NAMES.get(led_mode)
             attributes = {
                 ATTR_FRIENDLY_NAME: entity_name,
                 CONF_ENABLED: led_enable,
@@ -323,12 +323,12 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
 
             unique_id = EntityData.generate_unique_id(DOMAIN_SELECT, entity_name)
 
-            entity_description = SelectDescription(
+            entity_description = SelectEntityDescription(
                 key=unique_id,
                 name=entity_name,
-                icon=ICON_LED_MODES.get(state, LED_MODE_ICON_DEFAULT),
+                icon=ICON_LED_MODES.get(led_mode, LED_MODE_ICON_DEFAULT),
                 device_class=f"{DOMAIN}__{ATTR_LED_MODE}",
-                attr_options=tuple(ICON_LED_MODES.keys()),
+                options=list(LED_MODES_NAMES.values()),
                 entity_category=EntityCategory.CONFIG,
             )
 
@@ -757,15 +757,20 @@ class MyDolphinPlusHomeAssistantManager(HomeAssistantManager):
                     self.ws.set_cleaning_mode(cleaning_mode)
 
     async def _set_led_mode(self, entity: EntityData, option: str):
-        led_mode_name = LED_MODES_NAMES.get(option)
+        current_led_mode = LED_MODE_BLINKING
+
+        for led_mode in LED_MODES_NAMES:
+            if LED_MODES_NAMES[led_mode] == option:
+                current_led_mode = led_mode
+                break
+
         _LOGGER.debug(
-            f"Change led mode, State: {entity.state}, New: {led_mode_name} ({option})"
+            f"Change led mode, State: {entity.state}, New: {option} ({current_led_mode})"
         )
 
-        if entity.state != led_mode_name:
-            value = int(option)
+        value = int(current_led_mode)
 
-            self.ws.set_led_mode(value)
+        self.ws.set_led_mode(value)
 
     def set_led_intensity(self, intensity: int):
         self.ws.set_led_intensity(intensity)

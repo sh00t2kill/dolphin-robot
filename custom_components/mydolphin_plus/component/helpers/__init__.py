@@ -5,8 +5,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import Event, HomeAssistant
 
-from ...component.helpers.const import DATA
 from ...component.managers.home_assistant import MyDolphinPlusHomeAssistantManager
+from ...core.helpers import DATA
 
 _LOGGER = logging.getLogger(__name__)
 
