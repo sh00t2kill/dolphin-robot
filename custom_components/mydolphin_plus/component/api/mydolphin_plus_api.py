@@ -13,10 +13,35 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from homeassistant.core import HomeAssistant
 
+from ...configuration.helpers.const import DEFAULT_NAME
 from ...configuration.models.config_data import ConfigData
 from ...core.api.base_api import BaseAPI
 from ...core.helpers.enums import ConnectivityStatus
-from ..helpers.const import *
+from ..helpers.const import (
+    API_DATA_LOGIN_TOKEN,
+    API_DATA_MOTOR_UNIT_SERIAL,
+    API_DATA_SERIAL_NUMBER,
+    API_REQUEST_HEADER_TOKEN,
+    API_REQUEST_SERIAL_EMAIL,
+    API_REQUEST_SERIAL_NUMBER,
+    API_REQUEST_SERIAL_PASSWORD,
+    API_RESPONSE_ALERT,
+    API_RESPONSE_DATA,
+    API_RESPONSE_STATUS,
+    API_RESPONSE_STATUS_FAILURE,
+    API_RESPONSE_STATUS_SUCCESS,
+    API_RESPONSE_UNIT_SERIAL_NUMBER,
+    API_TOKEN_FIELDS,
+    BLOCK_SIZE,
+    DATA_ROBOT_DETAILS,
+    LOGIN_HEADERS,
+    LOGIN_URL,
+    MAXIMUM_ATTEMPTS_GET_AWS_TOKEN,
+    ROBOT_DETAILS_BY_SN_URL,
+    ROBOT_DETAILS_URL,
+    STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
+    TOKEN_URL,
+)
 
 REQUIREMENTS = ["aiohttp"]
 
@@ -29,12 +54,13 @@ class IntegrationAPI(BaseAPI):
     base_url: str | None
     aws_token_encrypted_key: str | None
 
-    def __init__(self,
-                 hass: HomeAssistant | None,
-                 async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
-                 async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
-                 ):
-
+    def __init__(
+        self,
+        hass: HomeAssistant | None,
+        async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
+        async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]]
+        | None = None,
+    ):
         super().__init__(hass, async_on_data_changed, async_on_status_changed)
 
         try:
@@ -78,7 +104,9 @@ class IntegrationAPI(BaseAPI):
 
         return motor_unit_serial
 
-    async def initialize(self, config_data: ConfigData, aws_token_encrypted_key: str | None):
+    async def initialize(
+        self, config_data: ConfigData, aws_token_encrypted_key: str | None
+    ):
         _LOGGER.info("Initializing MyDolphin API")
 
         self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = aws_token_encrypted_key
@@ -101,14 +129,18 @@ class IntegrationAPI(BaseAPI):
         result = None
 
         try:
-            async with self.session.post(url, headers=headers, data=request_data, ssl=False) as response:
+            async with self.session.post(
+                url, headers=headers, data=request_data, ssl=False
+            ) as response:
                 _LOGGER.debug(f"Status of {url}: {response.status}")
 
                 response.raise_for_status()
 
                 result = await response.json()
 
-                _LOGGER.debug(f"POST request [{url}] completed successfully, Result: {result}")
+                _LOGGER.debug(
+                    f"POST request [{url}] completed successfully, Result: {result}"
+                )
 
         except ClientResponseError as crex:
             _LOGGER.error(
@@ -141,7 +173,9 @@ class IntegrationAPI(BaseAPI):
 
                 result = await response.json()
 
-                _LOGGER.debug(f"GET request [{url}] completed successfully, Result: {result}")
+                _LOGGER.debug(
+                    f"GET request [{url}] completed successfully, Result: {result}"
+                )
 
         except ClientResponseError as crex:
             _LOGGER.error(
@@ -212,21 +246,23 @@ class IntegrationAPI(BaseAPI):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}")
+            _LOGGER.error(
+                f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
+            )
             await self.set_status(ConnectivityStatus.Failed)
 
     async def _set_actual_motor_unit_serial(self):
         try:
-            headers = {
-                API_REQUEST_HEADER_TOKEN: self._login_token
-            }
+            headers = {API_REQUEST_HEADER_TOKEN: self._login_token}
 
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
 
             request_data = f"{API_REQUEST_SERIAL_NUMBER}={self._serial_serial}"
 
-            payload = await self._async_post(ROBOT_DETAILS_BY_SN_URL, headers, request_data)
+            payload = await self._async_post(
+                ROBOT_DETAILS_BY_SN_URL, headers, request_data
+            )
 
             if payload is None:
                 payload = {}
@@ -234,9 +270,13 @@ class IntegrationAPI(BaseAPI):
             data = payload.get(API_RESPONSE_DATA, {})
 
             if data is not None:
-                _LOGGER.info(f"Successfully retrieved details for device {self._serial_serial}")
+                _LOGGER.info(
+                    f"Successfully retrieved details for device {self._serial_serial}"
+                )
 
-                self.data[API_DATA_MOTOR_UNIT_SERIAL] = data.get(API_RESPONSE_UNIT_SERIAL_NUMBER)
+                self.data[API_DATA_MOTOR_UNIT_SERIAL] = data.get(
+                    API_RESPONSE_UNIT_SERIAL_NUMBER
+                )
 
                 await self.set_status(ConnectivityStatus.TemporaryConnected)
 
@@ -244,7 +284,9 @@ class IntegrationAPI(BaseAPI):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}")
+            _LOGGER.error(
+                f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
+            )
             await self.set_status(ConnectivityStatus.Failed)
 
     async def _generate_token(self):
@@ -255,9 +297,7 @@ class IntegrationAPI(BaseAPI):
         try:
             get_token_attempts = 0
 
-            headers = {
-                API_REQUEST_HEADER_TOKEN: self._login_token
-            }
+            headers = {API_REQUEST_HEADER_TOKEN: self._login_token}
 
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
@@ -266,7 +306,9 @@ class IntegrationAPI(BaseAPI):
                 if self.aws_token_encrypted_key is None:
                     self._generate_aws_token_encrypted_key()
 
-                request_data = f"{API_REQUEST_SERIAL_NUMBER}={self.aws_token_encrypted_key}"
+                request_data = (
+                    f"{API_REQUEST_SERIAL_NUMBER}={self.aws_token_encrypted_key}"
+                )
 
                 payload = await self._async_post(TOKEN_URL, headers, request_data)
 
@@ -280,7 +322,9 @@ class IntegrationAPI(BaseAPI):
 
                     await self.set_status(ConnectivityStatus.Connected)
 
-                    _LOGGER.debug(f"Retrieved AWS token after {get_token_attempts} attempts")
+                    _LOGGER.debug(
+                        f"Retrieved AWS token after {get_token_attempts} attempts"
+                    )
 
                     get_token_attempts = MAXIMUM_ATTEMPTS_GET_AWS_TOKEN
 
@@ -288,7 +332,9 @@ class IntegrationAPI(BaseAPI):
                     self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = None
 
                     if get_token_attempts + 1 >= MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
-                        _LOGGER.error(f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}")
+                        _LOGGER.error(
+                            f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}"
+                        )
 
                         await self.set_status(ConnectivityStatus.Failed)
 
@@ -298,7 +344,9 @@ class IntegrationAPI(BaseAPI):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}")
+            _LOGGER.error(
+                f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}"
+            )
             await self.set_status(ConnectivityStatus.Failed)
 
     async def _load_details(self):
@@ -307,9 +355,7 @@ class IntegrationAPI(BaseAPI):
             return
 
         try:
-            headers = {
-                API_REQUEST_HEADER_TOKEN: self._login_token
-            }
+            headers = {API_REQUEST_HEADER_TOKEN: self._login_token}
 
             for key in LOGIN_HEADERS:
                 headers[key] = LOGIN_HEADERS[key]
@@ -318,11 +364,12 @@ class IntegrationAPI(BaseAPI):
 
             payload = await self._async_post(ROBOT_DETAILS_URL, headers, request_data)
 
-            response_status = payload.get(API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE)
+            response_status = payload.get(
+                API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE
+            )
             alert = payload.get(API_RESPONSE_STATUS, API_RESPONSE_ALERT)
 
             if response_status == API_RESPONSE_STATUS_SUCCESS:
-
                 data = payload.get(API_RESPONSE_DATA, {})
 
                 for key in DATA_ROBOT_DETAILS:
@@ -339,7 +386,9 @@ class IntegrationAPI(BaseAPI):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}")
+            _LOGGER.error(
+                f"Failed to retrieve Robot Details, Error: {str(ex)}, Line: {line_number}"
+            )
 
     def _generate_aws_token_encrypted_key(self):
         _LOGGER.debug(f"ENCRYPT: Serial number: {self._motor_unit_serial}")

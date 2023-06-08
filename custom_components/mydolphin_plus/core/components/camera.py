@@ -12,13 +12,26 @@ import sys
 import aiohttp
 import async_timeout
 
-from homeassistant.components.camera import DEFAULT_CONTENT_TYPE, SUPPORT_STREAM, Camera
+from homeassistant.components.camera import (
+    DEFAULT_CONTENT_TYPE,
+    Camera,
+    CameraEntityFeature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import TemplateError
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import homeassistant.helpers.config_validation as cv
 
-from ..helpers.const import *
+from ..helpers.const import (
+    ATTR_MODE_RECORD,
+    ATTR_STREAM_FPS,
+    CONF_MOTION_DETECTION,
+    CONF_STILL_IMAGE_URL,
+    CONF_STREAM_SOURCE,
+    DOMAIN_CAMERA,
+    EMPTY_STRING,
+    SINGLE_FRAME_PS,
+)
 from ..models.base_entity import BaseEntity
 from ..models.entity_data import EntityData
 
@@ -26,7 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class CoreCamera(Camera, BaseEntity, ABC):
-    """  Camera """
+    """Camera"""
 
     def __init__(self, hass, device_info):
         super().__init__()
@@ -47,12 +60,13 @@ class CoreCamera(Camera, BaseEntity, ABC):
         hass: HomeAssistant,
         entity: EntityData,
         current_domain: str,
+        DOMAIN_STREAM=None,
     ):
         super().initialize(hass, entity, current_domain)
 
         try:
             if self.ha is None:
-                _LOGGER.warning(f"Failed to initialize CoreCamera without HA manager")
+                _LOGGER.warning("Failed to initialize CoreCamera without HA manager")
                 return
 
             config_data = self.ha.config_data
@@ -60,25 +74,29 @@ class CoreCamera(Camera, BaseEntity, ABC):
             username = config_data.username
             password = config_data.password
 
-            fps = int(entity.details.get(ATTR_STREAM_FPS, 1))
+            fps_str = entity.details.get(ATTR_STREAM_FPS, SINGLE_FRAME_PS)
+
+            fps = SINGLE_FRAME_PS if fps_str == EMPTY_STRING else int(float(fps_str))
+
             stream_source = entity.attributes.get(CONF_STREAM_SOURCE)
 
             snapshot = entity.attributes.get(CONF_STILL_IMAGE_URL)
 
             still_image_url_template = cv.template(snapshot)
 
-            stream_support = DOMAIN_STREAM in self.hass.data
-
-            stream_support_flag = SUPPORT_STREAM if stream_source and stream_support else 0
-
             self._still_image_url = still_image_url_template
             self._still_image_url.hass = hass
 
             self._stream_source = stream_source
-            self._frame_interval = 1 / fps
-            self._supported_features = stream_support_flag
+            self._frame_interval = SINGLE_FRAME_PS / fps
 
             self._is_recording_state = self.entity.details.get(ATTR_MODE_RECORD)
+            self._attr_is_streaming = stream_source is not None
+
+            if self._stream_source:
+                self._attr_supported_features = CameraEntityFeature.STREAM
+            else:
+                self._attr_supported_features = CameraEntityFeature(0)
 
             if username and password:
                 self._auth = aiohttp.BasicAuth(username, password=password)
@@ -87,7 +105,9 @@ class CoreCamera(Camera, BaseEntity, ABC):
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(f"Failed to initialize CoreCamera instance, Error: {ex}, Line: {line_number}")
+            _LOGGER.error(
+                f"Failed to initialize CoreCamera instance, Error: {ex}, Line: {line_number}"
+            )
 
     @property
     def is_recording(self) -> bool:
@@ -98,27 +118,28 @@ class CoreCamera(Camera, BaseEntity, ABC):
         return self.entity.details.get(CONF_MOTION_DETECTION, False)
 
     @property
-    def supported_features(self):
-        """Return supported features for this camera."""
-        return self._supported_features
-
-    @property
     def frame_interval(self):
         """Return the interval between frames of the mjpeg stream."""
         return self._frame_interval
 
-    def camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:
+    def camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
         """Return bytes of camera image."""
         return asyncio.run_coroutine_threadsafe(
             self.async_camera_image(), self.hass.loop
         ).result()
 
-    async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
         """Return a still image response from the camera."""
         try:
             url = self._still_image_url.async_render()
         except TemplateError as err:
-            _LOGGER.error(f"Error parsing template {self._still_image_url}, Error: {err}")
+            _LOGGER.error(
+                f"Error parsing template {self._still_image_url}, Error: {err}"
+            )
             return self._last_image
 
         try:
@@ -134,7 +155,9 @@ class CoreCamera(Camera, BaseEntity, ABC):
             return self._last_image
 
         except aiohttp.ClientError as err:
-            _LOGGER.error(f"Error getting new camera image from {self.name}, Error: {err}")
+            _LOGGER.error(
+                f"Error getting new camera image from {self.name}, Error: {err}"
+            )
             return self._last_image
 
         self._last_url = url

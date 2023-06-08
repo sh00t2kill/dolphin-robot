@@ -6,12 +6,13 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
 from ...core.api.base_api import BaseAPI
-from ...core.helpers.const import *
 from ...core.helpers.enums import ConnectivityStatus
 from ...core.managers.password_manager import PasswordManager
+from ..helpers.const import DATA_KEYS
 from ..helpers.exceptions import LoginError
 from ..models.config_data import ConfigData
 
@@ -80,7 +81,7 @@ class ConfigurationManager:
 
         fields = {
             vol.Optional(CONF_USERNAME, default=user_input.get(CONF_USERNAME)): str,
-            vol.Optional(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str
+            vol.Optional(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
         }
 
         return fields
@@ -93,7 +94,7 @@ class ConfigurationManager:
             str(ConnectivityStatus.Failed): "invalid_server_details",
             str(ConnectivityStatus.NotFound): "invalid_server_details",
             str(ConnectivityStatus.MissingAPIKey): "missing_permanent_api_key",
-            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials"
+            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials",
         }
 
         status_description = status_mapping.get(str(self.api.status))
@@ -103,7 +104,9 @@ class ConfigurationManager:
 
         return result
 
-    def get_options_fields(self, user_input: dict[str, Any] | None) -> dict[vol.Marker, Any]:
+    def get_options_fields(
+        self, user_input: dict[str, Any] | None
+    ) -> dict[vol.Marker, Any]:
         if user_input is None:
             data = ConfigData.from_dict().to_dict()
 
@@ -115,12 +118,14 @@ class ConfigurationManager:
 
         fields = {
             vol.Optional(CONF_USERNAME, default=data.get(CONF_USERNAME)): str,
-            vol.Optional(CONF_PASSWORD, default=data.get(CONF_PASSWORD)): str
+            vol.Optional(CONF_PASSWORD, default=data.get(CONF_PASSWORD)): str,
         }
 
         return fields
 
-    def remap_entry_data(self, entry: ConfigEntry, options: dict[str, Any]) -> dict[str, Any]:
+    def remap_entry_data(
+        self, entry: ConfigEntry, options: dict[str, Any]
+    ) -> dict[str, Any]:
         config_options = {}
         config_data = {}
 

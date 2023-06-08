@@ -11,12 +11,74 @@ import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
+from homeassistant.const import CONF_MODE
 from homeassistant.core import HomeAssistant
 
 from ...configuration.models.config_data import ConfigData
 from ...core.api.base_api import BaseAPI
 from ...core.helpers.enums import ConnectivityStatus
-from ..helpers.const import *
+from ..helpers.const import (
+    API_DATA_MOTOR_UNIT_SERIAL,
+    API_DATA_SERIAL_NUMBER,
+    API_RESPONSE_DATA_ACCESS_KEY_ID,
+    API_RESPONSE_DATA_SECRET_ACCESS_KEY,
+    API_RESPONSE_DATA_TOKEN,
+    ATTR_REMOTE_CONTROL_MODE_EXIT,
+    AWS_IOT_PORT,
+    AWS_IOT_URL,
+    CA_FILE_NAME,
+    CLEANING_MODE_PICKUP,
+    CLEANING_MODE_REGULAR,
+    DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND,
+    DATA_LED_ENABLE,
+    DATA_LED_INTENSITY,
+    DATA_LED_MODE,
+    DATA_ROOT_STATE,
+    DATA_ROOT_TIMESTAMP,
+    DATA_ROOT_VERSION,
+    DATA_SCHEDULE_CLEANING_MODE,
+    DATA_SCHEDULE_IS_ENABLED,
+    DATA_SCHEDULE_TIME,
+    DATA_SCHEDULE_TIME_HOURS,
+    DATA_SCHEDULE_TIME_MINUTES,
+    DATA_SCHEDULE_TRIGGERED_BY,
+    DATA_SECTION_CYCLE_INFO,
+    DATA_SECTION_DELAY,
+    DATA_SECTION_FILTER_BAG_INDICATION,
+    DATA_SECTION_LED,
+    DATA_SECTION_SYSTEM_STATE,
+    DATA_SECTION_WEEKLY_SETTINGS,
+    DATA_STATE_DESIRED,
+    DATA_STATE_REPORTED,
+    DATA_SYSTEM_STATE_PWS_STATE,
+    DEFAULT_ENABLE,
+    DEFAULT_LED_INTENSITY,
+    DEFAULT_TIME_PART,
+    DYNAMIC_CONTENT_DIRECTION,
+    DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL,
+    DYNAMIC_CONTENT_REMOTE_CONTROL_MODE,
+    DYNAMIC_CONTENT_SERIAL_NUMBER,
+    DYNAMIC_CONTENT_SPEED,
+    DYNAMIC_DESCRIPTION,
+    DYNAMIC_DESCRIPTION_JOYSTICK,
+    DYNAMIC_DESCRIPTION_TEMPERATURE,
+    DYNAMIC_TYPE,
+    DYNAMIC_TYPE_PWS_REQUEST,
+    JOYSTICK_SPEED,
+    LED_MODE_BLINKING,
+    MQTT_MESSAGE_ENCODING,
+    MQTT_QOS_0,
+    MQTT_QOS_1,
+    PWS_STATE_OFF,
+    PWS_STATE_ON,
+    TOPIC_CALLBACK_ACCEPTED,
+    TOPIC_CALLBACK_REJECTED,
+    UPDATE_API_INTERVAL,
+    WS_DATA_DIFF,
+    WS_DATA_TIMESTAMP,
+    WS_DATA_VERSION,
+    WS_LAST_UPDATE,
+)
 from ..models.topic_data import TopicData
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,12 +91,13 @@ class IntegrationWS(BaseAPI):
 
     _topic_data: TopicData | None
 
-    def __init__(self,
-                 hass: HomeAssistant | None,
-                 async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
-                 async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None = None
-                 ):
-
+    def __init__(
+        self,
+        hass: HomeAssistant | None,
+        async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
+        async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]]
+        | None = None,
+    ):
         super().__init__(hass, async_on_data_changed, async_on_status_changed)
 
         try:
@@ -52,6 +115,10 @@ class IntegrationWS(BaseAPI):
             _LOGGER.error(
                 f"Failed to load MyDolphin Plus WS, error: {ex}, line: {line_number}"
             )
+
+    @property
+    def has_running_loop(self):
+        return self.hass.loop is not None and not self.hass.loop.is_closed()
 
     async def terminate(self):
         await super().terminate()
@@ -87,7 +154,9 @@ class IntegrationWS(BaseAPI):
             aws_client.configureCredentials(ca_file_path)
             aws_client.configureIAMCredentials(aws_key, aws_secret, aws_token)
             aws_client.configureAutoReconnectBackoffTime(1, 32, 20)
-            aws_client.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
+            aws_client.configureOfflinePublishQueueing(
+                -1
+            )  # Infinite offline Publish queueing
             aws_client.configureDrainingFrequency(2)  # Draining: 2 Hz
             aws_client.configureConnectDisconnectTimeout(10)
             aws_client.configureMQTTOperationTimeout(10)
@@ -96,7 +165,9 @@ class IntegrationWS(BaseAPI):
             aws_client.onOffline = self._handle_aws_client_offline
 
             for topic in self._topic_data.subscribe:
-                aws_client.subscribeAsync(topic, MQTT_QOS_0, self._ack_callback, self._message_callback)
+                aws_client.subscribeAsync(
+                    topic, MQTT_QOS_0, self._ack_callback, self._message_callback
+                )
 
             connected = aws_client.connectAsync(ackCallback=self._ack_callback)
 
@@ -150,7 +221,10 @@ class IntegrationWS(BaseAPI):
         _LOGGER.debug("AWS IOT Client is Online")
 
         if self.is_home_assistant:
-            self.hass.async_create_task(self.set_status(ConnectivityStatus.Connected))
+            if self.has_running_loop:
+                self.hass.async_create_task(
+                    self.set_status(ConnectivityStatus.Connected)
+                )
 
         else:
             loop = asyncio.get_running_loop()
@@ -160,7 +234,8 @@ class IntegrationWS(BaseAPI):
         _LOGGER.debug("AWS IOT Client is Offline")
 
         if self.is_home_assistant:
-            self.hass.async_create_task(self.set_status(ConnectivityStatus.Failed))
+            if self.has_running_loop:
+                self.hass.async_create_task(self.set_status(ConnectivityStatus.Failed))
 
         else:
             loop = asyncio.get_running_loop()
@@ -179,10 +254,14 @@ class IntegrationWS(BaseAPI):
             payload = {} if has_message else json.loads(message_payload)
 
             motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
-            _LOGGER.info(f"Message received for device {motor_unit_serial}, Topic: {message_topic}")
+            _LOGGER.info(
+                f"Message received for device {motor_unit_serial}, Topic: {message_topic}"
+            )
 
             if message_topic.endswith(TOPIC_CALLBACK_REJECTED):
-                _LOGGER.warning(f"Rejected message for {message_topic}, Message: {message_payload}")
+                _LOGGER.warning(
+                    f"Rejected message for {message_topic}, Message: {message_payload}"
+                )
 
             elif message_topic == self._topic_data.dynamic:
                 _LOGGER.debug(f"Dynamic payload: {message_payload}")
@@ -213,7 +292,8 @@ class IntegrationWS(BaseAPI):
                     self._read_temperature_and_in_water_details()
 
                 if self.is_home_assistant:
-                    self.hass.async_create_task(self.fire_data_changed_event())
+                    if self.has_running_loop:
+                        self.hass.async_create_task(self.fire_data_changed_event())
 
                 else:
                     loop = asyncio.get_running_loop()
@@ -225,14 +305,12 @@ class IntegrationWS(BaseAPI):
             message_details = f"Topic: {message_topic}, Data: {message_payload}"
             error_details = f"Error: {str(ex)}, Line: {line_number}"
 
-            _LOGGER.error(f"Callback parsing failed, {message_details}, {error_details}")
+            _LOGGER.error(
+                f"Callback parsing failed, {message_details}, {error_details}"
+            )
 
     def _send_desired_command(self, payload: dict | None):
-        data = {
-            DATA_ROOT_STATE: {
-                DATA_STATE_DESIRED: payload
-            }
-        }
+        data = {DATA_ROOT_STATE: {DATA_STATE_DESIRED: payload}}
 
         self._publish(self._topic_data.update, data)
 
@@ -248,7 +326,9 @@ class IntegrationWS(BaseAPI):
         if self.status == ConnectivityStatus.Connected:
             try:
                 if self._awsiot_client is not None:
-                    published = self._awsiot_client.publishAsync(topic, payload, MQTT_QOS_1)
+                    published = self._awsiot_client.publishAsync(
+                        topic, payload, MQTT_QOS_1
+                    )
 
                     if published:
                         _LOGGER.debug(f"Published message: {data} to {topic}")
@@ -256,47 +336,51 @@ class IntegrationWS(BaseAPI):
                         _LOGGER.warning(f"Failed to publish message: {data} to {topic}")
 
             except Exception as ex:
-                _LOGGER.error(f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}")
+                _LOGGER.error(
+                    f"Error while trying to publish message: {data} to {topic}, Error: {str(ex)}"
+                )
 
         else:
-            _LOGGER.error(f"Failed to publish message: {data} to {topic}, Broker is not connected")
+            _LOGGER.error(
+                f"Failed to publish message: {data} to {topic}, Broker is not connected"
+            )
 
     def set_cleaning_mode(self, cleaning_mode):
         data = {
             DATA_SECTION_CYCLE_INFO: {
-                DATA_SCHEDULE_CLEANING_MODE: {
-                    CONF_MODE: cleaning_mode
-                }
+                DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: cleaning_mode}
             }
         }
 
         _LOGGER.info(f"Set cleaning mode, Desired: {data}")
         self._send_desired_command(data)
 
-    def set_delay(self,
-                  enabled: bool | None = False,
-                  mode: str | None = CLEANING_MODE_REGULAR,
-                  job_time: str | None = None):
+    def set_delay(
+        self,
+        enabled: bool | None = False,
+        mode: str | None = CLEANING_MODE_REGULAR,
+        job_time: str | None = None,
+    ):
         scheduling = self._get_schedule_settings(enabled, mode, job_time)
 
-        request_data = {
-            DATA_SECTION_DELAY: scheduling
-        }
+        request_data = {DATA_SECTION_DELAY: scheduling}
 
         _LOGGER.info(f"Set delay, Desired: {request_data}")
         self._send_desired_command(request_data)
 
-    def set_schedule(self,
-                     day: str,
-                     enabled: bool | None = False,
-                     mode: str | None = CLEANING_MODE_REGULAR,
-                     job_time: str | None = None):
+    def set_schedule(
+        self,
+        day: str,
+        enabled: bool | None = False,
+        mode: str | None = CLEANING_MODE_REGULAR,
+        job_time: str | None = None,
+    ):
         scheduling = self._get_schedule_settings(enabled, mode, job_time)
 
         request_data = {
             DATA_SECTION_WEEKLY_SETTINGS: {
                 DATA_SCHEDULE_TRIGGERED_BY: 0,
-                day: scheduling
+                day: scheduling,
             }
         }
 
@@ -324,7 +408,7 @@ class IntegrationWS(BaseAPI):
     def navigate(self, direction: str):
         request_data = {
             DYNAMIC_CONTENT_SPEED: JOYSTICK_SPEED,
-            DYNAMIC_CONTENT_DIRECTION: direction
+            DYNAMIC_CONTENT_DIRECTION: direction,
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
@@ -342,7 +426,7 @@ class IntegrationWS(BaseAPI):
 
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
-            DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: motor_unit_serial
+            DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: motor_unit_serial,
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_TEMPERATURE, request_data)
@@ -382,13 +466,11 @@ class IntegrationWS(BaseAPI):
 
         data = {
             DATA_SCHEDULE_IS_ENABLED: enabled,
-            DATA_SCHEDULE_CLEANING_MODE: {
-                CONF_MODE: mode
-            },
+            DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: mode},
             DATA_SCHEDULE_TIME: {
                 DATA_SCHEDULE_TIME_HOURS: hours,
-                DATA_SCHEDULE_TIME_MINUTES: minutes
-            }
+                DATA_SCHEDULE_TIME_MINUTES: minutes,
+            },
         }
 
         return data
@@ -397,14 +479,12 @@ class IntegrationWS(BaseAPI):
         default_data = {
             DATA_LED_ENABLE: DEFAULT_ENABLE,
             DATA_LED_INTENSITY: DEFAULT_LED_INTENSITY,
-            DATA_LED_MODE: LED_MODE_BLINKING
+            DATA_LED_MODE: LED_MODE_BLINKING,
         }
 
         request_data = self.data.get(DATA_SECTION_LED, default_data)
         request_data[key] = value
 
-        data = {
-            DATA_SECTION_LED: request_data
-        }
+        data = {DATA_SECTION_LED: request_data}
 
         return data

@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .component.helpers import async_set_ha, clear_ha, get_ha
-from .component.helpers.const import *
+from .configuration.helpers.const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         exc_type, exc_obj, tb = sys.exc_info()
         line_number = tb.tb_lineno
 
-        _LOGGER.error(f"Failed to load MyDolphin Plus, error: {ex}, line: {line_number}")
+        _LOGGER.error(
+            f"Failed to load MyDolphin Plus, error: {ex}, line: {line_number}"
+        )
 
     return initialized
 

@@ -1,5 +1,19 @@
 """Test file for indicators."""
-from custom_components.mydolphin_plus.component.helpers.const import *
+from custom_components.mydolphin_plus.component.helpers.const import (
+    PWS_STATE_CLEANING,
+    PWS_STATE_ERROR,
+    PWS_STATE_HOLD_DELAY,
+    PWS_STATE_HOLD_WEEKLY,
+    PWS_STATE_OFF,
+    PWS_STATE_ON,
+    PWS_STATE_PROGRAMMING,
+    ROBOT_STATE_FAULT,
+    ROBOT_STATE_FINISHED,
+    ROBOT_STATE_INIT,
+    ROBOT_STATE_NOT_CONNECTED,
+    ROBOT_STATE_PROGRAMMING,
+    ROBOT_STATE_SCANNING,
+)
 
 IS_ROBOT_BUSY = "isBusy"
 

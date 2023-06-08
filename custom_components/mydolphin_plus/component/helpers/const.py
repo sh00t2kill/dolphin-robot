@@ -9,10 +9,8 @@ from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.components.vacuum import VacuumEntityFeature
-from homeassistant.const import ATTR_MODE, CONF_ENABLED, CONF_MODE, CONF_STATE
+from homeassistant.const import CONF_ENABLED, CONF_MODE
 import homeassistant.helpers.config_validation as cv
-
-from ...core.helpers.const import *
 
 VERSION = "0.0.3"
 
@@ -147,7 +145,7 @@ API_DATA_LOGIN_TOKEN = "login_token"
 API_TOKEN_FIELDS = [
     API_RESPONSE_DATA_TOKEN,
     API_RESPONSE_DATA_ACCESS_KEY_ID,
-    API_RESPONSE_DATA_SECRET_ACCESS_KEY
+    API_RESPONSE_DATA_SECRET_ACCESS_KEY,
 ]
 
 BLOCK_SIZE = 16
@@ -164,8 +162,8 @@ AWS_IOT_URL = f"a12rqfdx55bdbv-ats.iot.{AWS_BASE_HOST}"
 AWS_IOT_PORT = 443
 
 LOGIN_HEADERS = {
-    'appkey': '346BDE92-53D1-4829-8A2E-B496014B586C',
-    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+    "appkey": "346BDE92-53D1-4829-8A2E-B496014B586C",
+    "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
 }
 CA_FILE_NAME = "AmazonRootCA.pem"
 
@@ -190,7 +188,7 @@ DATA_ROBOT_DETAILS = {
     "RegDate": "Registration Date",
     "MyRobotName": DATA_ROBOT_NAME,
     "isReg": "Is Registered",
-    "RobotFamily": "Product Family"
+    "RobotFamily": "Product Family",
 }
 
 ATTR_LED_MODE = "led_mode"
@@ -204,19 +202,19 @@ CLEANING_MODE_PICKUP = "pickup"
 CLEANING_MODE_ICON_DEFAULT = "mdi:border-all-variant"
 
 CLEANING_MODES = {
-  CLEANING_MODE_REGULAR: "Regular - Cleans floor, water and waterline",
-  CLEANING_MODE_FAST_MODE: "Fast mode - Cleans the floor",
-  CLEANING_MODE_FLOOR_ONLY: "Floor only - Cleans the floor only",
-  CLEANING_MODE_WATER_LINE: "Water line - Cleans the walls and water line",
-  CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline",
+    CLEANING_MODE_REGULAR: "Regular - Cleans floor, water and waterline",
+    CLEANING_MODE_FAST_MODE: "Fast mode - Cleans the floor",
+    CLEANING_MODE_FLOOR_ONLY: "Floor only - Cleans the floor only",
+    CLEANING_MODE_WATER_LINE: "Water line - Cleans the walls and water line",
+    CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline",
 }
 
 CLEANING_MODES_SHORT = {
-  CLEANING_MODE_REGULAR: "Regular",
-  CLEANING_MODE_FAST_MODE: "Fast mode",
-  CLEANING_MODE_FLOOR_ONLY: "Floor only",
-  CLEANING_MODE_WATER_LINE: "Water line",
-  CLEANING_MODE_ULTRA_CLEAN: "Ultra clean",
+    CLEANING_MODE_REGULAR: "Regular",
+    CLEANING_MODE_FAST_MODE: "Fast mode",
+    CLEANING_MODE_FLOOR_ONLY: "Floor only",
+    CLEANING_MODE_WATER_LINE: "Water line",
+    CLEANING_MODE_ULTRA_CLEAN: "Ultra clean",
 }
 
 ICON_CLEANING_MODES = {
@@ -224,7 +222,7 @@ ICON_CLEANING_MODES = {
     CLEANING_MODE_FAST_MODE: "mdi:clock-fast",
     CLEANING_MODE_FLOOR_ONLY: "mdi:border-bottom-variant",
     CLEANING_MODE_WATER_LINE: "mdi:format-align-top",
-    CLEANING_MODE_ULTRA_CLEAN: "mdi:border-all"
+    CLEANING_MODE_ULTRA_CLEAN: "mdi:border-all",
 }
 
 LED_MODE_BLINKING = "1"
@@ -235,13 +233,13 @@ LED_MODE_ICON_DEFAULT = "mdi:lighthouse-on"
 ICON_LED_MODES = {
     LED_MODE_BLINKING: LED_MODE_ICON_DEFAULT,
     LED_MODE_ALWAYS_ON: "mdi:lightbulb-on",
-    LED_MODE_DISCO: "mdi:lightbulb-multiple-outline"
+    LED_MODE_DISCO: "mdi:lightbulb-multiple-outline",
 }
 
 LED_MODES_NAMES = {
     LED_MODE_BLINKING: "Blinking",
     LED_MODE_ALWAYS_ON: "Always on",
-    LED_MODE_DISCO: "Disco"
+    LED_MODE_DISCO: "Disco",
 }
 
 SERVICE_NAVIGATE = "navigate"
@@ -265,29 +263,31 @@ JOYSTICK_DIRECTIONS = [
     JOYSTICK_FORWARD,
     JOYSTICK_BACKWARD,
     JOYSTICK_RIGHT,
-    JOYSTICK_LEFT
+    JOYSTICK_LEFT,
 ]
 
 SERVICE_SCHEMA_NAVIGATE = vol.Schema(
-    {
-        vol.Required(CONF_DIRECTION): vol.In([JOYSTICK_DIRECTIONS])
-    }
+    {vol.Required(CONF_DIRECTION): vol.In([JOYSTICK_DIRECTIONS])}
 )
 
 SERVICE_SCHEMA_DAILY_SCHEDULE = vol.Schema(
     {
         vol.Optional(CONF_ENABLED, default=False): cv.boolean,
         vol.Required(CONF_DAY): vol.In(list(calendar.day_name)),
-        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(CLEANING_MODES.keys()),
-        vol.Optional(CONF_TIME, default=None): cv.string
+        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(
+            CLEANING_MODES.keys()
+        ),
+        vol.Optional(CONF_TIME, default=None): cv.string,
     }
 )
 
 SERVICE_SCHEMA_DELAYED_CLEAN = vol.Schema(
     {
         vol.Optional(CONF_ENABLED, default=False): cv.boolean,
-        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(CLEANING_MODES.keys()),
-        vol.Optional(CONF_TIME, default=None): cv.string
+        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(
+            CLEANING_MODES.keys()
+        ),
+        vol.Optional(CONF_TIME, default=None): cv.string,
     }
 )
 
@@ -321,7 +321,7 @@ CLOCK_HOURS_ICONS = {
     20: "mdi:clock-time-eight",
     21: "mdi:clock-time-nine",
     22: "mdi:clock-time-ten",
-    23: "mdi:clock-time-eleven"
+    23: "mdi:clock-time-eleven",
 }
 
 PWS_STATE_ON = "on"
@@ -356,7 +356,7 @@ FILTER_BAG_STATUS = {
     "Almost full": (75, 99),
     "Full": (100, 100),
     "Fault": (101, 101),
-    "Not available": (102, 102)
+    "Not available": (102, 102),
 }
 
 FILTER_BAG_ICONS = {
@@ -367,33 +367,25 @@ FILTER_BAG_ICONS = {
     "Almost full": "mdi:gauge",
     "Full": "mdi:gauge-full",
     "Fault": "mdi:robot-dead",
-    "Not available": "mdi:robot-confused-outline"
+    "Not available": "mdi:robot-confused-outline",
 }
 
-VACUUM_FEATURES = VacuumEntityFeature.STATE | \
-                  VacuumEntityFeature.FAN_SPEED | \
-                  VacuumEntityFeature.RETURN_HOME | \
-                  VacuumEntityFeature.SEND_COMMAND | \
-                  VacuumEntityFeature.START | \
-                  VacuumEntityFeature.STOP | \
-                  VacuumEntityFeature.PAUSE | \
-                  VacuumEntityFeature.TURN_ON | \
-                  VacuumEntityFeature.TURN_OFF | \
-                  VacuumEntityFeature.LOCATE
+VACUUM_FEATURES = (
+    VacuumEntityFeature.STATE
+    | VacuumEntityFeature.FAN_SPEED
+    | VacuumEntityFeature.RETURN_HOME
+    | VacuumEntityFeature.SEND_COMMAND
+    | VacuumEntityFeature.START
+    | VacuumEntityFeature.STOP
+    | VacuumEntityFeature.PAUSE
+    | VacuumEntityFeature.TURN_ON
+    | VacuumEntityFeature.TURN_OFF
+    | VacuumEntityFeature.LOCATE
+)
 
 STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
 
 STORAGE_DATA_FILE_CONFIG = "config"
-STORAGE_API_LIST = "list"
-STORAGE_API_DATA_API = "api"
-STORAGE_API_DATA_WS = "ws"
 
-STORAGE_DATA_FILES = [
-    STORAGE_DATA_FILE_CONFIG
-]
-
-STORAGE_API_DATA = [
-    STORAGE_API_DATA_API,
-    STORAGE_API_DATA_WS,
-]
+STORAGE_DATA_FILES = [STORAGE_DATA_FILE_CONFIG]
