@@ -5,13 +5,11 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_PASSWORD
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
-from . import get_ha
-from .component.managers.home_assistant import MyDolphinPlusHomeAssistantManager
-from .configuration.helpers.const import DOMAIN
+from .common.consts import DOMAIN
+from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,57 +20,42 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     _LOGGER.debug("Starting diagnostic tool")
 
-    manager = get_ha(hass, entry.entry_id)
+    coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    return _async_get_diagnostics(hass, manager)
+    return _async_get_diagnostics(hass, coordinator, entry)
 
 
 @callback
 def _async_get_diagnostics(
-    hass: HomeAssistant,
-    manager: MyDolphinPlusHomeAssistantManager,
+    hass: HomeAssistant, coordinator: MyDolphinPlusCoordinator, entry: ConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
     _LOGGER.debug("Getting diagnostic information")
 
-    api_data = manager.api.data
-    ws_data = manager.ws.data
-    config_data = manager.config_data.to_dict()
+    data = coordinator.get_device_debug_data()
+    serial_number = coordinator.get_device_serial_number()
 
-    data = {}
+    data["disabled_by"] = entry.disabled_by
+    data["disabled_polling"] = entry.pref_disable_polling
 
-    for api_data_key in api_data:
-        data[api_data_key] = api_data[api_data_key]
+    _LOGGER.debug("Getting diagnostic information for all devices")
 
-    for ws_data_key in ws_data:
-        data[ws_data_key] = ws_data[ws_data_key]
+    data.update(device=_async_device_as_dict(hass, serial_number))
 
-    for config_data_key in config_data:
-        data[config_data_key] = config_data[config_data_key]
-
-    if CONF_PASSWORD in data:
-        data.pop(CONF_PASSWORD)
-
-    result = _async_device_as_dict(hass, data, manager)
-
-    return result
+    return data
 
 
 @callback
-def _async_device_as_dict(
-    hass: HomeAssistant, data: dict, manager: MyDolphinPlusHomeAssistantManager
-) -> dict[str, Any]:
+def _async_device_as_dict(hass: HomeAssistant, unique_id) -> dict[str, Any]:
     """Represent a Shinobi monitor as a dictionary."""
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
-    ha_device = device_registry.async_get_device(
-        identifiers={(DOMAIN, manager.robot_name)}
-    )
 
-    result = {"debug": data}
+    ha_device = device_registry.async_get_device(identifiers={(DOMAIN, unique_id)})
+    data = {}
 
     if ha_device:
-        result["home_assistant"] = {
+        data["home_assistant"] = {
             "name": ha_device.name,
             "name_by_user": ha_device.name_by_user,
             "disabled": ha_device.disabled,
@@ -109,4 +92,4 @@ def _async_device_as_dict(
                 }
             )
 
-    return result
+    return data

@@ -1,4 +1,4 @@
-from ..helpers.const import (
+from custom_components.mydolphin_plus.common.consts import (
     TOPIC_ACTION_GET,
     TOPIC_ACTION_UPDATE,
     TOPIC_CALLBACK_ACCEPTED,

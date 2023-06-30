@@ -24,11 +24,3 @@ class ConnectivityStatus(StrEnum):
             return logging.WARNING
         else:
             return logging.ERROR
-
-
-class EntityStatus(StrEnum):
-    EMPTY = "empty"
-    READY = "ready"
-    CREATED = "created"
-    DELETED = "deleted"
-    UPDATED = "updated"

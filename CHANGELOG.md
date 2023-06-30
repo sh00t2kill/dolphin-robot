@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.0
+
+- Refactor code to support HA coordinator
+
 ## v0.3.4
 
 - Fix error upon restart caused by attempt to handle message from AWS MQTT Broker during restart of HA

@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 
-from ...component.helpers.const import CLEANING_MODES
+from custom_components.mydolphin_plus.common.consts import CLEANING_MODES
 
 _LOGGER = logging.getLogger(__name__)
 

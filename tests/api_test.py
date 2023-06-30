@@ -1,14 +1,21 @@
 """test/api_test.py."""
 import asyncio
 from asyncio import sleep
+import json
 import logging
 import os
 import sys
 
-from custom_components.mydolphin_plus.component.api.mydolphin_plus_api import (
-    IntegrationAPI,
+from custom_components.mydolphin_plus.common.connectivity_status import (
+    ConnectivityStatus,
 )
-from custom_components.mydolphin_plus.configuration.models.config_data import ConfigData
+from custom_components.mydolphin_plus.common.consts import (
+    API_RECONNECT_INTERVAL,
+    WS_RECONNECT_INTERVAL,
+)
+from custom_components.mydolphin_plus.managers.aws_client import AWSClient
+from custom_components.mydolphin_plus.managers.config_manager import ConfigManager
+from custom_components.mydolphin_plus.managers.rest_api import RestAPI
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
 DEBUG = str(os.environ.get("DEBUG", False)).lower() == str(True).lower()
@@ -27,31 +34,68 @@ root.addHandler(stream_handler)
 _LOGGER = logging.getLogger(__name__)
 
 
-def handle_update():
-    """Do update logging."""
-    _LOGGER.info("Data updated")
+class APITest:
+    def __init__(self):
+        self._login_credentials = {
+            CONF_USERNAME: os.environ.get(CONF_USERNAME),
+            CONF_PASSWORD: os.environ.get(CONF_PASSWORD),
+        }
 
+        _LOGGER.info("Creating configuration manager instance")
 
-async def run():
-    """Test API."""
-    data = {
-        CONF_USERNAME: os.environ.get(CONF_USERNAME),
-        CONF_PASSWORD: os.environ.get(CONF_PASSWORD),
-    }
+        self._config_manager = ConfigManager(None)
 
-    config_data = ConfigData.from_dict(data)
+        self._api = RestAPI(None, self._config_manager, self._on_api_status_changed)
+        self._aws_client = AWSClient(None, self._on_aws_status_changed)
 
-    api = IntegrationAPI(None)
+    async def initialize(self):
+        """Test API."""
+        await self._config_manager.initialize()
+        self._config_manager.update_credentials(self._login_credentials)
 
-    await api.initialize(config_data, None)
+        _LOGGER.info("Creating REST API instance")
 
-    while True:
-        await sleep(1)
+        await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+
+        while True:
+            await sleep(1)
+
+            if self._aws_client.status == ConnectivityStatus.Connected:
+                data = json.dumps(self._aws_client.data, indent=4)
+
+                _LOGGER.info(data)
+
+    async def _on_api_status_changed(self, status: ConnectivityStatus):
+        if status == ConnectivityStatus.Connected:
+            await self._api.update()
+
+            await self._aws_client.update_api_data(self._api.data)
+
+            await self._aws_client.initialize()
+
+        elif status == ConnectivityStatus.Failed:
+            await self._aws_client.terminate()
+
+            await sleep(API_RECONNECT_INTERVAL.total_seconds())
+
+            await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+
+    async def _on_aws_status_changed(self, status: ConnectivityStatus):
+        if status == ConnectivityStatus.Failed:
+            await self._api.initialize(None)
+
+            await sleep(WS_RECONNECT_INTERVAL.total_seconds())
+
+            await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+
+        if status == ConnectivityStatus.Connected:
+            await self._aws_client.update()
 
 
 loop = asyncio.new_event_loop()
 
 try:
-    loop.run_until_complete(run())
+    instance = APITest()
+    loop.run_until_complete(instance.initialize())
 finally:
     loop.close()

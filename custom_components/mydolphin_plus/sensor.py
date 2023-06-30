@@ -1,34 +1,107 @@
-"""
-Support for MyDolphin Plus.
-For more details about this platform, please refer to the documentation at
-https://github.com/sh00t2kill/dolphin-robot
-"""
-from __future__ import annotations
-
 import logging
+import sys
 
-from .core.components.sensor import CoreSensor
-from .core.helpers.setup_base_entry import async_setup_base_entry
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import ATTR_ICON, ATTR_STATE, Platform
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
+
+from .common.consts import ATTR_ATTRIBUTES, DOMAIN, SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW
+from .common.entity_descriptions import ENTITY_DESCRIPTIONS
+from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, config_entry, async_add_devices):
-    """Set up the  Switch."""
-    await async_setup_base_entry(
-        hass,
-        config_entry,
-        async_add_devices,
-        CoreSensor.get_domain(),
-        CoreSensor.get_component,
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+):
+    @callback
+    def _async_device_new(serial_number):
+        try:
+            coordinator = hass.data[DOMAIN][entry.entry_id]
+
+            device_data = coordinator.get_device()
+            identifiers = device_data.get("identifiers")
+            coordinator_serial_number = list(identifiers)[0][1]
+
+            if coordinator_serial_number != serial_number:
+                return
+
+            entities = []
+
+            for entity_description in ENTITY_DESCRIPTIONS:
+                if isinstance(entity_description, SensorEntityDescription):
+                    entity = MyDolphinPlusSensorEntity(entity_description, coordinator)
+
+                    entities.append(entity)
+
+            _LOGGER.debug(f"Setting up {Platform.SENSOR} entities: {entities}")
+
+            async_add_entities(entities, True)
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to initialize {Platform.SENSOR}, Error: {ex}, Line: {line_number}"
+            )
+
+    """Set up the binary sensor platform."""
+    entry.async_on_unload(
+        async_dispatcher_connect(
+            hass, SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW, _async_device_new
+        )
     )
 
 
-async def async_unload_entry(hass, config_entry):
-    _LOGGER.info(f"Unload entry for {CoreSensor.get_domain()} domain: {config_entry}")
+class MyDolphinPlusSensorEntity(CoordinatorEntity, SensorEntity):
+    """Representation of a sensor."""
 
-    return True
+    def __init__(
+        self,
+        entity_description: SensorEntityDescription,
+        coordinator: MyDolphinPlusCoordinator,
+    ):
+        super().__init__(coordinator)
 
+        device_info = coordinator.get_device()
+        device_name = device_info.get("name")
+        identifiers = device_info.get("identifiers")
+        serial_number = list(identifiers)[0][1]
 
-async def async_remove_entry(hass, entry) -> None:
-    _LOGGER.info(f"Remove entry for {CoreSensor.get_domain()} entry: {entry}")
+        entity_name = f"{device_name} {entity_description.name}"
+
+        slugify_name = slugify(entity_name)
+
+        unique_id = slugify(f"{Platform.SENSOR}_{serial_number}_{slugify_name}")
+
+        self.entity_description = entity_description
+
+        self._attr_device_info = device_info
+        self._attr_name = entity_name
+        self._attr_unique_id = unique_id
+        self._attr_device_class = entity_description.device_class
+
+    @property
+    def _local_coordinator(self) -> MyDolphinPlusCoordinator:
+        return self.coordinator
+
+    def _handle_coordinator_update(self) -> None:
+        """Fetch new state parameters for the sensor."""
+        device_data = self._local_coordinator.get_data(self.entity_description)
+        state = device_data.get(ATTR_STATE)
+        attributes = device_data.get(ATTR_ATTRIBUTES)
+        icon = device_data.get(ATTR_ICON)
+
+        self._attr_state = state
+        self._attr_extra_state_attributes = attributes
+
+        if icon is not None:
+            self._attr_icon = icon
+
+        self.async_write_ha_state()

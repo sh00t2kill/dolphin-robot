@@ -1,19 +1,37 @@
-"""
-Support for MyDolphin Plus.
-For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/switch.mydolphin_plus/
-"""
 import calendar
 from datetime import timedelta
 
 import voluptuous as vol
 
 from homeassistant.components.vacuum import VacuumEntityFeature
-from homeassistant.const import CONF_ENABLED, CONF_MODE
+from homeassistant.const import (
+    CONF_ENABLED,
+    CONF_MODE,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    Platform,
+)
 import homeassistant.helpers.config_validation as cv
 
-VERSION = "0.0.3"
+MANUFACTURER = "Maytronics"
+DEFAULT_NAME = "MyDolphin Plus"
+DOMAIN = "mydolphin_plus"
+DATA = f"{DOMAIN}_DATA"
+LEGACY_KEY_FILE = f"{DOMAIN}.key"
 
+SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW = f"{DOMAIN}_NEW_DEVICE_SIGNAL"
+
+CONFIGURATION_URL = "https://www.maytronics.com/"
+
+PLATFORMS = [
+    Platform.SELECT,
+    Platform.LIGHT,
+    Platform.BINARY_SENSOR,
+    Platform.SELECT,
+    Platform.VACUUM,
+]
+
+ATTR_IS_ON = "is_on"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_START_TIME = "start_time"
 ATTR_STATUS = "status"
@@ -110,6 +128,7 @@ DEFAULT_BATTERY_LEVEL = "NA"
 UPDATE_API_INTERVAL = timedelta(seconds=60)
 UPDATE_ENTITIES_INTERVAL = timedelta(seconds=1)
 LOCATE_OFF_INTERVAL_SECONDS = timedelta(seconds=10)
+API_RECONNECT_INTERVAL = timedelta(minutes=30)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
 WS_LAST_UPDATE = "last-update"
@@ -192,6 +211,8 @@ DATA_ROBOT_DETAILS = {
 }
 
 ATTR_LED_MODE = "led_mode"
+ATTR_ATTRIBUTES = "attributes"
+ATTR_ACTIONS = "actions"
 
 CLEANING_MODE_REGULAR = "all"
 CLEANING_MODE_FAST_MODE = "short"
@@ -383,9 +404,34 @@ VACUUM_FEATURES = (
     | VacuumEntityFeature.LOCATE
 )
 
+STORAGE_DATA_KEY = "key"
 STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
 
 STORAGE_DATA_FILE_CONFIG = "config"
 
 STORAGE_DATA_FILES = [STORAGE_DATA_FILE_CONFIG]
+
+DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]
+
+DATA_KEY_VACUUM = "Vacuum"
+DATA_KEY_LED_MODE = "LED Mode"
+DATA_KEY_LED = "LED"
+DATA_KEY_FILTER_STATUS = "Filter Status"
+DATA_KEY_CYCLE_TIME = "Cycle Time"
+DATA_KEY_CYCLE_TIME_LEFT = "Cycle Time Left"
+DATA_KEY_AWS_BROKER = "AWS Broker"
+DATA_KEY_WEEKLY_SCHEDULE = "Weekly Schedule"
+DATA_KEY_SCHEDULE = "Schedule"
+
+ACTION_ENTITY_RETURN_TO_BASE = "return_to_base"
+ACTION_ENTITY_SET_FAN_SPEED = "set_fan_speed"
+ACTION_ENTITY_START = "start"
+ACTION_ENTITY_STOP = "stop"
+ACTION_ENTITY_PAUSE = "stop"
+ACTION_ENTITY_TURN_ON = "turn_on"
+ACTION_ENTITY_TURN_OFF = "turn_off"
+ACTION_ENTITY_TOGGLE = "toggle"
+ACTION_ENTITY_SEND_COMMAND = "send_command"
+ACTION_ENTITY_LOCATE = "locate"
+ACTION_ENTITY_SELECT_OPTION = "select_option"
