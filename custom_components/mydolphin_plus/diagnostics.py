@@ -32,26 +32,27 @@ def _async_get_diagnostics(
     """Return diagnostics for a config entry."""
     _LOGGER.debug("Getting diagnostic information")
 
+    device_data = coordinator.get_device()
+    identifiers = device_data.get("identifiers")
     data = coordinator.get_device_debug_data()
-    serial_number = coordinator.get_device_serial_number()
 
     data["disabled_by"] = entry.disabled_by
     data["disabled_polling"] = entry.pref_disable_polling
 
     _LOGGER.debug("Getting diagnostic information for all devices")
 
-    data.update(device=_async_device_as_dict(hass, serial_number))
+    data.update(device=_async_device_as_dict(hass, identifiers))
 
     return data
 
 
 @callback
-def _async_device_as_dict(hass: HomeAssistant, unique_id) -> dict[str, Any]:
+def _async_device_as_dict(hass: HomeAssistant, identifiers) -> dict[str, Any]:
     """Represent a Shinobi monitor as a dictionary."""
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
 
-    ha_device = device_registry.async_get_device(identifiers={(DOMAIN, unique_id)})
+    ha_device = device_registry.async_get_device(identifiers=identifiers)
     data = {}
 
     if ha_device:

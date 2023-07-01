@@ -16,9 +16,8 @@ class ConnectivityStatus(StrEnum):
 
     @staticmethod
     def get_log_level(status: StrEnum) -> int:
-        if status == ConnectivityStatus.Connected:
-            return logging.DEBUG
-        elif status in [
+        if status in [
+            ConnectivityStatus.Connected,
             ConnectivityStatus.Disconnected,
             ConnectivityStatus.TemporaryConnected,
         ]:

@@ -49,6 +49,27 @@
           "fault": "Fault",
           "not_available": "Not available"
         }
+      },
+      "robot_status": {
+        "state": {
+          "finished": "Finished",
+          "fault": "Fault",
+          "notConnected": "Not connected",
+          "programming": "Programming",
+          "init": "Initialized",
+          "scanning": "Scanning"
+        }
+      },
+      "main_unit_status": {
+        "state": {
+          "on": "On",
+          "off": "Off",
+          "holdDelay": "Hold delay schedule",
+          "holdWeekly": "Hold weekly schedule",
+          "programming": "Programming",
+          "error": "Error",
+          "cleaning": "Cleaning"
+        }
       }
     },
     "select": {

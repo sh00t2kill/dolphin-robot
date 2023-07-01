@@ -3,6 +3,25 @@
 ## v0.4.0
 
 - Refactor code to support HA coordinator
+- Improve reconnection when AWS Broker gets disconnected
+- Remove integration options (Edit configuration)
+- Fix vacuum on/off states
+- Improve diagnostic data
+- New components
+  - Sensor: Clean Mode
+  - Sensor: Cycle Count
+  - Sensor: Main Unit Status
+  - Sensor: Robot Status
+  - Sensor: Robot Type
+  - Sensor: RSSI
+  - Sensor: Network Name
+  - Sensor: Status (Calculated Status)
+- Support translation for
+  - Vacuum - Fan Speed
+  - Sensor - Filter Status
+  - Sensor - Robot Status
+  - Sensor - Main Unit Status
+  - Select - LED Mode
 
 ## v0.3.4
 

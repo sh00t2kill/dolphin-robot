@@ -105,11 +105,13 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         key=slugify(DATA_KEY_MAIN_UNIT_STATUS),
         name=DATA_KEY_MAIN_UNIT_STATUS,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_MAIN_UNIT_STATUS),
     ),
     SensorEntityDescription(
-        key=slugify(DATA_KEY_ROBOT_TYPE),
+        key=slugify(DATA_KEY_ROBOT_STATUS),
         name=DATA_KEY_ROBOT_STATUS,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_ROBOT_STATUS),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_ROBOT_TYPE),
