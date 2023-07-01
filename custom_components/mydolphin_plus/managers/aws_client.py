@@ -266,7 +266,7 @@ class AWSClient:
             payload = {} if has_message else json.loads(message_payload)
 
             motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
-            _LOGGER.info(
+            _LOGGER.debug(
                 f"Message received for device {motor_unit_serial}, Topic: {message_topic}"
             )
 

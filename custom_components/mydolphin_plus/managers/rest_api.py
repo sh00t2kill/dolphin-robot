@@ -236,8 +236,7 @@ class RestAPI:
             _LOGGER.debug("Connected. Refresh details")
             await self._load_details()
 
-            for key in self.data:
-                _LOGGER.info(f"{key}: {self.data[key]}")
+            _LOGGER.info(f"API Data updated: {self.data}")
 
     async def _login(self):
         await self._service_login()

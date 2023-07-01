@@ -188,6 +188,9 @@ class MyDolphinPlusLightEntity(CoordinatorEntity, StateVacuumEntity, ABC):
                 self._attr_extra_state_attributes = attributes
                 self._attr_fan_speed = fan_speed
 
+            else:
+                self._attr_state = None
+
             self.async_write_ha_state()
 
         except Exception as ex:

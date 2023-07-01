@@ -113,6 +113,9 @@ class MyDolphinPlusLightEntity(CoordinatorEntity, LightEntity, ABC):
                 self._attr_is_on = is_on
                 self._attr_extra_state_attributes = attributes
 
+            else:
+                self._attr_is_on = None
+
             self.async_write_ha_state()
 
         except Exception as ex:

@@ -100,6 +100,9 @@ class MyDolphinPlusSelectEntity(CoordinatorEntity, SelectEntity, ABC):
                 self._attr_current_option = state
                 self._attr_extra_state_attributes = attributes
 
+            else:
+                self._attr_current_option = self.entity_description.options[0]
+
             self.async_write_ha_state()
 
         except Exception as ex:

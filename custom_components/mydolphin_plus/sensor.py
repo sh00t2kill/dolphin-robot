@@ -93,6 +93,9 @@ class MyDolphinPlusSensorEntity(CoordinatorEntity, SensorEntity):
                 if icon is not None:
                     self._attr_icon = icon
 
+            else:
+                self._attr_native_value = None
+
             self.async_write_ha_state()
 
         except Exception as ex:

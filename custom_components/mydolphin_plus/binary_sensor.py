@@ -102,6 +102,9 @@ class MyDolphinPlusBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
                 if icon is not None:
                     self._attr_icon = icon
 
+            else:
+                self._attr_is_on = None
+
             self.async_write_ha_state()
 
         except Exception as ex:

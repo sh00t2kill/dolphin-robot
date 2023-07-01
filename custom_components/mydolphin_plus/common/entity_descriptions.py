@@ -89,7 +89,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         name=DATA_KEY_RSSI,
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-        unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_NETWORK_NAME),
