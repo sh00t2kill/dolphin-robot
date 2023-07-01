@@ -18,7 +18,10 @@ class ConnectivityStatus(StrEnum):
     def get_log_level(status: StrEnum) -> int:
         if status == ConnectivityStatus.Connected:
             return logging.DEBUG
-        elif status in [ConnectivityStatus.Disconnected]:
+        elif status in [
+            ConnectivityStatus.Disconnected,
+            ConnectivityStatus.TemporaryConnected,
+        ]:
             return logging.INFO
         elif status in [ConnectivityStatus.NotConnected, ConnectivityStatus.Connecting]:
             return logging.WARNING

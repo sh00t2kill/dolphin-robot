@@ -1,3 +1,4 @@
+import logging
 from os import path, remove
 
 from cryptography.fernet import Fernet
@@ -16,12 +17,16 @@ from ..common.consts import (
     STORAGE_DATA_LOCATING,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class ConfigManager:
     _encryption_key: str | None
     _crypto: Fernet | None
     _store: Store | None
     _data: dict | None
+
+    _password: str | None
 
     def __init__(self, hass: HomeAssistant | None, entry: ConfigEntry | None = None):
         self._hass = hass
@@ -31,6 +36,8 @@ class ConfigManager:
         self._store = None
 
         self._data = None
+
+        self._password = None
 
         if entry is not None:
             file_name = f"{DOMAIN}.{entry.entry_id}.config.json"
@@ -62,32 +69,39 @@ class ConfigManager:
         return username
 
     @property
+    def password_hashed(self) -> str:
+        password_hashed = self._encrypt(self.password)
+
+        return password_hashed
+
+    @property
     def password(self) -> str:
-        password_hashed = self._data.get(CONF_PASSWORD)
-        password = self._decrypt(password_hashed)
+        password = self._data.get(CONF_PASSWORD)
 
         return password
 
     @property
     def aws_token_encrypted_key(self) -> str | None:
-        is_locating = self._data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY, False)
+        key = self._data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
 
-        return is_locating
+        return key
 
     async def initialize(self):
         await self._load()
 
         if self._entry is not None:
+            password_hashed = self._entry.data.get(CONF_PASSWORD)
+            password = None
+
+            if password_hashed is not None:
+                password = self._decrypt(password_hashed)
+
             self._data[CONF_USERNAME] = self._entry.data.get(CONF_USERNAME)
-            self._data[CONF_PASSWORD] = self._entry.data.get(CONF_PASSWORD)
+            self._data[CONF_PASSWORD] = password
 
     def update_credentials(self, data: dict):
-        password = data[CONF_PASSWORD]
-
-        password_hashed = self._encrypt(password)
-
         self._data[CONF_USERNAME] = data[CONF_USERNAME]
-        self._data[CONF_PASSWORD] = password_hashed
+        self._data[CONF_PASSWORD] = data[CONF_PASSWORD]
 
     async def update_aws_token_encrypted_key(self, key: str):
         self._data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = key
@@ -120,7 +134,7 @@ class ConfigManager:
                 await self._import_encryption_key()
 
         else:
-            self._encryption_key = config_data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
+            self._encryption_key = config_data.get(STORAGE_DATA_KEY)
 
         if self._encryption_key is None:
             self._encryption_key = Fernet.generate_key().decode("utf-8")

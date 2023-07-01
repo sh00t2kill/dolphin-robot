@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from base64 import b64encode
+from collections.abc import Awaitable
 import hashlib
 import logging
 import secrets
 import sys
-from types import coroutine
+from typing import Callable
 
 from aiohttp import ClientResponseError, ClientSession
 from cryptography.hazmat.backends import default_backend
@@ -13,7 +14,6 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
@@ -39,7 +39,6 @@ from ..common.consts import (
     MAXIMUM_ATTEMPTS_GET_AWS_TOKEN,
     ROBOT_DETAILS_BY_SN_URL,
     ROBOT_DETAILS_URL,
-    SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW,
     STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     TOKEN_URL,
 )
@@ -56,15 +55,15 @@ class RestAPI:
     _status: ConnectivityStatus | None
     _session: ClientSession | None
     _config_manager: ConfigManager
-    _on_status_changed: coroutine
+    _on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None
 
-    _dispatched_devices: dict
+    _dispatched_devices: list
 
     def __init__(
         self,
         hass: HomeAssistant | None,
         config_manager: ConfigManager,
-        on_status_changed: coroutine,
+        on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None,
     ):
         try:
             self.hass = hass
@@ -72,12 +71,14 @@ class RestAPI:
             self.data = {}
 
             self._config_manager = config_manager
-            self._on_status_changed = on_status_changed
+            self._on_status_changed = (
+                self._do_nothing if on_status_changed is None else on_status_changed
+            )
 
             self._status = None
 
             self._session = None
-            self._dispatched_devices = {}
+            self._dispatched_devices = []
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -120,6 +121,9 @@ class RestAPI:
     @property
     def _is_home_assistant(self):
         return self.hass is not None
+
+    async def _do_nothing(self, _status: ConnectivityStatus):
+        pass
 
     async def initialize(self, aws_token_encrypted_key: str | None):
         _LOGGER.info("Initializing MyDolphin API")
@@ -308,15 +312,6 @@ class RestAPI:
 
                 await self._set_status(ConnectivityStatus.TemporaryConnected)
 
-            if serial_serial not in self._dispatched_devices:
-                self._dispatched_devices.append(serial_serial)
-
-                async_dispatcher_send(
-                    self._hass,
-                    SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW,
-                    serial_serial,
-                )
-
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -362,9 +357,10 @@ class RestAPI:
 
                     await self._set_status(ConnectivityStatus.Connected)
 
-                    _LOGGER.debug(
-                        f"Retrieved AWS token after {get_token_attempts} attempts"
-                    )
+                    if get_token_attempts > 0:
+                        _LOGGER.debug(
+                            f"Retrieved AWS token after {get_token_attempts} attempts"
+                        )
 
                     get_token_attempts = MAXIMUM_ATTEMPTS_GET_AWS_TOKEN
 

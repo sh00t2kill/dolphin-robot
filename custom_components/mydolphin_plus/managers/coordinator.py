@@ -2,6 +2,7 @@ from asyncio import sleep
 import calendar
 from datetime import datetime, timedelta
 import logging
+import sys
 from typing import Any, Callable
 
 from voluptuous import MultipleInvalid
@@ -18,6 +19,7 @@ from homeassistant.const import (
 )
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import slugify
 
 from ..common.common import get_cleaning_mode_name, get_date_time_from_timestamp
 from ..common.connectivity_status import ConnectivityStatus
@@ -69,14 +71,23 @@ from ..common.consts import (
     DATA_FEATURE_WEEKLY_TIMER,
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
     DATA_KEY_AWS_BROKER,
+    DATA_KEY_BUSY,
+    DATA_KEY_CLEAN_MODE,
+    DATA_KEY_CYCLE_COUNT,
     DATA_KEY_CYCLE_TIME,
     DATA_KEY_CYCLE_TIME_LEFT,
     DATA_KEY_FILTER_STATUS,
     DATA_KEY_LED,
     DATA_KEY_LED_MODE,
+    DATA_KEY_MAIN_UNIT_STATUS,
+    DATA_KEY_NETWORK_NAME,
+    DATA_KEY_ROBOT_STATUS,
+    DATA_KEY_ROBOT_TYPE,
+    DATA_KEY_RSSI,
     DATA_KEY_SCHEDULE,
+    DATA_KEY_STATUS,
     DATA_KEY_VACUUM,
-    DATA_KEY_WEEKLY_SCHEDULE,
+    DATA_KEY_WEEKLY_SCHEDULER,
     DATA_LED_ENABLE,
     DATA_LED_INTENSITY,
     DATA_LED_MODE,
@@ -114,7 +125,6 @@ from ..common.consts import (
     ICON_LED_MODES,
     LED_MODE_BLINKING,
     LED_MODE_ICON_DEFAULT,
-    LED_MODES_NAMES,
     MANUFACTURER,
     PWS_STATE_CLEANING,
     PWS_STATE_ERROR,
@@ -193,6 +203,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return data
 
     async def initialize(self):
+        self._build_data_mapping()
+
         await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
     def get_device_serial_number(self) -> str:
@@ -307,37 +319,59 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     def _build_data_mapping(self):
         data_mapping = {
-            DATA_KEY_VACUUM: self._get_vacuum_data,
-            DATA_KEY_LED_MODE: self._get_led_mode_data,
-            DATA_KEY_LED: self._get_led_data,
-            DATA_KEY_FILTER_STATUS: self._get_filter_status_data,
-            DATA_KEY_CYCLE_TIME: self._get_cycle_time_data,
-            DATA_KEY_CYCLE_TIME_LEFT: self._get_cycle_time_left_data,
-            DATA_KEY_AWS_BROKER: self._get_aws_broker_data,
-            DATA_KEY_WEEKLY_SCHEDULE: self._get_weekly_schedule,
+            slugify(DATA_KEY_STATUS): self._get_status_data,
+            slugify(DATA_KEY_RSSI): self._get_rssi_data,
+            slugify(DATA_KEY_NETWORK_NAME): self._get_network_name_data,
+            slugify(DATA_KEY_CLEAN_MODE): self._get_clean_mode_data,
+            slugify(DATA_KEY_MAIN_UNIT_STATUS): self._get_main_unit_status_data,
+            slugify(DATA_KEY_ROBOT_STATUS): self._get_robot_status_data,
+            slugify(DATA_KEY_ROBOT_TYPE): self._get_robot_type_data,
+            slugify(DATA_KEY_BUSY): self._get_busy_data,
+            slugify(DATA_KEY_CYCLE_COUNT): self._get_cycle_count_data,
+            slugify(DATA_KEY_VACUUM): self._get_vacuum_data,
+            slugify(DATA_KEY_LED_MODE): self._get_led_mode_data,
+            slugify(DATA_KEY_LED): self._get_led_data,
+            slugify(DATA_KEY_FILTER_STATUS): self._get_filter_status_data,
+            slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
+            slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
+            slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
+            slugify(DATA_KEY_WEEKLY_SCHEDULER): self._get_weekly_schedule,
         }
 
         schedules = list(calendar.day_name)
         schedules.append(DATA_SECTION_DELAY)
 
         for day in schedules:
-            data_mapping[f"{DATA_KEY_SCHEDULE} {day}"] = self._get_daily_schedule_data
+            data_mapping[
+                slugify(f"{DATA_KEY_SCHEDULE} {day}")
+            ] = self._get_daily_schedule_data
 
-        self._data_mapping: dict[
-            str, Callable[[EntityDescription], dict]
-        ] = data_mapping
+        self._data_mapping = data_mapping
+
+        _LOGGER.debug(f"Data retrieval mapping created, Mapping: {self._data_mapping}")
 
     def get_data(self, entity_description: EntityDescription) -> dict | None:
-        handler = self._data_mapping.get(entity_description.key)
         result = None
 
-        if handler is None:
-            _LOGGER.error(
-                f"Handler was not found for {entity_description.key}, Entity Description: {entity_description}"
-            )
+        try:
+            handler = self._data_mapping.get(entity_description.key)
 
-        else:
-            result = handler(entity_description)
+            if handler is None:
+                _LOGGER.error(
+                    f"Handler was not found for {entity_description.key}, Entity Description: {entity_description}"
+                )
+
+            else:
+                if self._system_status_details is not None:
+                    result = handler(entity_description)
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
@@ -350,270 +384,571 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return async_action
 
-    def _get_vacuum_data(self, _entity_description) -> dict | None:
-        data = self.aws_data
+    def _get_status_data(self, entity_description) -> dict | None:
+        result = None
 
-        details = self._system_status_details
+        try:
+            data = self.aws_data
 
-        debug = data.get(DATA_SECTION_DEBUG, {})
-        wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
+            details = self._system_status_details
 
-        wifi = data.get(DATA_SECTION_WIFI, {})
-        net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
+            debug = data.get(DATA_SECTION_DEBUG, {})
+            wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
 
-        cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
-        cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
-        mode_name = get_cleaning_mode_name(mode)
+            wifi = data.get(DATA_SECTION_WIFI, {})
+            net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
 
-        state = details.get(ATTR_CALCULATED_STATUS)
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+            mode_name = get_cleaning_mode_name(mode)
 
-        attributes = {
-            ATTR_RSSI: wifi_rssi,
-            ATTR_NETWORK_NAME: net_name,
-            ATTR_BATTERY_LEVEL: DEFAULT_BATTERY_LEVEL,
-            ATTR_MODE: mode_name,
-        }
+            state = details.get(ATTR_CALCULATED_STATUS)
 
-        for key in details:
-            attributes[key] = details.get(key)
+            attributes = {
+                ATTR_RSSI: wifi_rssi,
+                ATTR_NETWORK_NAME: net_name,
+                ATTR_BATTERY_LEVEL: DEFAULT_BATTERY_LEVEL,
+                ATTR_MODE: mode_name,
+            }
 
-        result = {
-            ATTR_STATE: state,
-            ATTR_ATTRIBUTES: attributes,
-            ATTR_ACTIONS: {
-                ACTION_ENTITY_TURN_ON: self._vacuum_turn_on,
-                ACTION_ENTITY_TURN_OFF: self._vacuum_turn_off,
-                ACTION_ENTITY_TOGGLE: self._vacuum_toggle,
-                ACTION_ENTITY_START: self._vacuum_start,
-                ACTION_ENTITY_STOP: self._vacuum_stop,
-                ACTION_ENTITY_PAUSE: self._vacuum_pause,
-                ACTION_ENTITY_SET_FAN_SPEED: self._set_cleaning_mode,
-                ACTION_ENTITY_LOCATE: self._vacuum_locate,
-                ACTION_ENTITY_SEND_COMMAND: self._send_command,
-                ACTION_ENTITY_RETURN_TO_BASE: self._pickup,
-            },
-        }
+            for key in details:
+                attributes[key] = details.get(key)
 
-        return result
+            result = {
+                ATTR_STATE: state,
+                ATTR_ATTRIBUTES: attributes,
+            }
 
-    def _get_led_mode_data(self, _entity_description) -> dict | None:
-        data = self.aws_data
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
 
-        led = data.get(DATA_SECTION_LED, {})
-        led_mode = str(led.get(DATA_LED_MODE, LED_MODE_BLINKING))
-        led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
-        led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
-
-        result = {
-            ATTR_STATE: LED_MODES_NAMES.get(led_mode),
-            ATTR_ATTRIBUTES: {
-                CONF_ENABLED: led_enable,
-                ATTR_INTENSITY: led_intensity,
-            },
-            ATTR_ICON: ICON_LED_MODES.get(led_mode, LED_MODE_ICON_DEFAULT),
-            ATTR_ACTIONS: {ACTION_ENTITY_SELECT_OPTION: self._set_led_mode},
-        }
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
-    def _get_led_data(self, _entity_description) -> dict | None:
-        data = self.aws_data
+    def _get_rssi_data(self, entity_description) -> dict | None:
+        result = None
 
-        led = data.get(DATA_SECTION_LED, {})
-        led_mode = led.get(DATA_LED_MODE, LED_MODE_BLINKING)
-        led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
-        led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
+        try:
+            data = self.aws_data
 
-        result = {
-            ATTR_IS_ON: led_enable,
-            ATTR_ATTRIBUTES: {
-                ATTR_MODE: led_mode,
-                ATTR_INTENSITY: led_intensity,
-            },
-            ATTR_ACTIONS: {
-                ACTION_ENTITY_TURN_ON: self._set_led_enabled,
-                ACTION_ENTITY_TURN_OFF: self._set_led_disabled,
-            },
-        }
+            debug = data.get(DATA_SECTION_DEBUG, {})
+            wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
+
+            wifi = data.get(DATA_SECTION_WIFI, {})
+            net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
+
+            attributes = {ATTR_NETWORK_NAME: net_name}
+
+            result = {
+                ATTR_STATE: wifi_rssi,
+                ATTR_ATTRIBUTES: attributes,
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
-    def _get_weekly_schedule(self, _entity_description) -> dict | None:
-        data = self.aws_data
+    def _get_network_name_data(self, entity_description) -> dict | None:
+        result = None
 
-        features = data.get(DATA_SECTION_FEATURE, {})
+        try:
+            data = self.aws_data
 
-        weekly_timer = features.get(DATA_FEATURE_WEEKLY_TIMER, {})
-        status = weekly_timer.get(ATTR_STATUS, ATTR_DISABLED)
+            wifi = data.get(DATA_SECTION_WIFI, {})
+            net_name = wifi.get(DATA_WIFI_NETWORK_NAME)
 
-        is_enabled = status == ATTR_ENABLE
+            result = {ATTR_STATE: net_name}
 
-        result = {
-            ATTR_IS_ON: is_enabled,
-            ATTR_ATTRIBUTES: {ATTR_STATUS: status},
-            ATTR_ICON: "mdi:calendar-check" if is_enabled else "mdi:calendar-remove",
-        }
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_clean_mode_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            data = self.aws_data
+
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+            mode_name = get_cleaning_mode_name(mode)
+
+            result = {ATTR_STATE: mode_name}
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_main_unit_status_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            details = self._system_status_details
+
+            state = details.get(ATTR_PWS_STATUS)
+
+            result = {ATTR_STATE: state}
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_robot_status_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            details = self._system_status_details
+
+            state = details.get(ATTR_ROBOT_STATUS)
+
+            result = {ATTR_STATE: state}
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_robot_type_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            details = self._system_status_details
+
+            state = details.get(ATTR_ROBOT_TYPE)
+
+            result = {ATTR_STATE: state}
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_busy_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            details = self._system_status_details
+
+            is_on = details.get(ATTR_IS_BUSY)
+
+            result = {ATTR_IS_ON: is_on}
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_cycle_count_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            details = self._system_status_details
+
+            state = details.get(ATTR_TURN_ON_COUNT)
+
+            result = {ATTR_STATE: state}
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_vacuum_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            data = self.aws_data
+
+            details = self._system_status_details
+
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+
+            state = details.get(ATTR_CALCULATED_STATUS)
+
+            result = {
+                ATTR_STATE: state,
+                ATTR_ATTRIBUTES: {ATTR_MODE: mode},
+                ATTR_ACTIONS: {
+                    ACTION_ENTITY_TURN_ON: self._vacuum_turn_on,
+                    ACTION_ENTITY_TURN_OFF: self._vacuum_turn_off,
+                    ACTION_ENTITY_TOGGLE: self._vacuum_toggle,
+                    ACTION_ENTITY_START: self._vacuum_start,
+                    ACTION_ENTITY_STOP: self._vacuum_stop,
+                    ACTION_ENTITY_PAUSE: self._vacuum_pause,
+                    ACTION_ENTITY_SET_FAN_SPEED: self._set_cleaning_mode,
+                    ACTION_ENTITY_LOCATE: self._vacuum_locate,
+                    ACTION_ENTITY_SEND_COMMAND: self._send_command,
+                    ACTION_ENTITY_RETURN_TO_BASE: self._pickup,
+                },
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_led_mode_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            data = self.aws_data
+
+            led = data.get(DATA_SECTION_LED, {})
+            led_mode = str(led.get(DATA_LED_MODE, LED_MODE_BLINKING))
+            led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
+            led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
+
+            result = {
+                ATTR_STATE: led_mode,
+                ATTR_ATTRIBUTES: {
+                    CONF_ENABLED: led_enable,
+                    ATTR_INTENSITY: led_intensity,
+                },
+                ATTR_ICON: ICON_LED_MODES.get(led_mode, LED_MODE_ICON_DEFAULT),
+                ATTR_ACTIONS: {ACTION_ENTITY_SELECT_OPTION: self._set_led_mode},
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_led_data(self, entity_description) -> dict | None:
+        result = None
+
+        try:
+            data = self.aws_data
+
+            led = data.get(DATA_SECTION_LED, {})
+            led_mode = led.get(DATA_LED_MODE, LED_MODE_BLINKING)
+            led_intensity = led.get(DATA_LED_INTENSITY, DEFAULT_LED_INTENSITY)
+            led_enable = led.get(DATA_LED_ENABLE, DEFAULT_ENABLE)
+
+            result = {
+                ATTR_IS_ON: led_enable,
+                ATTR_ATTRIBUTES: {
+                    ATTR_MODE: led_mode,
+                    ATTR_INTENSITY: led_intensity,
+                },
+                ATTR_ACTIONS: {
+                    ACTION_ENTITY_TURN_ON: self._set_led_enabled,
+                    ACTION_ENTITY_TURN_OFF: self._set_led_disabled,
+                },
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_weekly_schedule(self, entity_description) -> dict | None:
+        result = None
+        try:
+            data = self.aws_data
+
+            features = data.get(DATA_SECTION_FEATURE, {})
+
+            weekly_timer = features.get(DATA_FEATURE_WEEKLY_TIMER, {})
+            status = weekly_timer.get(ATTR_STATUS, ATTR_DISABLED)
+
+            is_enabled = status == ATTR_ENABLE
+
+            result = {
+                ATTR_IS_ON: is_enabled,
+                ATTR_ATTRIBUTES: {ATTR_STATUS: status},
+                ATTR_ICON: "mdi:calendar-check"
+                if is_enabled
+                else "mdi:calendar-remove",
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
     def _get_daily_schedule_data(self, entity_description) -> dict | None:
-        data = self.aws_data
+        result = None
+        try:
+            data = self.aws_data
 
-        local_entity: MyDolphinPlusDailyBinarySensorEntityDescription = (
-            entity_description
-        )
+            local_entity: MyDolphinPlusDailyBinarySensorEntityDescription = (
+                entity_description
+            )
 
-        if local_entity.day == DATA_SECTION_DELAY:
-            schedule_settings = data.get(local_entity.day, {})
+            if local_entity.day == DATA_SECTION_DELAY:
+                schedule_settings = data.get(local_entity.day, {})
 
-        else:
-            weekly_settings = data.get(DATA_SECTION_WEEKLY_SETTINGS, {})
+            else:
+                weekly_settings = data.get(DATA_SECTION_WEEKLY_SETTINGS, {})
 
-            schedule_settings = weekly_settings.get(local_entity.day.lower(), {})
+                schedule_settings = weekly_settings.get(local_entity.day.lower(), {})
 
-        is_enabled = schedule_settings.get(DATA_SCHEDULE_IS_ENABLED, DEFAULT_ENABLE)
-        cleaning_mode = schedule_settings.get(DATA_SCHEDULE_CLEANING_MODE, {})
-        job_time = schedule_settings.get(DATA_SCHEDULE_TIME, {})
+            is_enabled = schedule_settings.get(DATA_SCHEDULE_IS_ENABLED, DEFAULT_ENABLE)
+            cleaning_mode = schedule_settings.get(DATA_SCHEDULE_CLEANING_MODE, {})
+            job_time = schedule_settings.get(DATA_SCHEDULE_TIME, {})
 
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
-        mode_name = get_cleaning_mode_name(mode)
-        hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, DEFAULT_TIME_PART)
-        minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, DEFAULT_TIME_PART)
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+            mode_name = get_cleaning_mode_name(mode)
+            hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, DEFAULT_TIME_PART)
+            minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, DEFAULT_TIME_PART)
 
-        job_start_time = None
-        if hours < DEFAULT_TIME_PART and minutes < DEFAULT_TIME_PART:
-            job_start_time = str(timedelta(hours=hours, minutes=minutes))
+            job_start_time = None
+            if hours < DEFAULT_TIME_PART and minutes < DEFAULT_TIME_PART:
+                job_start_time = str(timedelta(hours=hours, minutes=minutes))
 
-        result = {
-            ATTR_IS_ON: is_enabled,
-            ATTR_ATTRIBUTES: {
-                ATTR_MODE: mode_name,
-                ATTR_START_TIME: job_start_time,
-            },
-            ATTR_ICON: "mdi:calendar-check" if is_enabled else "mdi:calendar-remove",
-        }
+            result = {
+                ATTR_IS_ON: is_enabled,
+                ATTR_ATTRIBUTES: {
+                    ATTR_MODE: mode_name,
+                    ATTR_START_TIME: job_start_time,
+                },
+                ATTR_ICON: "mdi:calendar-check"
+                if is_enabled
+                else "mdi:calendar-remove",
+            }
 
-        return result
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
 
-    def _get_filter_status_data(self, _entity_description) -> dict | None:
-        data = self.aws_data
-
-        filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
-        filter_state = filter_bag_indication.get(CONF_STATE, -1)
-        reset_fbi = filter_bag_indication.get(
-            DATA_FILTER_BAG_INDICATION_RESET_FBI, False
-        )
-        state = None
-
-        for state_name in FILTER_BAG_STATUS:
-            state_range = FILTER_BAG_STATUS.get(state_name)
-            state_range_min = int(state_range[0])
-            state_range_max = int(state_range[1])
-
-            is_in_range = state_range_max >= filter_state >= state_range_min
-
-            if is_in_range:
-                state = state_name
-                break
-
-        result = {
-            ATTR_STATE: state,
-            ATTR_ATTRIBUTES: {
-                ATTR_RESET_FBI: reset_fbi,
-                ATTR_STATUS: filter_state,
-            },
-            ATTR_ICON: FILTER_BAG_ICONS.get(filter_state),
-        }
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
-    def _get_cycle_time_data(self, _entity_description) -> dict | None:
-        data = self.aws_data
+    def _get_filter_status_data(self, entity_description) -> dict | None:
+        result = None
+        try:
+            data = self.aws_data
 
-        cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
-        cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
-        mode_name = get_cleaning_mode_name(mode)
+            filter_bag_indication = data.get(DATA_SECTION_FILTER_BAG_INDICATION, {})
+            filter_state = filter_bag_indication.get(CONF_STATE, -1)
+            reset_fbi = filter_bag_indication.get(
+                DATA_FILTER_BAG_INDICATION_RESET_FBI, False
+            )
+            state = None
 
-        cycle_time_minutes = cleaning_mode.get(
-            DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0
-        )
-        cycle_time = timedelta(minutes=cycle_time_minutes)
-        cycle_time_hours = cycle_time / timedelta(hours=1)
+            for state_name in FILTER_BAG_STATUS:
+                state_range = FILTER_BAG_STATUS.get(state_name)
+                state_range_min = int(state_range[0])
+                state_range_max = int(state_range[1])
 
-        cycle_start_time_ts = cycle_info.get(
-            DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
-        )
-        cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
+                is_in_range = state_range_max >= filter_state >= state_range_min
 
-        result = {
-            ATTR_STATE: cycle_time_minutes,
-            ATTR_ATTRIBUTES: {
-                ATTR_MODE: mode_name,
-                ATTR_START_TIME: cycle_start_time,
-            },
-            ATTR_ICON: CLOCK_HOURS_ICONS.get(cycle_time_hours, "mdi:clock-time-twelve"),
-        }
+                if is_in_range:
+                    state = state_name
+                    break
 
-        return result
+            result = {
+                ATTR_STATE: state,
+                ATTR_ATTRIBUTES: {
+                    ATTR_RESET_FBI: reset_fbi,
+                    ATTR_STATUS: filter_state,
+                },
+                ATTR_ICON: FILTER_BAG_ICONS.get(filter_state),
+            }
 
-    def _get_cycle_time_left_data(self, _entity_description) -> dict | None:
-        data = self.aws_data
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
 
-        system_details = self._system_status_details
-        calculated_state = system_details.get(ATTR_CALCULATED_STATUS)
-
-        cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
-        cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
-        mode_name = get_cleaning_mode_name(mode)
-
-        cycle_time = cleaning_mode.get(DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0)
-        cycle_time_in_seconds = cycle_time * 60
-
-        cycle_start_time_ts = cycle_info.get(
-            DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
-        )
-        cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
-
-        now = datetime.now()
-        now_ts = now.timestamp()
-
-        expected_cycle_end_time_ts = cycle_time_in_seconds + cycle_start_time_ts
-        expected_cycle_end_time = get_date_time_from_timestamp(
-            expected_cycle_end_time_ts
-        )
-
-        seconds_left = 0
-        if (
-            calculated_state in [PWS_STATE_ON, PWS_STATE_CLEANING]
-            and expected_cycle_end_time_ts > now_ts
-        ):
-            seconds_left = expected_cycle_end_time_ts - now_ts
-
-        state = timedelta(seconds=seconds_left).total_seconds()
-        state_hours = int((expected_cycle_end_time - now) / timedelta(hours=1))
-
-        result = {
-            ATTR_STATE: state,
-            ATTR_ATTRIBUTES: {
-                ATTR_MODE: mode_name,
-                ATTR_START_TIME: cycle_start_time,
-                ATTR_EXPECTED_END_TIME: expected_cycle_end_time,
-            },
-            ATTR_ICON: CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
-        }
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
-    def _get_aws_broker_data(self, _entity_description) -> dict | None:
-        is_on = self._aws_client.status == ConnectivityStatus.Connected
+    def _get_cycle_time_data(self, entity_description) -> dict | None:
+        result = None
+        try:
+            data = self.aws_data
 
-        result = {
-            ATTR_IS_ON: is_on,
-            "attributes": {ATTR_STATUS: self._aws_client.status},
-        }
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+            mode_name = get_cleaning_mode_name(mode)
+
+            cycle_time_minutes = cleaning_mode.get(
+                DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0
+            )
+            cycle_time = timedelta(minutes=cycle_time_minutes)
+            cycle_time_hours = cycle_time / timedelta(hours=1)
+
+            cycle_start_time_ts = cycle_info.get(
+                DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
+            )
+            cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
+
+            result = {
+                ATTR_STATE: cycle_time_minutes,
+                ATTR_ATTRIBUTES: {
+                    ATTR_MODE: mode_name,
+                    ATTR_START_TIME: cycle_start_time,
+                },
+                ATTR_ICON: CLOCK_HOURS_ICONS.get(
+                    cycle_time_hours, "mdi:clock-time-twelve"
+                ),
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_cycle_time_left_data(self, entity_description) -> dict | None:
+        result = None
+        try:
+            data = self.aws_data
+
+            system_details = self._system_status_details
+            calculated_state = system_details.get(ATTR_CALCULATED_STATUS)
+
+            cycle_info = data.get(DATA_SECTION_CYCLE_INFO, {})
+            cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+            mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+            mode_name = get_cleaning_mode_name(mode)
+
+            cycle_time = cleaning_mode.get(DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0)
+            cycle_time_in_seconds = cycle_time * 60
+
+            cycle_start_time_ts = cycle_info.get(
+                DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
+            )
+            cycle_start_time = get_date_time_from_timestamp(cycle_start_time_ts)
+
+            now = datetime.now()
+            now_ts = now.timestamp()
+
+            expected_cycle_end_time_ts = cycle_time_in_seconds + cycle_start_time_ts
+            expected_cycle_end_time = get_date_time_from_timestamp(
+                expected_cycle_end_time_ts
+            )
+
+            seconds_left = 0
+            if (
+                calculated_state in [PWS_STATE_ON, PWS_STATE_CLEANING]
+                and expected_cycle_end_time_ts > now_ts
+            ):
+                seconds_left = expected_cycle_end_time_ts - now_ts
+
+            state = timedelta(seconds=seconds_left).total_seconds()
+            state_hours = int((expected_cycle_end_time - now) / timedelta(hours=1))
+
+            result = {
+                ATTR_STATE: state,
+                ATTR_ATTRIBUTES: {
+                    ATTR_MODE: mode_name,
+                    ATTR_START_TIME: cycle_start_time,
+                    ATTR_EXPECTED_END_TIME: expected_cycle_end_time,
+                },
+                ATTR_ICON: CLOCK_HOURS_ICONS.get(state_hours, "mdi:clock-time-twelve"),
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
+
+        return result
+
+    def _get_aws_broker_data(self, entity_description) -> dict | None:
+        result = None
+        try:
+            is_on = self._aws_client.status == ConnectivityStatus.Connected
+
+            result = {
+                ATTR_IS_ON: is_on,
+                "attributes": {ATTR_STATUS: self._aws_client.status},
+            }
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to extract data for {entity_description}, Error: {ex}, Line: {line_number}"
+            )
 
         return result
 
@@ -632,16 +967,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                     self._aws_client.set_cleaning_mode(cleaning_mode)
 
     async def _set_led_mode(self, option: str):
-        current_led_mode = LED_MODE_BLINKING
+        _LOGGER.debug(f"Change led mode, New: {option}")
 
-        for led_mode in LED_MODES_NAMES:
-            if LED_MODES_NAMES[led_mode] == option:
-                current_led_mode = led_mode
-                break
-
-        _LOGGER.debug(f"Change led mode, New: {option} ({current_led_mode})")
-
-        value = int(current_led_mode)
+        value = int(option)
 
         self._aws_client.set_led_mode(value)
 

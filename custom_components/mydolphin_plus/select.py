@@ -5,64 +5,44 @@ import sys
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_STATE, Platform
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
-from .common.consts import (
-    ACTION_ENTITY_SELECT_OPTION,
-    ATTR_ATTRIBUTES,
-    DOMAIN,
-    SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW,
-)
+from .common.consts import ACTION_ENTITY_SELECT_OPTION, ATTR_ATTRIBUTES, DOMAIN
 from .common.entity_descriptions import ENTITY_DESCRIPTIONS
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+CURRENT_DOMAIN = Platform.SELECT
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
-    @callback
-    def _async_device_new(serial_number):
-        try:
-            coordinator = hass.data[DOMAIN][entry.entry_id]
+    try:
+        coordinator = hass.data[DOMAIN][entry.entry_id]
 
-            device_data = coordinator.get_device()
-            identifiers = device_data.get("identifiers")
-            coordinator_serial_number = list(identifiers)[0][1]
+        entities = []
 
-            if coordinator_serial_number != serial_number:
-                return
+        for entity_description in ENTITY_DESCRIPTIONS:
+            if isinstance(entity_description, SelectEntityDescription):
+                entity = MyDolphinPlusSelectEntity(entity_description, coordinator)
 
-            entities = []
+                entities.append(entity)
 
-            for entity_description in ENTITY_DESCRIPTIONS:
-                if isinstance(entity_description, SelectEntityDescription):
-                    entity = MyDolphinPlusSelectEntity(entity_description, coordinator)
+        _LOGGER.debug(f"Setting up {CURRENT_DOMAIN} entities: {entities}")
 
-                    entities.append(entity)
+        async_add_entities(entities, True)
 
-            _LOGGER.debug(f"Setting up {Platform.SELECT} entities: {entities}")
+    except Exception as ex:
+        exc_type, exc_obj, tb = sys.exc_info()
+        line_number = tb.tb_lineno
 
-            async_add_entities(entities, True)
-
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to initialize {Platform.SELECT}, Error: {ex}, Line: {line_number}"
-            )
-
-    """Set up the binary sensor platform."""
-    entry.async_on_unload(
-        async_dispatcher_connect(
-            hass, SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW, _async_device_new
+        _LOGGER.error(
+            f"Failed to initialize {CURRENT_DOMAIN}, Error: {ex}, Line: {line_number}"
         )
-    )
 
 
 class MyDolphinPlusSelectEntity(CoordinatorEntity, SelectEntity, ABC):
@@ -86,7 +66,7 @@ class MyDolphinPlusSelectEntity(CoordinatorEntity, SelectEntity, ABC):
 
         slugify_name = slugify(entity_name)
 
-        unique_id = slugify(f"{Platform.BINARY_SENSOR}_{serial_number}_{slugify_name}")
+        unique_id = slugify(f"{CURRENT_DOMAIN}_{serial_number}_{slugify_name}")
 
         self.entity_description = entity_description
 
@@ -109,11 +89,23 @@ class MyDolphinPlusSelectEntity(CoordinatorEntity, SelectEntity, ABC):
 
     def _handle_coordinator_update(self) -> None:
         """Fetch new state parameters for the sensor."""
-        device_data = self._local_coordinator.get_data(self.entity_description)
-        state = device_data.get(ATTR_STATE)
-        attributes = device_data.get(ATTR_ATTRIBUTES)
+        try:
+            device_data = self._local_coordinator.get_data(self.entity_description)
+            if device_data is not None:
+                _LOGGER.debug(f"Data for {self.unique_id}: {device_data}")
 
-        self._attr_current_option = state
-        self._attr_extra_state_attributes = attributes
+                state = device_data.get(ATTR_STATE)
+                attributes = device_data.get(ATTR_ATTRIBUTES)
 
-        self.async_write_ha_state()
+                self._attr_current_option = state
+                self._attr_extra_state_attributes = attributes
+
+            self.async_write_ha_state()
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to update {self.unique_id}, Error: {ex}, Line: {line_number}"
+            )

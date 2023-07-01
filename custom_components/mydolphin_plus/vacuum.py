@@ -3,11 +3,10 @@ import logging
 import sys
 from typing import Any
 
-from homeassistant.components.vacuum import VacuumEntity
+from homeassistant.components.vacuum import StateVacuumEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_STATE, Platform
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.const import ATTR_MODE, ATTR_STATE, Platform
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
@@ -24,7 +23,6 @@ from .common.consts import (
     ACTION_ENTITY_TURN_ON,
     ATTR_ATTRIBUTES,
     DOMAIN,
-    SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW,
 )
 from .common.entity_descriptions import (
     ENTITY_DESCRIPTIONS,
@@ -34,51 +32,37 @@ from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+CURRENT_DOMAIN = Platform.VACUUM
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
-    @callback
-    def _async_device_new(serial_number):
-        try:
-            coordinator = hass.data[DOMAIN][entry.entry_id]
+    try:
+        coordinator = hass.data[DOMAIN][entry.entry_id]
 
-            device_data = coordinator.get_device()
-            identifiers = device_data.get("identifiers")
-            coordinator_serial_number = list(identifiers)[0][1]
+        entities = []
 
-            if coordinator_serial_number != serial_number:
-                return
+        for entity_description in ENTITY_DESCRIPTIONS:
+            if isinstance(entity_description, MyDolphinPlusVacuumEntityDescription):
+                entity = MyDolphinPlusLightEntity(entity_description, coordinator)
 
-            entities = []
+                entities.append(entity)
 
-            for entity_description in ENTITY_DESCRIPTIONS:
-                if isinstance(entity_description, MyDolphinPlusVacuumEntityDescription):
-                    entity = MyDolphinPlusLightEntity(entity_description, coordinator)
+        _LOGGER.debug(f"Setting up {CURRENT_DOMAIN} entities: {entities}")
 
-                    entities.append(entity)
+        async_add_entities(entities, True)
 
-            _LOGGER.debug(f"Setting up {Platform.VACUUM} entities: {entities}")
+    except Exception as ex:
+        exc_type, exc_obj, tb = sys.exc_info()
+        line_number = tb.tb_lineno
 
-            async_add_entities(entities, True)
-
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to initialize {Platform.VACUUM}, Error: {ex}, Line: {line_number}"
-            )
-
-    """Set up the binary sensor platform."""
-    entry.async_on_unload(
-        async_dispatcher_connect(
-            hass, SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW, _async_device_new
+        _LOGGER.error(
+            f"Failed to initialize {CURRENT_DOMAIN}, Error: {ex}, Line: {line_number}"
         )
-    )
 
 
-class MyDolphinPlusLightEntity(CoordinatorEntity, VacuumEntity, ABC):
+class MyDolphinPlusLightEntity(CoordinatorEntity, StateVacuumEntity, ABC):
     """Representation of a sensor."""
 
     def __init__(
@@ -93,16 +77,14 @@ class MyDolphinPlusLightEntity(CoordinatorEntity, VacuumEntity, ABC):
         identifiers = device_info.get("identifiers")
         serial_number = list(identifiers)[0][1]
 
-        entity_name = f"{device_name} {entity_description.name}"
+        slugify_name = slugify(device_name)
 
-        slugify_name = slugify(entity_name)
-
-        unique_id = slugify(f"{Platform.VACUUM}_{serial_number}_{slugify_name}")
+        unique_id = slugify(f"{CURRENT_DOMAIN}_{serial_number}_{slugify_name}")
 
         self.entity_description = entity_description
 
         self._attr_device_info = device_info
-        self._attr_name = entity_name
+        self._attr_name = device_name
         self._attr_unique_id = unique_id
 
         self._attr_supported_features = entity_description.features
@@ -127,7 +109,7 @@ class MyDolphinPlusLightEntity(CoordinatorEntity, VacuumEntity, ABC):
 
         await async_set_fan_speed(fan_speed)
 
-    async def async_start(self, **kwargs: Any) -> None:
+    async def async_start(self) -> None:
         async_start = self._local_coordinator.get_device_action(
             self.entity_description, ACTION_ENTITY_START
         )
@@ -141,7 +123,7 @@ class MyDolphinPlusLightEntity(CoordinatorEntity, VacuumEntity, ABC):
 
         await async_stop(self.state)
 
-    async def async_pause(self, **kwargs: Any) -> None:
+    async def async_pause(self) -> None:
         async_pause = self._local_coordinator.get_device_action(
             self.entity_description, ACTION_ENTITY_PAUSE
         )
@@ -192,11 +174,26 @@ class MyDolphinPlusLightEntity(CoordinatorEntity, VacuumEntity, ABC):
 
     def _handle_coordinator_update(self) -> None:
         """Fetch new state parameters for the sensor."""
-        device_data = self._local_coordinator.get_data(self.entity_description)
-        state = device_data.get(ATTR_STATE)
-        attributes = device_data.get(ATTR_ATTRIBUTES)
+        try:
+            device_data = self._local_coordinator.get_data(self.entity_description)
+            if device_data is not None:
+                _LOGGER.debug(f"Data for {self.unique_id}: {device_data}")
 
-        self._attr_state = state
-        self._attr_extra_state_attributes = attributes
+                state = device_data.get(ATTR_STATE)
+                attributes = device_data.get(ATTR_ATTRIBUTES)
 
-        self.async_write_ha_state()
+                fan_speed = attributes.get(ATTR_MODE)
+
+                self._attr_state = state
+                self._attr_extra_state_attributes = attributes
+                self._attr_fan_speed = fan_speed
+
+            self.async_write_ha_state()
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to update {self.unique_id}, Error: {ex}, Line: {line_number}"
+            )

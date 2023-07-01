@@ -34,16 +34,18 @@ class DomainFlowHandler(config_entries.ConfigFlow):
 
         if user_input is not None:
             config_manager = ConfigManager(self.hass, None)
+            await config_manager.initialize()
+
             config_manager.update_credentials(user_input)
 
-            api = RestAPI(self.hass, config_manager)
+            api = RestAPI(self.hass, config_manager, None)
 
             await api.validate()
 
             if api.status == ConnectivityStatus.TemporaryConnected:
                 _LOGGER.debug("User inputs are valid")
 
-                user_input[CONF_PASSWORD] = config_manager.password
+                user_input[CONF_PASSWORD] = config_manager.password_hashed
 
                 return self.async_create_entry(title=DEFAULT_NAME, data=user_input)
 

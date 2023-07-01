@@ -27,7 +27,7 @@ PLATFORMS = [
     Platform.SELECT,
     Platform.LIGHT,
     Platform.BINARY_SENSOR,
-    Platform.SELECT,
+    Platform.SENSOR,
     Platform.VACUUM,
 ]
 
@@ -257,12 +257,6 @@ ICON_LED_MODES = {
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline",
 }
 
-LED_MODES_NAMES = {
-    LED_MODE_BLINKING: "Blinking",
-    LED_MODE_ALWAYS_ON: "Always on",
-    LED_MODE_DISCO: "Disco",
-}
-
 SERVICE_NAVIGATE = "navigate"
 SERVICE_DAILY_SCHEDULE = "daily_schedule"
 SERVICE_DELAYED_CLEAN = "delayed_clean"
@@ -370,25 +364,25 @@ CALCULATED_STATES = {
 }
 
 FILTER_BAG_STATUS = {
-    "Unknown": (-1, -1),
-    "Empty": (0, 0),
-    "Partial full": (1, 25),
-    "Getting full": (26, 74),
-    "Almost full": (75, 99),
-    "Full": (100, 100),
-    "Fault": (101, 101),
-    "Not available": (102, 102),
+    "unknown": (-1, -1),
+    "empty": (0, 0),
+    "partially_full": (1, 25),
+    "getting_full": (26, 74),
+    "almost_full": (75, 99),
+    "full": (100, 100),
+    "fault": (101, 101),
+    "not_available": (102, 102),
 }
 
 FILTER_BAG_ICONS = {
-    "Unknown": "mdi:robot-off",
-    "Empty": "mdi:gauge-empty",
-    "Partial full": "mdi:gauge-low",
-    "Getting full": "mdi:gauge",
-    "Almost full": "mdi:gauge",
-    "Full": "mdi:gauge-full",
-    "Fault": "mdi:robot-dead",
-    "Not available": "mdi:robot-confused-outline",
+    "unknown": "mdi:robot-off",
+    "empty": "mdi:gauge-empty",
+    "partially_full": "mdi:gauge-low",
+    "getting_full": "mdi:gauge",
+    "almost_full": "mdi:gauge",
+    "full": "mdi:gauge-full",
+    "fault": "mdi:robot-dead",
+    "not_available": "mdi:robot-confused-outline",
 }
 
 VACUUM_FEATURES = (
@@ -414,6 +408,7 @@ STORAGE_DATA_FILES = [STORAGE_DATA_FILE_CONFIG]
 
 DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]
 
+DATA_KEY_STATUS = "Status"
 DATA_KEY_VACUUM = "Vacuum"
 DATA_KEY_LED_MODE = "LED Mode"
 DATA_KEY_LED = "LED"
@@ -421,8 +416,16 @@ DATA_KEY_FILTER_STATUS = "Filter Status"
 DATA_KEY_CYCLE_TIME = "Cycle Time"
 DATA_KEY_CYCLE_TIME_LEFT = "Cycle Time Left"
 DATA_KEY_AWS_BROKER = "AWS Broker"
-DATA_KEY_WEEKLY_SCHEDULE = "Weekly Schedule"
+DATA_KEY_WEEKLY_SCHEDULER = "Weekly Scheduler"
 DATA_KEY_SCHEDULE = "Schedule"
+DATA_KEY_RSSI = "RSSI"
+DATA_KEY_NETWORK_NAME = "Network Name"
+DATA_KEY_CLEAN_MODE = "Clean Mode"
+DATA_KEY_MAIN_UNIT_STATUS = "Main Unit Status"
+DATA_KEY_ROBOT_STATUS = "Robot Status"
+DATA_KEY_ROBOT_TYPE = "Robot Type"
+DATA_KEY_BUSY = "Busy"
+DATA_KEY_CYCLE_COUNT = "Cycle Count"
 
 ACTION_ENTITY_RETURN_TO_BASE = "return_to_base"
 ACTION_ENTITY_SET_FAN_SPEED = "set_fan_speed"

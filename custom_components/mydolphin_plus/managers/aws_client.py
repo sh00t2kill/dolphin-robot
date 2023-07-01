@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable
 from datetime import datetime
 import json
 import logging
 import os
 import sys
-from types import coroutine
+from typing import Callable
 import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -87,9 +88,13 @@ class AWSClient:
 
     _topic_data: TopicData | None
     _status: ConnectivityStatus | None
-    _on_status_changed: coroutine
+    _on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]]
 
-    def __init__(self, hass: HomeAssistant | None, on_status_changed: coroutine):
+    def __init__(
+        self,
+        hass: HomeAssistant | None,
+        on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]],
+    ):
         try:
             self.hass = hass
             self._on_status_changed = on_status_changed
