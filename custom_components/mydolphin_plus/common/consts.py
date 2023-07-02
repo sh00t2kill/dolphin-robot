@@ -127,9 +127,9 @@ DEFAULT_TIME_PART = 255
 DEFAULT_BATTERY_LEVEL = "NA"
 
 UPDATE_API_INTERVAL = timedelta(seconds=60)
-UPDATE_ENTITIES_INTERVAL = timedelta(seconds=1)
+UPDATE_ENTITIES_INTERVAL = timedelta(seconds=5)
 LOCATE_OFF_INTERVAL_SECONDS = timedelta(seconds=10)
-API_RECONNECT_INTERVAL = timedelta(minutes=30)
+API_RECONNECT_INTERVAL = timedelta(seconds=30)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
 WS_LAST_UPDATE = "last-update"

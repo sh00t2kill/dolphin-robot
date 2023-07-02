@@ -5,7 +5,6 @@
 - Refactor code to support HA coordinator
 - Improve reconnection when AWS Broker gets disconnected
 - Remove integration options (Edit configuration)
-- Fix vacuum on/off states
 - Improve diagnostic data
 - New components
   - Sensor: Clean Mode
@@ -22,6 +21,7 @@
   - Sensor - Filter Status
   - Sensor - Robot Status
   - Sensor - Main Unit Status
+  - Sensor - Clean Mode
   - Select - LED Mode
 
 ## v0.3.4

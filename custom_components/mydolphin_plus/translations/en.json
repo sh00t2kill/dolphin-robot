@@ -70,6 +70,15 @@
           "error": "Error",
           "cleaning": "Cleaning"
         }
+      },
+      "clean_mode": {
+        "state": {
+          "all": "Regular",
+          "short": "Fast mode",
+          "floor": "Floor only",
+          "water": "Water line",
+          "ultra": "Ultra clean"
+        }
       }
     },
     "select": {

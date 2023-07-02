@@ -2,8 +2,6 @@ import logging
 import sys
 from typing import Any
 
-from slugify import slugify
-
 from custom_components.mydolphin_plus import DOMAIN, MyDolphinPlusCoordinator
 from custom_components.mydolphin_plus.common.entity_descriptions import (
     ENTITY_DESCRIPTIONS,
@@ -13,6 +11,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,9 +77,15 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
         self._attr_name = entity_name
         self._attr_unique_id = unique_id
 
+        self._data = {}
+
     @property
     def _local_coordinator(self) -> MyDolphinPlusCoordinator:
         return self.coordinator
+
+    @property
+    def data(self) -> dict | None:
+        return self._data
 
     async def async_execute_device_action(self, key: str, *kwargs: Any):
         async_device_action = self._local_coordinator.get_device_action(
@@ -89,9 +94,29 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
 
         await async_device_action(*kwargs)
 
-    def get_data(self) -> dict | None:
-        device_data = self._local_coordinator.get_data(self.entity_description)
+        await self.coordinator.async_request_refresh()
 
-        _LOGGER.debug(f"Data for {self.unique_id}: {device_data}")
+    def update_component(self, data):
+        pass
 
-        return device_data
+    def _handle_coordinator_update(self) -> None:
+        """Fetch new state parameters for the sensor."""
+        try:
+            new_data = self._local_coordinator.get_data(self.entity_description)
+
+            if self._data != new_data:
+                _LOGGER.debug(f"Data for {self.unique_id}: {new_data}")
+
+                self.update_component(new_data)
+
+                self._data = new_data
+
+                self.async_write_ha_state()
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to update {self.unique_id}, Error: {ex}, Line: {line_number}"
+            )

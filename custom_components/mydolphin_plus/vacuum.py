@@ -1,12 +1,12 @@
 from abc import ABC
 import logging
-import sys
 from typing import Any
 
 from homeassistant.components.vacuum import StateVacuumEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODE, ATTR_STATE, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.icon import icon_for_battery_level
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
 from .common.consts import (
@@ -55,6 +55,12 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC):
 
         self._attr_supported_features = entity_description.features
         self._attr_fan_speed_list = entity_description.fan_speed_list
+        self._attr_battery_level = 100
+
+    @property
+    def battery_icon(self) -> str:
+        """Return the battery icon for the vacuum cleaner."""
+        return icon_for_battery_level(battery_level=self.battery_level, charging=True)
 
     async def async_return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
@@ -96,29 +102,17 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC):
         """Locate the vacuum cleaner."""
         await self.async_execute_device_action(ACTION_ENTITY_LOCATE)
 
-    def _handle_coordinator_update(self) -> None:
+    def update_component(self, data):
         """Fetch new state parameters for the sensor."""
-        try:
-            device_data = self.get_data()
-            if device_data is not None:
-                state = device_data.get(ATTR_STATE)
-                attributes = device_data.get(ATTR_ATTRIBUTES)
+        if data is not None:
+            state = data.get(ATTR_STATE)
+            attributes = data.get(ATTR_ATTRIBUTES)
 
-                fan_speed = attributes.get(ATTR_MODE)
+            fan_speed = attributes.get(ATTR_MODE)
 
-                self._attr_state = state
-                self._attr_extra_state_attributes = attributes
-                self._attr_fan_speed = fan_speed
+            self._attr_state = state
+            self._attr_extra_state_attributes = attributes
+            self._attr_fan_speed = fan_speed
 
-            else:
-                self._attr_state = None
-
-            self.async_write_ha_state()
-
-        except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to update {self.unique_id}, Error: {ex}, Line: {line_number}"
-            )
+        else:
+            self._attr_state = None

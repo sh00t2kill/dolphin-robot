@@ -110,6 +110,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         key=slugify(DATA_KEY_CLEAN_MODE),
         name=DATA_KEY_CLEAN_MODE,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_CLEAN_MODE),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_MAIN_UNIT_STATUS),
