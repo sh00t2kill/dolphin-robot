@@ -10,6 +10,7 @@ from custom_components.mydolphin_plus.common.consts import (
     DATA_KEY_CYCLE_TIME_LEFT,
     DATA_KEY_FILTER_STATUS,
     DATA_KEY_LED,
+    DATA_KEY_LED_INTENSITY,
     DATA_KEY_LED_MODE,
     DATA_KEY_MAIN_UNIT_STATUS,
     DATA_KEY_NETWORK_NAME,
@@ -29,6 +30,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.components.light import LightEntityDescription
+from homeassistant.components.number import NumberDeviceClass, NumberEntityDescription
 from homeassistant.components.select import SelectEntityDescription
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -78,6 +80,14 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         options=list(ICON_LED_MODES.keys()),
         entity_category=EntityCategory.CONFIG,
         translation_key=slugify(DATA_KEY_LED_MODE),
+    ),
+    NumberEntityDescription(
+        key=slugify(DATA_KEY_LED_INTENSITY),
+        name=DATA_KEY_LED_INTENSITY,
+        native_min_value=0,
+        native_max_value=100,
+        entity_category=EntityCategory.CONFIG,
+        device_class=NumberDeviceClass.POWER_FACTOR,
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_STATUS),

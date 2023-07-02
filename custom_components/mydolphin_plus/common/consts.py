@@ -29,6 +29,7 @@ PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.SENSOR,
     Platform.VACUUM,
+    Platform.NUMBER,
 ]
 
 ATTR_IS_ON = "is_on"
@@ -363,6 +364,14 @@ CALCULATED_STATES = {
     PWS_STATE_HOLD_WEEKLY: "Idle (Schedule)",
 }
 
+CONSIDERED_POWER_STATE = {
+    PWS_STATE_OFF: False,
+    PWS_STATE_ERROR: False,
+    PWS_STATE_ON: True,
+    PWS_STATE_CLEANING: True,
+    PWS_STATE_PROGRAMMING: True,
+}
+
 FILTER_BAG_STATUS = {
     "unknown": (-1, -1),
     "empty": (0, 0),
@@ -411,6 +420,7 @@ DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]
 DATA_KEY_STATUS = "Status"
 DATA_KEY_VACUUM = "Vacuum"
 DATA_KEY_LED_MODE = "LED Mode"
+DATA_KEY_LED_INTENSITY = "LED Intensity"
 DATA_KEY_LED = "LED"
 DATA_KEY_FILTER_STATUS = "Filter Status"
 DATA_KEY_CYCLE_TIME = "Cycle Time"
@@ -438,3 +448,4 @@ ACTION_ENTITY_TOGGLE = "toggle"
 ACTION_ENTITY_SEND_COMMAND = "send_command"
 ACTION_ENTITY_LOCATE = "locate"
 ACTION_ENTITY_SELECT_OPTION = "select_option"
+ACTION_ENTITY_SET_NATIVE_VALUE = "set_native_value"

@@ -8,14 +8,10 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ICON, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import slugify
 
-from .common.consts import ATTR_ATTRIBUTES, ATTR_IS_ON, DOMAIN
-from .common.entity_descriptions import (
-    ENTITY_DESCRIPTIONS,
-    MyDolphinPlusDailyBinarySensorEntityDescription,
-)
+from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
+from .common.consts import ATTR_ATTRIBUTES, ATTR_IS_ON
+from .common.entity_descriptions import MyDolphinPlusDailyBinarySensorEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,33 +22,17 @@ CURRENT_DOMAIN = Platform.SENSOR
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
-    try:
-        coordinator = hass.data[DOMAIN][entry.entry_id]
-
-        entities = []
-
-        for entity_description in ENTITY_DESCRIPTIONS:
-            if isinstance(entity_description, BinarySensorEntityDescription):
-                entity = MyDolphinPlusBinarySensorEntity(
-                    entity_description, coordinator
-                )
-
-                entities.append(entity)
-
-        _LOGGER.debug(f"Setting up {CURRENT_DOMAIN} entities: {entities}")
-
-        async_add_entities(entities, True)
-
-    except Exception as ex:
-        exc_type, exc_obj, tb = sys.exc_info()
-        line_number = tb.tb_lineno
-
-        _LOGGER.error(
-            f"Failed to initialize {CURRENT_DOMAIN}, Error: {ex}, Line: {line_number}"
-        )
+    await async_setup_entities(
+        hass,
+        entry,
+        CURRENT_DOMAIN,
+        BinarySensorEntityDescription,
+        MyDolphinPlusBinarySensorEntity,
+        async_add_entities,
+    )
 
 
-class MyDolphinPlusBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
+class MyDolphinPlusBinarySensorEntity(MyDolphinPlusBaseEntity, BinarySensorEntity):
     """Representation of a sensor."""
 
     def __init__(
@@ -61,37 +41,16 @@ class MyDolphinPlusBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
         | MyDolphinPlusDailyBinarySensorEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):
-        super().__init__(coordinator)
+        super().__init__(entity_description, coordinator, CURRENT_DOMAIN)
 
-        device_info = coordinator.get_device()
-        device_name = device_info.get("name")
-        identifiers = device_info.get("identifiers")
-        serial_number = list(identifiers)[0][1]
-
-        entity_name = f"{device_name} {entity_description.name}"
-
-        slugify_name = slugify(entity_name)
-
-        unique_id = slugify(f"{CURRENT_DOMAIN}_{serial_number}_{slugify_name}")
-
-        self.entity_description = entity_description
-
-        self._attr_device_info = device_info
-        self._attr_name = entity_name
-        self._attr_unique_id = unique_id
         self._attr_device_class = entity_description.device_class
-
-    @property
-    def _local_coordinator(self) -> MyDolphinPlusCoordinator:
-        return self.coordinator
 
     def _handle_coordinator_update(self) -> None:
         """Fetch new state parameters for the sensor."""
         try:
-            device_data = self._local_coordinator.get_data(self.entity_description)
-            if device_data is not None:
-                _LOGGER.debug(f"Data for {self.unique_id}: {device_data}")
+            device_data = self.get_data()
 
+            if device_data is not None:
                 is_on = device_data.get(ATTR_IS_ON)
                 attributes = device_data.get(ATTR_ATTRIBUTES)
                 icon = device_data.get(ATTR_ICON)

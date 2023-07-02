@@ -16,6 +16,7 @@
   - Sensor: RSSI
   - Sensor: Network Name
   - Sensor: Status (Calculated Status)
+  - Number: LED Intensity
 - Support translation for
   - Vacuum - Fan Speed
   - Sensor - Filter Status
