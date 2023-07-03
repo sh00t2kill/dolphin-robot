@@ -54,7 +54,7 @@
         "state": {
           "finished": "Finished",
           "fault": "Fault",
-          "notConnected": "Disconnected",
+          "notconnected": "Disconnected",
           "programming": "Programming",
           "init": "Initialized",
           "scanning": "Scanning"
@@ -78,7 +78,7 @@
           "holddelay": "Idle (Delay)",
           "holdweekly": "Idle (Weekly)",
           "programming": "Programming",
-          "notConnected": "Disconnected"
+          "notconnected": "Disconnected"
         }
       },
       "clean_mode": {

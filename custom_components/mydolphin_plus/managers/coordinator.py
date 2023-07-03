@@ -386,7 +386,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         state = self._system_status_details.get(ATTR_CALCULATED_STATUS)
 
         result = {
-            ATTR_STATE: state,
+            ATTR_STATE: None if state is None else state.lower(),
             ATTR_ATTRIBUTES: self._system_status_details,
         }
 
@@ -427,7 +427,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     def _get_robot_status_data(self, _entity_description) -> dict | None:
         state = self._system_status_details.get(ATTR_ROBOT_STATUS)
 
-        result = {ATTR_STATE: state}
+        result = {ATTR_STATE: None if state is None else state.lower()}
 
         return result
 
