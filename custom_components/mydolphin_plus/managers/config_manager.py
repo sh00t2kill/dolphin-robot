@@ -12,6 +12,7 @@ from homeassistant.helpers.storage import Store
 
 from ..common.consts import (
     DOMAIN,
+    ENTRY_ID_CONFIG,
     LEGACY_KEY_FILE,
     STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     STORAGE_DATA_KEY,
@@ -40,22 +41,34 @@ class ConfigManager:
 
         self._password = None
 
-        if entry is not None:
+        self._has_entry = entry is not None
+
+        if self._has_entry:
             file_name = f"{DOMAIN}.config.json"
 
             self._store = Store(hass, STORAGE_VERSION, file_name, encoder=JSONEncoder)
 
     @property
+    def _entry_id(self):
+        entry_id = self._entry.entry_id if self._has_entry else ENTRY_ID_CONFIG
+
+        return entry_id
+
+    @property
     def data(self):
-        return None if self._data is None else self._data.get(self._entry.entry_id)
+        return self._data.get(self._entry_id)
 
     @property
     def name(self):
-        return self._entry.title
+        entry_title = self._entry.title if self._has_entry else ENTRY_ID_CONFIG
+
+        return entry_title
 
     @property
     def unique_id(self):
-        return self._entry.unique_id
+        unique_id = self._entry.unique_id if self._has_entry else ENTRY_ID_CONFIG
+
+        return unique_id
 
     @property
     def is_locating(self) -> bool:
@@ -90,7 +103,7 @@ class ConfigManager:
     async def initialize(self):
         await self._load()
 
-        if self._entry is not None:
+        if self._has_entry:
             password_hashed = self._entry.data.get(CONF_PASSWORD)
             password = None
 
@@ -123,8 +136,8 @@ class ConfigManager:
         if self._data is None:
             self._data = {}
 
-        if self._entry.entry_id not in self._data:
-            self._data[self._entry.entry_id] = {
+        if self._entry_id not in self._data:
+            self._data[self._entry_id] = {
                 STORAGE_DATA_LOCATING: False,
                 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None,
                 STORAGE_DATA_KEY: self._encryption_key,
@@ -173,6 +186,9 @@ class ConfigManager:
             self._encryption_key = key
 
     async def _save(self):
+        if self._has_entry:
+            return
+
         data = copy(self._data)
 
         entry_data = copy(self.data)
@@ -181,10 +197,9 @@ class ConfigManager:
             if key not in [CONF_PASSWORD, CONF_USERNAME]:
                 data[key] = entry_data[key]
 
-        self._data[self._entry.entry_id] = entry_data
+        self._data[self._entry_id] = entry_data
 
-        if self._store is not None:
-            await self._store.async_save(data)
+        await self._store.async_save(data)
 
     def _encrypt(self, data: str) -> str:
         if data is not None:
