@@ -16,19 +16,14 @@ class ConnectivityStatus(StrEnum):
 
     @staticmethod
     def get_log_level(status: StrEnum) -> int:
-        if status == ConnectivityStatus.Connected:
-            return logging.DEBUG
-        elif status in [ConnectivityStatus.Disconnected]:
+        if status in [
+            ConnectivityStatus.Connected,
+            ConnectivityStatus.Connecting,
+            ConnectivityStatus.Disconnected,
+            ConnectivityStatus.TemporaryConnected,
+        ]:
             return logging.INFO
-        elif status in [ConnectivityStatus.NotConnected, ConnectivityStatus.Connecting]:
+        elif status in [ConnectivityStatus.NotConnected]:
             return logging.WARNING
         else:
             return logging.ERROR
-
-
-class EntityStatus(StrEnum):
-    EMPTY = "empty"
-    READY = "ready"
-    CREATED = "created"
-    DELETED = "deleted"
-    UPDATED = "updated"

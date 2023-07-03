@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.4.0
+
+- Refactor code to support HA coordinator
+- Improve reconnection when AWS Broker gets disconnected
+- Remove integration options (Edit configuration)
+- Improve diagnostic data
+- New components
+  - Sensor: Clean Mode
+  - Sensor: Cycle Count
+  - Sensor: Main Unit Status
+  - Sensor: Robot Status
+  - Sensor: Robot Type
+  - Sensor: RSSI
+  - Sensor: Network Name
+  - Sensor: Status (Calculated Status)
+  - Number: LED Intensity
+- Support translation for
+  - Vacuum: Fan Speed
+  - Sensor: Filter Status
+  - Sensor: Robot Status
+  - Sensor: Main Unit Status
+  - Sensor: Clean Mode
+  - Sensor: Status
+  - Select: LED Mode
+
 ## v0.3.4
 
 - Fix error upon restart caused by attempt to handle message from AWS MQTT Broker during restart of HA
