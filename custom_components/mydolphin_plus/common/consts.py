@@ -19,6 +19,8 @@ DOMAIN = "mydolphin_plus"
 DATA = f"{DOMAIN}_DATA"
 LEGACY_KEY_FILE = f"{DOMAIN}.key"
 
+ENTRY_ID_CONFIG = "config"
+
 SIGNAL_MY_DOLPHIN_PLUS_DEVICE_NEW = f"{DOMAIN}_NEW_DEVICE_SIGNAL"
 
 CONFIGURATION_URL = "https://www.maytronics.com/"
