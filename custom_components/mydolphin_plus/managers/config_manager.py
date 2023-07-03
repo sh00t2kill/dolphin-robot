@@ -47,7 +47,7 @@ class ConfigManager:
 
     @property
     def data(self):
-        return self._data.get(self._entry.entry_id)
+        return None if self._data is None else self._data.get(self._entry.entry_id)
 
     @property
     def name(self):

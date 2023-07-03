@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.1
+
+- Fix integration setup process
+
 ## v0.4.0
 
 - Refactor code to support HA coordinator
