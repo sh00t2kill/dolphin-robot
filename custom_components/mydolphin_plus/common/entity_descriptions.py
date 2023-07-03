@@ -93,6 +93,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         key=slugify(DATA_KEY_STATUS),
         name=DATA_KEY_STATUS,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_STATUS),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_RSSI),

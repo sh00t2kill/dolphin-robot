@@ -54,7 +54,7 @@
         "state": {
           "finished": "Finished",
           "fault": "Fault",
-          "notConnected": "Not connected",
+          "notConnected": "Disconnected",
           "programming": "Programming",
           "init": "Initialized",
           "scanning": "Scanning"
@@ -64,11 +64,21 @@
         "state": {
           "on": "On",
           "off": "Off",
-          "holdDelay": "Hold delay schedule",
-          "holdWeekly": "Hold weekly schedule",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
           "programming": "Programming",
           "error": "Error",
           "cleaning": "Cleaning"
+        }
+      },
+      "status": {
+        "state": {
+          "on": "On",
+          "off": "Off",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
+          "programming": "Programming",
+          "notConnected": "Disconnected"
         }
       },
       "clean_mode": {

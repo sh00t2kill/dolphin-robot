@@ -17,12 +17,13 @@
   - Sensor: Status (Calculated Status)
   - Number: LED Intensity
 - Support translation for
-  - Vacuum - Fan Speed
-  - Sensor - Filter Status
-  - Sensor - Robot Status
-  - Sensor - Main Unit Status
-  - Sensor - Clean Mode
-  - Select - LED Mode
+  - Vacuum: Fan Speed
+  - Sensor: Filter Status
+  - Sensor: Robot Status
+  - Sensor: Main Unit Status
+  - Sensor: Clean Mode
+  - Sensor: Status
+  - Select: LED Mode
 
 ## v0.3.4
 

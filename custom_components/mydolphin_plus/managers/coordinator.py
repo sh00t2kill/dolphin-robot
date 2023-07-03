@@ -825,7 +825,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         calculated_state = PWS_STATE_OFF
 
-        pws_on = pws_state in [
+        pws_on = pws_state.lower() in [
             PWS_STATE_ON,
             PWS_STATE_HOLD_DELAY,
             PWS_STATE_HOLD_WEEKLY,
