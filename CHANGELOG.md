@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.3
+
+- Jumping version
+
 ## v0.4.2
 
 - Fix integration setup process
