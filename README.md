@@ -191,6 +191,78 @@ logger:
 Please attach also diagnostic details of the integration, available in:
 Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics
 
+### Invalid Token
+
+In case you have referenced to that section, something went wrong with the encryption key,
+Encryption key should be located in `.storage/mydolphin_plus.config.json` file under `data.key` property,
+below are the steps to solve that issue.
+
+#### File not exists or File exists, data.key is not
+
+Please report as issue
+
+#### File exists, data.key is available
+
+Example:
+
+```json
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "mydolphin_plus.config.json",
+  "data": {
+    "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY=",
+    "b8fa11c50331d2647b8aa7e37935efeb": {
+      "locating": false,
+      "aws-token-encrypted-key": "AWS_TOKEN"
+    }
+  }
+}
+```
+
+OR
+
+```json
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "mydolphin_plus.config.json",
+  "data": {
+    "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY="
+  }
+}
+```
+
+1. Remove the integration
+2. Delete the file
+3. Restart HA
+4. Try to re-add the integration
+5. If still happens - report as issue
+
+#### File exists, key is available under one of the entry configurations
+
+Example:
+
+```json
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "mydolphin_plus.config.json",
+  "data": {
+    "b8fa11c50331d2647b8aa7e37935efeb": {
+      "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY=",
+      "locating": false,
+      "aws-token-encrypted-key": "AWS_TOKEN"
+    }
+  }
+}
+```
+
+1. Move the `key` to the root of the JSON
+2. Restart HA
+3. Try to re-add the integration
+4. If still happens - follow instructions of section #1 (_i._)
+
 ## Lovelace cards.
 
 We have confirmed the robot works with the custom vacuum card, built by denysdovhan

@@ -2,7 +2,7 @@ import logging
 from os import path, remove
 import sys
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 from homeassistant.config_entries import STORAGE_VERSION, ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
@@ -14,6 +14,7 @@ from ..common.consts import (
     CONFIGURATION_FILE,
     DEFAULT_NAME,
     DOMAIN,
+    INVALID_TOKEN_SECTION,
     LEGACY_KEY_FILE,
     STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     STORAGE_DATA_KEY,
@@ -36,6 +37,7 @@ class ConfigManager:
     _entry_id: str
 
     _is_set_up_mode: bool
+    _is_initialized: bool
 
     def __init__(self, hass: HomeAssistant | None, entry: ConfigEntry | None = None):
         self._hass = hass
@@ -51,6 +53,7 @@ class ConfigManager:
         self._store_data = None
 
         self._is_set_up_mode = entry is None
+        self._is_initialized = False
 
         if self._is_set_up_mode:
             self._entry_data = {}
@@ -66,6 +69,12 @@ class ConfigManager:
             self._store = Store(
                 hass, STORAGE_VERSION, CONFIGURATION_FILE, encoder=JSONEncoder
             )
+
+    @property
+    def is_initialized(self) -> bool:
+        is_initialized = self._is_initialized
+
+        return is_initialized
 
     @property
     def data(self):
@@ -119,7 +128,18 @@ class ConfigManager:
             self._data[CONF_USERNAME] = self._entry_data.get(CONF_USERNAME)
             self._data[CONF_PASSWORD] = password
 
+            self._is_initialized = True
+
+        except InvalidToken:
+            self._is_initialized = False
+
+            _LOGGER.error(
+                f"Invalid encryption key, Please follow instructions in {INVALID_TOKEN_SECTION}"
+            )
+
         except Exception as ex:
+            self._is_initialized = False
+
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
@@ -167,7 +187,20 @@ class ConfigManager:
                 await self._import_encryption_key()
 
         else:
-            self._encryption_key = self._store_data.get(STORAGE_DATA_KEY)
+            if STORAGE_DATA_KEY in self._store_data:
+                self._encryption_key = self._store_data.get(STORAGE_DATA_KEY)
+
+            else:
+                for store_data_key in self._store_data:
+                    if store_data_key == self._entry_id:
+                        entry_configuration = self._store_data[store_data_key]
+
+                        if STORAGE_DATA_KEY in entry_configuration:
+                            self._encryption_key = entry_configuration.get(
+                                STORAGE_DATA_KEY
+                            )
+
+                            entry_configuration.pop(STORAGE_DATA_KEY)
 
         if self._encryption_key is None:
             self._encryption_key = Fernet.generate_key().decode("utf-8")
