@@ -2,6 +2,13 @@
 
 ## v0.4.4
 
+**Breaking Change**
+
+This version changes the approach of extracting encryption key, if you are using 0.4.x,
+most probably you will need to remove integration and re-integrate.
+
+**Changes:**
+
 - Fix unknown error while setting up integration
 
 ## v0.4.3

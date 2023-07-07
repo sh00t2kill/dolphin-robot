@@ -18,6 +18,7 @@ DEFAULT_NAME = "MyDolphin Plus"
 DOMAIN = "mydolphin_plus"
 DATA = f"{DOMAIN}_DATA"
 LEGACY_KEY_FILE = f"{DOMAIN}.key"
+CONFIGURATION_FILE = f"{DOMAIN}.config.json"
 
 ENTRY_ID_CONFIG = "config"
 

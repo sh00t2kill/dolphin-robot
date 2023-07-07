@@ -199,6 +199,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return data
 
+    @property
+    def config_manager(self) -> ConfigManager:
+        config_manager = self._config_manager
+
+        return config_manager
+
     async def initialize(self):
         self._build_data_mapping()
 

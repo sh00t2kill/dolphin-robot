@@ -1,5 +1,6 @@
 import logging
 from os import path, remove
+import sys
 
 from cryptography.fernet import Fernet
 
@@ -10,6 +11,7 @@ from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
 from ..common.consts import (
+    CONFIGURATION_FILE,
     DEFAULT_NAME,
     DOMAIN,
     LEGACY_KEY_FILE,
@@ -24,38 +26,46 @@ _LOGGER = logging.getLogger(__name__)
 class ConfigManager:
     _encryption_key: str | None
     _crypto: Fernet | None
-    _store: Store | None
     _data: dict | None
 
+    _store: Store | None
+    _store_data: dict | None
+    _entry_data: dict | None
     _password: str | None
+    _entry_title: str
+    _entry_id: str
+
+    _is_set_up_mode: bool
 
     def __init__(self, hass: HomeAssistant | None, entry: ConfigEntry | None = None):
         self._hass = hass
         self._encryption_key = None
         self._crypto = None
-        self._store = None
 
         self._data = None
 
         self._password = None
 
+        self._store = None
         self._entry_data = None
         self._store_data = None
 
-        if entry is None:
+        self._is_set_up_mode = entry is None
+
+        if self._is_set_up_mode:
             self._entry_data = {}
             self._entry_title = DEFAULT_NAME
             self._entry_id = "config"
-            self._store = None
 
         else:
             self._entry_data = entry.data
             self._entry_title = entry.title
             self._entry_id = entry.entry_id
 
-            file_name = f"{DOMAIN}.{self._entry_id}.config.json"
-
-            self._store = Store(hass, STORAGE_VERSION, file_name, encoder=JSONEncoder)
+        if hass is not None:
+            self._store = Store(
+                hass, STORAGE_VERSION, CONFIGURATION_FILE, encoder=JSONEncoder
+            )
 
     @property
     def data(self):
@@ -87,38 +97,46 @@ class ConfigManager:
 
     @property
     def password(self) -> str:
-        password = self.data.get(CONF_PASSWORD)
+        password = self._data.get(CONF_PASSWORD)
 
         return password
 
     @property
     def aws_token_encrypted_key(self) -> str | None:
-        key = self.data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
+        key = self._data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
 
         return key
 
     async def initialize(self):
-        await self._load()
+        try:
+            await self._load()
 
-        password_hashed = self._entry_data.get(CONF_PASSWORD)
-        password = None
+            password = self._entry_data.get(CONF_PASSWORD)
 
-        if password_hashed is not None:
-            password = self._decrypt(password_hashed)
+            if not self._is_set_up_mode:
+                password = self._decrypt(password)
 
-        self.data[CONF_USERNAME] = self._entry_data.get(CONF_USERNAME)
-        self.data[CONF_PASSWORD] = password
+            self._data[CONF_USERNAME] = self._entry_data.get(CONF_USERNAME)
+            self._data[CONF_PASSWORD] = password
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.error(
+                f"Failed to initialize configuration manager, Error: {ex}, Line: {line_number}"
+            )
 
     def update_credentials(self, data: dict):
         self._entry_data = data
 
     async def update_aws_token_encrypted_key(self, key: str):
-        self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = key
+        self._data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = key
 
         await self._save()
 
     async def update_is_locating(self, state: bool):
-        self.data[STORAGE_DATA_LOCATING] = state
+        self._data[STORAGE_DATA_LOCATING] = state
 
         await self._save()
 
@@ -132,7 +150,6 @@ class ConfigManager:
             self._data = {
                 STORAGE_DATA_LOCATING: False,
                 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None,
-                STORAGE_DATA_KEY: self._encryption_key,
             }
 
             await self._save()
@@ -145,12 +162,12 @@ class ConfigManager:
                 self._data = self._store_data.get(self._entry_id)
 
     async def _load_encryption_key(self):
-        if self._data is None:
+        if self._store_data is None:
             if self._hass is not None:
                 await self._import_encryption_key()
 
         else:
-            self._encryption_key = self._data.get(STORAGE_DATA_KEY)
+            self._encryption_key = self._store_data.get(STORAGE_DATA_KEY)
 
         if self._encryption_key is None:
             self._encryption_key = Fernet.generate_key().decode("utf-8")
@@ -184,16 +201,31 @@ class ConfigManager:
         if key is not None:
             self._encryption_key = key
 
+    async def remove(self):
+        if self._entry_id in self._store_data:
+            self._is_set_up_mode = True
+
+            self._store_data.pop(self._entry_id)
+
+            await self._save()
+
     async def _save(self):
         if self._store is None:
             return
 
-        if self._entry_id not in self._store_data:
-            self._store_data[self._entry_id] = {}
+        if self._store_data is None:
+            self._store_data = {STORAGE_DATA_KEY: self._encryption_key}
 
-        for key in self._data:
-            if key not in [CONF_PASSWORD, CONF_USERNAME]:
-                self._store_data[self._entry_id][key] = self._data[key]
+        elif STORAGE_DATA_KEY not in self._store_data:
+            self._store_data[STORAGE_DATA_KEY] = self._encryption_key
+
+        if not self._is_set_up_mode:
+            if self._entry_id not in self._store_data:
+                self._store_data[self._entry_id] = {}
+
+            for key in self._data:
+                if key not in [CONF_PASSWORD, CONF_USERNAME]:
+                    self._store_data[self._entry_id][key] = self._data[key]
 
         await self._store.async_save(self._store_data)
 
