@@ -199,6 +199,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return data
 
+    @property
+    def config_manager(self) -> ConfigManager:
+        config_manager = self._config_manager
+
+        return config_manager
+
     async def initialize(self):
         self._build_data_mapping()
 
@@ -272,6 +278,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             await sleep(API_RECONNECT_INTERVAL.total_seconds())
 
             await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+
+        elif status == ConnectivityStatus.InvalidCredentials:
+            self.update_interval = None
 
     async def _on_aws_client_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:

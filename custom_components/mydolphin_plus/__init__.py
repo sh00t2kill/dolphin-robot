@@ -29,20 +29,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         config_manager = ConfigManager(hass, entry)
         await config_manager.initialize()
 
-        coordinator = MyDolphinPlusCoordinator(hass, config_manager)
-        await coordinator.initialize()
+        is_initialized = config_manager.is_initialized
 
-        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+        if is_initialized:
+            coordinator = MyDolphinPlusCoordinator(hass, config_manager)
+            await coordinator.initialize()
 
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+            hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-        _LOGGER.info(f"Start loading {DOMAIN} integration, Entry ID: {entry.entry_id}")
+            await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-        await coordinator.async_config_entry_first_refresh()
+            _LOGGER.info(
+                f"Start loading {DOMAIN} integration, Entry ID: {entry.entry_id}"
+            )
 
-        _LOGGER.info("Finished loading integration")
+            await coordinator.async_config_entry_first_refresh()
 
-        initialized = True
+            _LOGGER.info("Finished loading integration")
+
+        initialized = is_initialized
 
     except LoginError:
         _LOGGER.info(f"Failed to login {DEFAULT_NAME} API, cannot log integration")
@@ -61,6 +66,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     _LOGGER.info(f"Unloading {DOMAIN} integration, Entry ID: {entry.entry_id}")
+
+    coordinator: MyDolphinPlusCoordinator = hass.data[DOMAIN][entry.entry_id]
+
+    await coordinator.config_manager.remove()
 
     for platform in PLATFORMS:
         await hass.config_entries.async_forward_entry_unload(entry, platform)

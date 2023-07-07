@@ -240,7 +240,15 @@ class RestAPI:
 
     async def _login(self):
         await self._service_login()
-        await self._generate_token()
+
+        if self._status == ConnectivityStatus.TemporaryConnected:
+            await self._generate_token()
+
+        elif self._status == ConnectivityStatus.InvalidCredentials:
+            return
+
+        else:
+            await self._set_status(ConnectivityStatus.Failed)
 
     async def _service_login(self):
         try:
@@ -269,7 +277,7 @@ class RestAPI:
                 await self._set_actual_motor_unit_serial()
 
             else:
-                await self._set_status(ConnectivityStatus.Failed)
+                await self._set_status(ConnectivityStatus.InvalidCredentials)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -321,13 +329,6 @@ class RestAPI:
             await self._set_status(ConnectivityStatus.Failed)
 
     async def _generate_token(self):
-        if self._status != ConnectivityStatus.TemporaryConnected:
-            _LOGGER.error(self._status)
-            _LOGGER.error(ConnectivityStatus.TemporaryConnected)
-
-            await self._set_status(ConnectivityStatus.Failed)
-            return
-
         try:
             get_token_attempts = 0
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.4.4
+
+**Breaking Change**
+
+This version changes the approach of extracting encryption key,
+If the following error message available in log, please follow its instructions:
+
+```log
+ERROR (MainThread) [custom_components.mydolphin_plus.managers.config_manager] Invalid encryption key, Please follow instructions in https://github.com/sh00t2kill/dolphin-robot#invalid-token
+```
+
+**Changes:**
+
+- Fix unknown error while setting up integration
+
 ## v0.4.3
 
 - Jumping version

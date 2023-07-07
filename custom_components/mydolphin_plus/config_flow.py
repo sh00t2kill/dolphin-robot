@@ -34,9 +34,9 @@ class DomainFlowHandler(config_entries.ConfigFlow):
 
         if user_input is not None:
             config_manager = ConfigManager(self.hass, None)
-            await config_manager.initialize()
-
             config_manager.update_credentials(user_input)
+
+            await config_manager.initialize()
 
             api = RestAPI(self.hass, config_manager, None)
 

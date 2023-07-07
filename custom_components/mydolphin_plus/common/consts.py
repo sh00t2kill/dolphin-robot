@@ -18,6 +18,9 @@ DEFAULT_NAME = "MyDolphin Plus"
 DOMAIN = "mydolphin_plus"
 DATA = f"{DOMAIN}_DATA"
 LEGACY_KEY_FILE = f"{DOMAIN}.key"
+CONFIGURATION_FILE = f"{DOMAIN}.config.json"
+
+INVALID_TOKEN_SECTION = "https://github.com/sh00t2kill/dolphin-robot#invalid-token"
 
 ENTRY_ID_CONFIG = "config"
 
