@@ -37,8 +37,42 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "aws_broker": {
+        "name": "AWS Broker"
+      },
+      "weekly_scheduler": {
+        "name": "Weekly Scheduler"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "number": {
+      "led_intensity": {
+        "name": "LED Intensity"
+      }
+    },
     "sensor": {
+      "rssi": {
+        "name": "RSSI"
+      },
+      "network_name": {
+        "name": "Network Name"
+      },
+      "robot_type": {
+        "name": "Robot Type"
+      },
+      "cycle_count": {
+        "name": "Cycle Count"
+      },
+      "cycle_time_left": {
+        "name": "Cycle Time Left"
+      },
       "filter_status": {
+        "name": "Filter Status",
         "state": {
           "unknown": "Unknown",
           "empty": "Empty",
@@ -51,6 +85,7 @@
         }
       },
       "robot_status": {
+        "name": "Robot Status",
         "state": {
           "finished": "Finished",
           "fault": "Fault",
@@ -61,6 +96,7 @@
         }
       },
       "main_unit_status": {
+        "name": "Main Unit Status",
         "state": {
           "on": "On",
           "off": "Off",
@@ -72,6 +108,7 @@
         }
       },
       "status": {
+        "name": "Status",
         "state": {
           "on": "On",
           "off": "Off",
@@ -82,6 +119,7 @@
         }
       },
       "clean_mode": {
+        "name": "Clean Mode",
         "state": {
           "all": "Regular",
           "short": "Fast mode",
@@ -93,6 +131,7 @@
     },
     "select": {
       "led_mode": {
+        "name": "LED Mode",
         "state": {
           "1": "Blinking",
           "2": "Always on",
