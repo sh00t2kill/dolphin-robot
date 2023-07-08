@@ -3,6 +3,7 @@
 ## v0.4.5
 
 - Add support to translate names of all components
+- Fix parameters for read temperature request
 
 ## v0.4.4
 

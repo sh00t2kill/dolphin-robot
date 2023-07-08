@@ -425,8 +425,8 @@ class AWSClient:
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def _read_temperature_and_in_water_details(self):
-        motor_unit_serial = self.data.get(API_DATA_SERIAL_NUMBER)
-        serial_number = self.data.get(API_DATA_SERIAL_NUMBER)
+        motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
+        serial_number = self._api_data.get(API_DATA_SERIAL_NUMBER)
 
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
