@@ -1,0 +1,158 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurazione MyDolphin Plus",
+        "description": Configura i dettagli del tuo MyDolphin Plus",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_admin_credentials": "Invalid administrator credentials",
+      "invalid_server_details": "Invalid server details",
+      "already_configured": "Integration already configured with the name",
+      "missing_permanent_api_key": "Missing permanent API key",
+      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it"
+    }
+  },
+  "options": {
+    "step": {
+      "mydolphin_plus_additional_settings": {
+        "title": "Options for MyDolphin Plus.",
+        "description": "Set up username and password.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_admin_credentials": "Invalid administrator credentials",
+      "invalid_server_details": "Invalid server details",
+      "already_configured": "integration already configured with the name",
+      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "aws_broker": {
+        "name": "Broker AWS"
+      },
+      "weekly_scheduler": {
+        "name": "Programma settimanale"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "number": {
+      "led_intensity": {
+        "name": "Intensità LED"
+      }
+    },
+    "sensor": {
+      "rssi": {
+        "name": "RSSI"
+      },
+      "network_name": {
+        "name": "Nome rete"
+      },
+      "robot_type": {
+        "name": "Modello Robot"
+      },
+      "cycle_count": {
+        "name": "Numero di cicli"
+      },
+      "cycle_time_left": {
+        "name": "Tempo rimanente ciclo"
+      },
+      "filter_status": {
+        "name": "Stato filtro",
+        "state": {
+          "unknown": "Sconosciuto",
+          "empty": "Vuoto",
+          "partially_full": "Parzialmente pieno",
+          "getting_full": "Verso il pieno",
+          "almost_full": "Quasi pieno",
+          "full": "Pieno",
+          "fault": "Problema",
+          "not_available": "Non disponibile"
+        }
+      },
+      "robot_status": {
+        "name": "Stato del Robot",
+        "state": {
+          "finished": "Completato",
+          "fault": "Problema",
+          "notconnected": "Disconnesso",
+          "programming": "In programmazione",
+          "init": "Inizializzazione",
+          "scanning": "Valutazione"
+        }
+      },
+      "main_unit_status": {
+        "name": "Stato unità principale",
+        "state": {
+          "on": "On",
+          "off": "Off",
+          "holddelay": "Fermo (In attesa)",
+          "holdweekly": "Fermo (Settimanale)",
+          "programming": "In programmazione",
+          "error": "Errore",
+          "cleaning": "In pulizia"
+        }
+      },
+      "status": {
+        "name": "Stato",
+        "state": {
+          "on": "On",
+          "off": "Off",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
+          "programming": "Programming",
+          "notconnected": "Disconnected"
+        }
+      },
+      "clean_mode": {
+        "name": "Clean Mode",
+        "state": {
+          "all": "Regular",
+          "short": "Fast mode",
+          "floor": "Floor only",
+          "water": "Water line",
+          "ultra": "Ultra clean"
+        }
+      }
+    },
+    "select": {
+      "led_mode": {
+        "name": "LED Mode",
+        "state": {
+          "1": "Blinking",
+          "2": "Always on",
+          "3": "Disco"
+        }
+      }
+    },
+    "vacuum": {
+      "vacuum": {
+        "state_attributes": {
+          "fan_speed": {
+            "state": {
+              "all": "Regular",
+              "short": "Fast mode",
+              "floor": "Floor only",
+              "water": "Water line",
+              "ultra": "Ultra clean"
+            }
+          }
+        }
+      }
+    }
+  }
+}
