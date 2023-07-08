@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Configurazione MyDolphin Plus",
-        "description": Configura i dettagli del tuo MyDolphin Plus",
+        "description": "Configura i dettagli del tuo MyDolphin Plus",
         "data": {
           "username": "Username",
           "password": "Password"
@@ -114,8 +114,8 @@
           "off": "Off",
           "holddelay": "Idle (Delay)",
           "holdweekly": "Idle (Weekly)",
-          "programming": "Programming",
-          "notconnected": "Disconnected"
+          "programming": "In programmazione",
+          "notconnected": "Disconnesso"
         }
       },
       "clean_mode": {
