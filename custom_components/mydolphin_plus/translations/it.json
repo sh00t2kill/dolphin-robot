@@ -92,7 +92,7 @@
           "notconnected": "Disconnesso",
           "programming": "In programmazione",
           "init": "Inizializzazione",
-          "scanning": "Valutazione"
+          "scanning": "Ricognizione"
         }
       },
       "main_unit_status": {
@@ -112,7 +112,7 @@
         "state": {
           "on": "On",
           "off": "Off",
-          "holddelay": "Idle (in attesa)",
+          "holddelay": "Fermo (in attesa)",
           "holdweekly": "Fermo (Settimanale)",
           "programming": "In programmazione",
           "notconnected": "Disconnesso"
