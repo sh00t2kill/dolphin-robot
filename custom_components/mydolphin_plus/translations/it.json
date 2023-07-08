@@ -119,13 +119,13 @@
         }
       },
       "clean_mode": {
-        "name": "Clean Mode",
+        "name": "Modo pulizia",
         "state": {
-          "all": "Regular",
-          "short": "Fast mode",
-          "floor": "Floor only",
-          "water": "Water line",
-          "ultra": "Ultra clean"
+          "all": "Fondo e pareti",
+          "short": "Veloce",
+          "floor": "Solo fondo",
+          "water": "Pelo acqua",
+          "ultra": "Ultra pulito"
         }
       }
     },
@@ -133,8 +133,8 @@
       "led_mode": {
         "name": "LED Mode",
         "state": {
-          "1": "Blinking",
-          "2": "Always on",
+          "1": "Lampeggio",
+          "2": "Sempre acceso",
           "3": "Disco"
         }
       }
@@ -144,11 +144,11 @@
         "state_attributes": {
           "fan_speed": {
             "state": {
-              "all": "Regular",
-              "short": "Fast mode",
-              "floor": "Floor only",
-              "water": "Water line",
-              "ultra": "Ultra clean"
+              "all": "Fondo e pareti",
+              "short": "Veloce",
+              "floor": "Solo fondo",
+              "water": "Pelo acqua",
+              "ultra": "Ultra pulito"
             }
           }
         }
