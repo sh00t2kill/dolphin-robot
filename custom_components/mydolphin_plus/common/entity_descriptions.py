@@ -73,6 +73,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         key=slugify(DATA_KEY_LED),
         name=DATA_KEY_LED,
         entity_category=EntityCategory.CONFIG,
+        translation_key=slugify(DATA_KEY_LED),
     ),
     SelectEntityDescription(
         key=slugify(DATA_KEY_LED_MODE),
@@ -88,6 +89,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         native_max_value=100,
         entity_category=EntityCategory.CONFIG,
         device_class=NumberDeviceClass.POWER_FACTOR,
+        translation_key=slugify(DATA_KEY_LED_INTENSITY),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_STATUS),
@@ -101,11 +103,13 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
+        translation_key=slugify(DATA_KEY_RSSI),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_NETWORK_NAME),
         name=DATA_KEY_NETWORK_NAME,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_NETWORK_NAME),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_CLEAN_MODE),
@@ -129,11 +133,13 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         key=slugify(DATA_KEY_ROBOT_TYPE),
         name=DATA_KEY_ROBOT_TYPE,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_ROBOT_TYPE),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_CYCLE_COUNT),
         name=DATA_KEY_CYCLE_COUNT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_CYCLE_COUNT),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_FILTER_STATUS),
@@ -146,6 +152,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.MINUTES,
+        translation_key=slugify(DATA_KEY_CYCLE_TIME),
     ),
     SensorEntityDescription(
         key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
@@ -153,6 +160,7 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        translation_key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
     ),
     BinarySensorEntityDescription(
         key=slugify(DATA_KEY_AWS_BROKER),
@@ -160,10 +168,12 @@ ENTITY_DESCRIPTIONS: list[EntityDescription] = [
         icon="mdi:aws",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_AWS_BROKER),
     ),
     BinarySensorEntityDescription(
         key=slugify(DATA_KEY_WEEKLY_SCHEDULER),
         name=DATA_KEY_WEEKLY_SCHEDULER,
+        translation_key=slugify(DATA_KEY_WEEKLY_SCHEDULER),
     ),
 ]
 

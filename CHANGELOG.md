@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.5
+
+- Add support to translate names of all components
+
 ## v0.4.4
 
 **Breaking Change**
