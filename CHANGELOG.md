@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.6
+
+- Italian translation by [@tigers75](https://github.com/tigers75)
+-
+
 ## v0.4.5
 
 - Add support to translate names of all components
