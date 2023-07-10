@@ -38,7 +38,7 @@ class DomainFlowHandler(config_entries.ConfigFlow):
 
             await config_manager.initialize()
 
-            api = RestAPI(self.hass, config_manager, None)
+            api = RestAPI(self.hass, config_manager)
 
             await api.validate()
 

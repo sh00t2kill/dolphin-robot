@@ -61,7 +61,7 @@ class RestAPI:
 
     def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
         try:
-            self.hass = hass
+            self._hass = hass
 
             self.data = {}
 
@@ -112,7 +112,7 @@ class RestAPI:
 
     @property
     def _is_home_assistant(self):
-        return self.hass is not None
+        return self._hass is not None
 
     async def initialize(self, aws_token_encrypted_key: str | None):
         _LOGGER.info("Initializing MyDolphin API")
@@ -125,7 +125,7 @@ class RestAPI:
     async def _initialize_session(self):
         try:
             if self._is_home_assistant:
-                self._session = async_create_clientsession(hass=self.hass)
+                self._session = async_create_clientsession(hass=self._hass)
 
             else:
                 self._session = ClientSession()
