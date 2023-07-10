@@ -3,7 +3,7 @@
 ## v0.4.6
 
 - Italian translation by [@tigers75](https://github.com/tigers75)
--
+- Asynchronous device loading
 
 ## v0.4.5
 

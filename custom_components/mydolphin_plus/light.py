@@ -5,7 +5,8 @@ from typing import Any
 from homeassistant.components.light import LightEntity, LightEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
 from .common.consts import (
@@ -13,6 +14,7 @@ from .common.consts import (
     ACTION_ENTITY_TURN_ON,
     ATTR_ATTRIBUTES,
     ATTR_IS_ON,
+    SIGNAL_DEVICE_NEW,
 )
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -24,13 +26,22 @@ CURRENT_DOMAIN = Platform.LIGHT
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
-    await async_setup_entities(
-        hass,
-        entry,
-        CURRENT_DOMAIN,
-        LightEntityDescription,
-        MyDolphinPlusLightEntity,
-        async_add_entities,
+    @callback
+    def _async_device_new(entry_id: str):
+        if entry.entry_id != entry_id:
+            return
+
+        async_setup_entities(
+            hass,
+            entry,
+            CURRENT_DOMAIN,
+            LightEntityDescription,
+            MyDolphinPlusLightEntity,
+            async_add_entities,
+        )
+
+    entry.async_on_unload(
+        async_dispatcher_connect(hass, SIGNAL_DEVICE_NEW, _async_device_new)
     )
 
 

@@ -16,7 +16,7 @@ from homeassistant.util import slugify
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entities(
+def async_setup_entities(
     hass: HomeAssistant,
     entry: ConfigEntry,
     platform: Platform,

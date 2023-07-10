@@ -41,6 +41,8 @@ class ConfigManager:
 
     def __init__(self, hass: HomeAssistant | None, entry: ConfigEntry | None = None):
         self._hass = hass
+        self._entry = entry
+
         self._encryption_key = None
         self._crypto = None
 
@@ -79,6 +81,18 @@ class ConfigManager:
     @property
     def data(self):
         return self._data
+
+    @property
+    def entry(self):
+        entry = self._entry
+
+        return entry
+
+    @property
+    def entry_id(self):
+        entry_id = self._entry_id
+
+        return entry_id
 
     @property
     def name(self):
