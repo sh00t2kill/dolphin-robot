@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from base64 import b64encode
-from collections.abc import Awaitable
 import hashlib
 import logging
 import secrets
 import sys
-from typing import Callable
 
 from aiohttp import ClientResponseError, ClientSession
 from cryptography.hazmat.backends import default_backend
@@ -14,6 +12,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
@@ -39,6 +38,8 @@ from ..common.consts import (
     MAXIMUM_ATTEMPTS_GET_AWS_TOKEN,
     ROBOT_DETAILS_BY_SN_URL,
     ROBOT_DETAILS_URL,
+    SIGNAL_API_STATUS,
+    SIGNAL_DEVICE_NEW,
     STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     TOKEN_URL,
 )
@@ -55,30 +56,21 @@ class RestAPI:
     _status: ConnectivityStatus | None
     _session: ClientSession | None
     _config_manager: ConfigManager
-    _on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None
 
-    _dispatched_devices: list
+    _device_loaded: bool
 
-    def __init__(
-        self,
-        hass: HomeAssistant | None,
-        config_manager: ConfigManager,
-        on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]] | None,
-    ):
+    def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
         try:
-            self.hass = hass
+            self._hass = hass
 
             self.data = {}
 
             self._config_manager = config_manager
-            self._on_status_changed = (
-                self._do_nothing if on_status_changed is None else on_status_changed
-            )
 
             self._status = None
 
             self._session = None
-            self._dispatched_devices = []
+            self._device_loaded = False
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -120,10 +112,7 @@ class RestAPI:
 
     @property
     def _is_home_assistant(self):
-        return self.hass is not None
-
-    async def _do_nothing(self, _status: ConnectivityStatus):
-        pass
+        return self._hass is not None
 
     async def initialize(self, aws_token_encrypted_key: str | None):
         _LOGGER.info("Initializing MyDolphin API")
@@ -136,7 +125,7 @@ class RestAPI:
     async def _initialize_session(self):
         try:
             if self._is_home_assistant:
-                self._session = async_create_clientsession(hass=self.hass)
+                self._session = async_create_clientsession(hass=self._hass)
 
             else:
                 self._session = ClientSession()
@@ -149,7 +138,7 @@ class RestAPI:
                 f"Failed to initialize session, Error: {str(ex)}, Line: {line_number}"
             )
 
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def validate(self):
         await self._initialize_session()
@@ -178,7 +167,7 @@ class RestAPI:
             )
 
             if crex.status in [404, 405]:
-                await self._set_status(ConnectivityStatus.NotFound)
+                self._set_status(ConnectivityStatus.NotFound)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -188,7 +177,7 @@ class RestAPI:
                 f"Failed to post JSON to {url}, Error: {ex}, Line: {line_number}"
             )
 
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
         return result
 
@@ -213,7 +202,7 @@ class RestAPI:
             )
 
             if crex.status in [404, 405]:
-                await self._set_status(ConnectivityStatus.NotFound)
+                self._set_status(ConnectivityStatus.NotFound)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -223,7 +212,7 @@ class RestAPI:
                 f"Failed to get data from {url}, Error: {ex}, Line: {line_number}"
             )
 
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
         return result
 
@@ -235,6 +224,13 @@ class RestAPI:
         if self._status == ConnectivityStatus.Connected:
             _LOGGER.debug("Connected. Refresh details")
             await self._load_details()
+
+            if not self._device_loaded:
+                self._device_loaded = True
+
+                async_dispatcher_send(
+                    self._hass, SIGNAL_DEVICE_NEW, self._config_manager.entry_id
+                )
 
             _LOGGER.info(f"API Data updated: {self.data}")
 
@@ -248,11 +244,11 @@ class RestAPI:
             return
 
         else:
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def _service_login(self):
         try:
-            await self._set_status(ConnectivityStatus.Connecting)
+            self._set_status(ConnectivityStatus.Connecting)
 
             username = self._config_manager.username
             password = self._config_manager.password
@@ -277,7 +273,7 @@ class RestAPI:
                 await self._set_actual_motor_unit_serial()
 
             else:
-                await self._set_status(ConnectivityStatus.InvalidCredentials)
+                self._set_status(ConnectivityStatus.InvalidCredentials)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -286,7 +282,7 @@ class RestAPI:
             _LOGGER.error(
                 f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
             )
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def _set_actual_motor_unit_serial(self):
         try:
@@ -317,7 +313,7 @@ class RestAPI:
                     API_RESPONSE_UNIT_SERIAL_NUMBER
                 )
 
-                await self._set_status(ConnectivityStatus.TemporaryConnected)
+                self._set_status(ConnectivityStatus.TemporaryConnected)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -326,7 +322,7 @@ class RestAPI:
             _LOGGER.error(
                 f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
             )
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def _generate_token(self):
         try:
@@ -355,7 +351,7 @@ class RestAPI:
                     for field in API_TOKEN_FIELDS:
                         self.data[field] = data.get(field)
 
-                    await self._set_status(ConnectivityStatus.Connected)
+                    self._set_status(ConnectivityStatus.Connected)
 
                     if get_token_attempts > 0:
                         _LOGGER.debug(
@@ -372,7 +368,7 @@ class RestAPI:
                             f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}"
                         )
 
-                        await self._set_status(ConnectivityStatus.Failed)
+                        self._set_status(ConnectivityStatus.Failed)
 
                 get_token_attempts += 1
 
@@ -383,11 +379,11 @@ class RestAPI:
             _LOGGER.error(
                 f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}"
             )
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def _load_details(self):
         if self._status != ConnectivityStatus.Connected:
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
             return
 
         try:
@@ -470,7 +466,7 @@ class RestAPI:
 
         return encryption_key
 
-    async def _set_status(self, status: ConnectivityStatus):
+    def _set_status(self, status: ConnectivityStatus):
         if status != self._status:
             log_level = ConnectivityStatus.get_log_level(status)
 
@@ -481,4 +477,7 @@ class RestAPI:
 
             self._status = status
 
-            await self._on_status_changed(status)
+            if self._hass is not None:
+                async_dispatcher_send(
+                    self._hass, SIGNAL_API_STATUS, self._config_manager.entry_id, status
+                )

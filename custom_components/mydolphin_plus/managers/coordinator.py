@@ -16,6 +16,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_STATE,
 )
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
@@ -138,6 +139,8 @@ from ..common.consts import (
     SERVICE_DELAYED_CLEAN,
     SERVICE_NAVIGATE,
     SERVICE_VALIDATION,
+    SIGNAL_API_STATUS,
+    SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_ENTITIES_INTERVAL,
     WS_RECONNECT_INTERVAL,
@@ -171,8 +174,22 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             update_method=self._async_update_data,
         )
 
-        self._api = RestAPI(hass, config_manager, self._on_api_status_changed)
-        self._aws_client = AWSClient(hass, self._on_aws_client_status_changed)
+        self._api = RestAPI(hass, config_manager)
+        self._aws_client = AWSClient(hass, config_manager)
+
+        entry = config_manager.entry
+
+        entry.async_on_unload(
+            async_dispatcher_connect(
+                hass, SIGNAL_API_STATUS, self._on_api_status_changed
+            )
+        )
+
+        entry.async_on_unload(
+            async_dispatcher_connect(
+                hass, SIGNAL_AWS_CLIENT_STATUS, self._on_aws_client_status_changed
+            )
+        )
 
         self._config_manager = config_manager
 
@@ -262,7 +279,10 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 aws_token_encrypted_key
             )
 
-    async def _on_api_status_changed(self, status: ConnectivityStatus):
+    async def _on_api_status_changed(self, entry_id: str, status: ConnectivityStatus):
+        if entry_id != self._config_manager.entry_id:
+            return
+
         if status == ConnectivityStatus.Connected:
             await self._set_aws_token_encrypted_key()
 
@@ -282,7 +302,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         elif status == ConnectivityStatus.InvalidCredentials:
             self.update_interval = None
 
-    async def _on_aws_client_status_changed(self, status: ConnectivityStatus):
+    async def _on_aws_client_status_changed(
+        self, entry_id: str, status: ConnectivityStatus
+    ):
+        if entry_id != self._config_manager.entry_id:
+            return
+
         if status == ConnectivityStatus.Connected:
             await self._aws_client.update()
 

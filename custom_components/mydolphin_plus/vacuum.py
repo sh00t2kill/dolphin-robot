@@ -5,7 +5,8 @@ from typing import Any
 from homeassistant.components.vacuum import StateVacuumEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODE, ATTR_STATE, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.icon import icon_for_battery_level
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
@@ -21,6 +22,7 @@ from .common.consts import (
     ACTION_ENTITY_TURN_OFF,
     ACTION_ENTITY_TURN_ON,
     ATTR_ATTRIBUTES,
+    SIGNAL_DEVICE_NEW,
 )
 from .common.entity_descriptions import MyDolphinPlusVacuumEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
@@ -33,13 +35,22 @@ CURRENT_DOMAIN = Platform.VACUUM
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
-    await async_setup_entities(
-        hass,
-        entry,
-        CURRENT_DOMAIN,
-        MyDolphinPlusVacuumEntityDescription,
-        MyDolphinPlusLightEntity,
-        async_add_entities,
+    @callback
+    def _async_device_new(entry_id: str):
+        if entry.entry_id != entry_id:
+            return
+
+        async_setup_entities(
+            hass,
+            entry,
+            CURRENT_DOMAIN,
+            MyDolphinPlusVacuumEntityDescription,
+            MyDolphinPlusLightEntity,
+            async_add_entities,
+        )
+
+    entry.async_on_unload(
+        async_dispatcher_connect(hass, SIGNAL_DEVICE_NEW, _async_device_new)
     )
 
 

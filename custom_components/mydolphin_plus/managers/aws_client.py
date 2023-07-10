@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import asyncio
-from collections.abc import Awaitable
 from datetime import datetime
 import json
 import logging
 import os
 import sys
-from typing import Callable
 import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
 from homeassistant.const import CONF_MODE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
+from .. import ConfigManager
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     API_DATA_MOTOR_UNIT_SERIAL,
@@ -70,6 +69,7 @@ from ..common.consts import (
     MQTT_QOS_1,
     PWS_STATE_OFF,
     PWS_STATE_ON,
+    SIGNAL_AWS_CLIENT_STATUS,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
     UPDATE_API_INTERVAL,
@@ -88,16 +88,11 @@ class AWSClient:
 
     _topic_data: TopicData | None
     _status: ConnectivityStatus | None
-    _on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]]
 
-    def __init__(
-        self,
-        hass: HomeAssistant | None,
-        on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]],
-    ):
+    def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
         try:
-            self.hass = hass
-            self._on_status_changed = on_status_changed
+            self._hass = hass
+            self._config_manager = config_manager
 
             self._api_data = {}
             self._data = {}
@@ -123,11 +118,11 @@ class AWSClient:
 
     @property
     def _is_home_assistant(self):
-        return self.hass is not None
+        return self._hass is not None
 
     @property
     def _has_running_loop(self):
-        return self.hass.loop is not None and not self.hass.loop.is_closed()
+        return self._hass.loop is not None and not self._hass.loop.is_closed()
 
     @property
     def data(self) -> dict:
@@ -137,13 +132,13 @@ class AWSClient:
         if self._awsiot_client is not None:
             self._awsiot_client.disconnectAsync(self._ack_callback)
 
-        await self._set_status(ConnectivityStatus.Disconnected)
+        self._set_status(ConnectivityStatus.Disconnected)
 
     async def initialize(self):
         try:
             _LOGGER.info("Initializing MyDolphin AWS IOT WS")
 
-            await self._set_status(ConnectivityStatus.Connecting)
+            self._set_status(ConnectivityStatus.Connecting)
 
             awsiot_id = str(uuid.uuid4())
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
@@ -189,7 +184,7 @@ class AWSClient:
 
             else:
                 _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
-                await self._set_status(ConnectivityStatus.Failed)
+                self._set_status(ConnectivityStatus.Failed)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -199,7 +194,7 @@ class AWSClient:
                 f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
             )
 
-            await self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def update_api_data(self, api_data: dict):
         self._api_data = api_data
@@ -232,26 +227,12 @@ class AWSClient:
     def _handle_aws_client_online(self):
         _LOGGER.debug("AWS IOT Client is Online")
 
-        if self._is_home_assistant:
-            if self._has_running_loop:
-                self.hass.async_create_task(
-                    self._set_status(ConnectivityStatus.Connected)
-                )
-
-        else:
-            loop = asyncio.new_event_loop()
-            loop.create_task(self._set_status(ConnectivityStatus.Connected))
+        self._set_status(ConnectivityStatus.Connected)
 
     def _handle_aws_client_offline(self):
         _LOGGER.debug("AWS IOT Client is Offline")
 
-        if self._is_home_assistant:
-            if self._has_running_loop:
-                self.hass.async_create_task(self._set_status(ConnectivityStatus.Failed))
-
-        else:
-            loop = asyncio.new_event_loop()
-            loop.create_task(self._set_status(ConnectivityStatus.Failed))
+        self._set_status(ConnectivityStatus.Failed)
 
     @staticmethod
     def _ack_callback(mid, data):
@@ -493,7 +474,7 @@ class AWSClient:
 
         return data
 
-    async def _set_status(self, status: ConnectivityStatus):
+    def _set_status(self, status: ConnectivityStatus):
         if status != self._status:
             log_level = ConnectivityStatus.get_log_level(status)
 
@@ -504,4 +485,10 @@ class AWSClient:
 
             self._status = status
 
-            await self._on_status_changed(status)
+            if self._hass is not None:
+                async_dispatcher_send(
+                    self._hass,
+                    SIGNAL_AWS_CLIENT_STATUS,
+                    self._config_manager.entry_id,
+                    status,
+                )

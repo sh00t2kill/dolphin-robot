@@ -4,10 +4,15 @@ import logging
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_STATE, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
-from .common.consts import ACTION_ENTITY_SELECT_OPTION, ATTR_ATTRIBUTES
+from .common.consts import (
+    ACTION_ENTITY_SELECT_OPTION,
+    ATTR_ATTRIBUTES,
+    SIGNAL_DEVICE_NEW,
+)
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,13 +23,22 @@ CURRENT_DOMAIN = Platform.SELECT
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
-    await async_setup_entities(
-        hass,
-        entry,
-        CURRENT_DOMAIN,
-        SelectEntityDescription,
-        MyDolphinPlusSelectEntity,
-        async_add_entities,
+    @callback
+    def _async_device_new(entry_id: str):
+        if entry.entry_id != entry_id:
+            return
+
+        async_setup_entities(
+            hass,
+            entry,
+            CURRENT_DOMAIN,
+            SelectEntityDescription,
+            MyDolphinPlusSelectEntity,
+            async_add_entities,
+        )
+
+    entry.async_on_unload(
+        async_dispatcher_connect(hass, SIGNAL_DEVICE_NEW, _async_device_new)
     )
 
 
