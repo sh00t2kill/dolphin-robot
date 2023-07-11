@@ -1,19 +1,45 @@
-"""
-Support for MyDolphin Plus.
-For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/switch.mydolphin_plus/
-"""
 import calendar
 from datetime import timedelta
 
 import voluptuous as vol
 
 from homeassistant.components.vacuum import VacuumEntityFeature
-from homeassistant.const import CONF_ENABLED, CONF_MODE
+from homeassistant.const import (
+    CONF_ENABLED,
+    CONF_MODE,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    Platform,
+)
 import homeassistant.helpers.config_validation as cv
 
-VERSION = "0.0.3"
+MANUFACTURER = "Maytronics"
+DEFAULT_NAME = "MyDolphin Plus"
+DOMAIN = "mydolphin_plus"
+DATA = f"{DOMAIN}_DATA"
+LEGACY_KEY_FILE = f"{DOMAIN}.key"
+CONFIGURATION_FILE = f"{DOMAIN}.config.json"
 
+INVALID_TOKEN_SECTION = "https://github.com/sh00t2kill/dolphin-robot#invalid-token"
+
+ENTRY_ID_CONFIG = "config"
+
+SIGNAL_DEVICE_NEW = f"{DOMAIN}_NEW_DEVICE_SIGNAL"
+SIGNAL_AWS_CLIENT_STATUS = f"{DOMAIN}_AWS_CLIENT_STATUS_SIGNAL"
+SIGNAL_API_STATUS = f"{DOMAIN}_API_SIGNAL"
+
+CONFIGURATION_URL = "https://www.maytronics.com/"
+
+PLATFORMS = [
+    Platform.SELECT,
+    Platform.LIGHT,
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.VACUUM,
+    Platform.NUMBER,
+]
+
+ATTR_IS_ON = "is_on"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_START_TIME = "start_time"
 ATTR_STATUS = "status"
@@ -108,8 +134,9 @@ DEFAULT_TIME_PART = 255
 DEFAULT_BATTERY_LEVEL = "NA"
 
 UPDATE_API_INTERVAL = timedelta(seconds=60)
-UPDATE_ENTITIES_INTERVAL = timedelta(seconds=1)
+UPDATE_ENTITIES_INTERVAL = timedelta(seconds=5)
 LOCATE_OFF_INTERVAL_SECONDS = timedelta(seconds=10)
+API_RECONNECT_INTERVAL = timedelta(seconds=30)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
 WS_LAST_UPDATE = "last-update"
@@ -192,6 +219,8 @@ DATA_ROBOT_DETAILS = {
 }
 
 ATTR_LED_MODE = "led_mode"
+ATTR_ATTRIBUTES = "attributes"
+ATTR_ACTIONS = "actions"
 
 CLEANING_MODE_REGULAR = "all"
 CLEANING_MODE_FAST_MODE = "short"
@@ -234,12 +263,6 @@ ICON_LED_MODES = {
     LED_MODE_BLINKING: LED_MODE_ICON_DEFAULT,
     LED_MODE_ALWAYS_ON: "mdi:lightbulb-on",
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline",
-}
-
-LED_MODES_NAMES = {
-    LED_MODE_BLINKING: "Blinking",
-    LED_MODE_ALWAYS_ON: "Always on",
-    LED_MODE_DISCO: "Disco",
 }
 
 SERVICE_NAVIGATE = "navigate"
@@ -326,8 +349,8 @@ CLOCK_HOURS_ICONS = {
 
 PWS_STATE_ON = "on"
 PWS_STATE_OFF = "off"
-PWS_STATE_HOLD_DELAY = "holdDelay"
-PWS_STATE_HOLD_WEEKLY = "holdWeekly"
+PWS_STATE_HOLD_DELAY = "holddelay"
+PWS_STATE_HOLD_WEEKLY = "holdweekly"
 PWS_STATE_PROGRAMMING = "programming"
 PWS_STATE_ERROR = "error"
 PWS_STATE_CLEANING = "cleaning"
@@ -339,35 +362,34 @@ ROBOT_STATE_PROGRAMMING = "programming"
 ROBOT_STATE_INIT = "init"
 ROBOT_STATE_SCANNING = "scanning"
 
-CALCULATED_STATES = {
-    PWS_STATE_ON: PWS_STATE_ON,
-    PWS_STATE_OFF: PWS_STATE_OFF,
-    PWS_STATE_PROGRAMMING: PWS_STATE_PROGRAMMING,
-    ROBOT_STATE_NOT_CONNECTED: "Disconnected",
-    PWS_STATE_HOLD_DELAY: "Idle (Delay)",
-    PWS_STATE_HOLD_WEEKLY: "Idle (Schedule)",
+CONSIDERED_POWER_STATE = {
+    PWS_STATE_OFF: False,
+    PWS_STATE_ERROR: False,
+    PWS_STATE_ON: True,
+    PWS_STATE_CLEANING: True,
+    PWS_STATE_PROGRAMMING: True,
 }
 
 FILTER_BAG_STATUS = {
-    "Unknown": (-1, -1),
-    "Empty": (0, 0),
-    "Partial full": (1, 25),
-    "Getting full": (26, 74),
-    "Almost full": (75, 99),
-    "Full": (100, 100),
-    "Fault": (101, 101),
-    "Not available": (102, 102),
+    "unknown": (-1, -1),
+    "empty": (0, 0),
+    "partially_full": (1, 25),
+    "getting_full": (26, 74),
+    "almost_full": (75, 99),
+    "full": (100, 100),
+    "fault": (101, 101),
+    "not_available": (102, 102),
 }
 
 FILTER_BAG_ICONS = {
-    "Unknown": "mdi:robot-off",
-    "Empty": "mdi:gauge-empty",
-    "Partial full": "mdi:gauge-low",
-    "Getting full": "mdi:gauge",
-    "Almost full": "mdi:gauge",
-    "Full": "mdi:gauge-full",
-    "Fault": "mdi:robot-dead",
-    "Not available": "mdi:robot-confused-outline",
+    "unknown": "mdi:robot-off",
+    "empty": "mdi:gauge-empty",
+    "partially_full": "mdi:gauge-low",
+    "getting_full": "mdi:gauge",
+    "almost_full": "mdi:gauge",
+    "full": "mdi:gauge-full",
+    "fault": "mdi:robot-dead",
+    "not_available": "mdi:robot-confused-outline",
 }
 
 VACUUM_FEATURES = (
@@ -383,9 +405,45 @@ VACUUM_FEATURES = (
     | VacuumEntityFeature.LOCATE
 )
 
+STORAGE_DATA_KEY = "key"
 STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
 
 STORAGE_DATA_FILE_CONFIG = "config"
 
 STORAGE_DATA_FILES = [STORAGE_DATA_FILE_CONFIG]
+
+DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]
+
+DATA_KEY_STATUS = "Status"
+DATA_KEY_VACUUM = "Vacuum"
+DATA_KEY_LED_MODE = "LED Mode"
+DATA_KEY_LED_INTENSITY = "LED Intensity"
+DATA_KEY_LED = "LED"
+DATA_KEY_FILTER_STATUS = "Filter Status"
+DATA_KEY_CYCLE_TIME = "Cycle Time"
+DATA_KEY_CYCLE_TIME_LEFT = "Cycle Time Left"
+DATA_KEY_AWS_BROKER = "AWS Broker"
+DATA_KEY_WEEKLY_SCHEDULER = "Weekly Scheduler"
+DATA_KEY_SCHEDULE = "Schedule"
+DATA_KEY_RSSI = "RSSI"
+DATA_KEY_NETWORK_NAME = "Network Name"
+DATA_KEY_CLEAN_MODE = "Clean Mode"
+DATA_KEY_MAIN_UNIT_STATUS = "Main Unit Status"
+DATA_KEY_ROBOT_STATUS = "Robot Status"
+DATA_KEY_ROBOT_TYPE = "Robot Type"
+DATA_KEY_BUSY = "Busy"
+DATA_KEY_CYCLE_COUNT = "Cycle Count"
+
+ACTION_ENTITY_RETURN_TO_BASE = "return_to_base"
+ACTION_ENTITY_SET_FAN_SPEED = "set_fan_speed"
+ACTION_ENTITY_START = "start"
+ACTION_ENTITY_STOP = "stop"
+ACTION_ENTITY_PAUSE = "stop"
+ACTION_ENTITY_TURN_ON = "turn_on"
+ACTION_ENTITY_TURN_OFF = "turn_off"
+ACTION_ENTITY_TOGGLE = "toggle"
+ACTION_ENTITY_SEND_COMMAND = "send_command"
+ACTION_ENTITY_LOCATE = "locate"
+ACTION_ENTITY_SELECT_OPTION = "select_option"
+ACTION_ENTITY_SET_NATIVE_VALUE = "set_native_value"

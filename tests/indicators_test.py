@@ -1,5 +1,5 @@
 """Test file for indicators."""
-from custom_components.mydolphin_plus.component.helpers.const import (
+from custom_components.mydolphin_plus.common.consts import (
     PWS_STATE_CLEANING,
     PWS_STATE_ERROR,
     PWS_STATE_HOLD_DELAY,

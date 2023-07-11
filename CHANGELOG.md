@@ -1,5 +1,67 @@
 # Changelog
 
+## v0.4.6
+
+- Italian translation by [@tigers75](https://github.com/tigers75)
+- Asynchronous device loading
+
+## v0.4.5
+
+- Add support to translate names of all components
+- Fix parameters for read temperature request
+
+## v0.4.4
+
+**Breaking Change**
+
+This version changes the approach of extracting encryption key,
+If the following error message available in log, please follow its instructions:
+
+```log
+ERROR (MainThread) [custom_components.mydolphin_plus.managers.config_manager] Invalid encryption key, Please follow instructions in https://github.com/sh00t2kill/dolphin-robot#invalid-token
+```
+
+**Changes:**
+
+- Fix unknown error while setting up integration
+
+## v0.4.3
+
+- Jumping version
+
+## v0.4.2
+
+- Fix integration setup process
+
+## v0.4.1
+
+- Fix integration setup process
+
+## v0.4.0
+
+- Refactor code to support HA coordinator
+- Improve reconnection when AWS Broker gets disconnected
+- Remove integration options (Edit configuration)
+- Improve diagnostic data
+- New components
+  - Sensor: Clean Mode
+  - Sensor: Cycle Count
+  - Sensor: Main Unit Status
+  - Sensor: Robot Status
+  - Sensor: Robot Type
+  - Sensor: RSSI
+  - Sensor: Network Name
+  - Sensor: Status (Calculated Status)
+  - Number: LED Intensity
+- Support translation for
+  - Vacuum: Fan Speed
+  - Sensor: Filter Status
+  - Sensor: Robot Status
+  - Sensor: Main Unit Status
+  - Sensor: Clean Mode
+  - Sensor: Status
+  - Select: LED Mode
+
 ## v0.3.4
 
 - Fix error upon restart caused by attempt to handle message from AWS MQTT Broker during restart of HA

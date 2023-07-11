@@ -43,13 +43,6 @@ to test you can run the CLI mode or within the HA.
 | Username    | Textbox | -        |         | Username of dashboard user for MyDolphin Plus |
 | Password    | Textbox | -        |         | Password of dashboard user for MyDolphin Plus |
 
-###### Integration options (Configuration -> Integrations -> MyDolphin Plus Integration -> Options)
-
-| Fields name | Type    | Required | Default              | Description                                   |
-| ----------- | ------- | -------- | -------------------- | --------------------------------------------- |
-| Username    | Textbox | -        | Last stored username | Username of dashboard user for MyDolphin Plus |
-| Password    | Textbox | -        | Last stored password | Password of dashboard user for MyDolphin Plus |
-
 ###### Configuration validations
 
 Upon submitting the form of creating an integration or updating options,
@@ -88,18 +81,27 @@ Please remove the integration and re-add it to make it work again.
 
 ## HA Components
 
-| Entity Name                      | Type           | Description                                                    | Additional information                                                                                                              |
-| -------------------------------- | -------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| {Robot Name} AWS Broker          | Binary Sensors | Indicates whether the component synchronized with cloud or not |                                                                                                                                     |
-| {Robot Name} Schedule Delay      | Binary Sensors | Indicates whether the delay cleaning is enabled or not         |                                                                                                                                     |
-| {Robot Name} Schedule {Day Name} | Binary Sensors | Indicates whether the schedule cleaning is enabled or not      |                                                                                                                                     |
-| {Robot Name} Weekly Schedule     | Binary Sensor  | Indicates whether the weekly scheduler is on or off            |                                                                                                                                     |
-| {Robot Name}                     | Light          | Turned on or off the led                                       |                                                                                                                                     |
-| {Robot Name} Led Mode            | Select         | Select led mode                                                | Blinking, Always on, Disco                                                                                                          |
-| {Robot Name} Filter              | Sensors        | Presents the status of the filter bag                          |                                                                                                                                     |
-| {Robot Name} Cycle Time          | Sensor         | Indicates the time the robot is cleaning                       | Measurement of duration in minutes                                                                                                  |
-| {Robot Name} Cycle Time Left     | Sensor         | Indicates the time left for the robot to complete the cycle    | Measurement of duration in seconds                                                                                                  |
-| {Robot Name}                     | Vacuum         | Provides functionality of vacuum to the robot                  | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate, Schedule, Delay Clean) |
+| Entity Name                      | Type          | Description                                                    | Additional information                                                                                                              |
+| -------------------------------- | ------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| {Robot Name} AWS Broker          | Binary Sensor | Indicates whether the component synchronized with cloud or not |                                                                                                                                     |
+| {Robot Name} Schedule Delay      | Binary Sensor | Indicates whether the delay cleaning is enabled or not         |                                                                                                                                     |
+| {Robot Name} Schedule {Day Name} | Binary Sensor | Indicates whether the schedule cleaning is enabled or not      |                                                                                                                                     |
+| {Robot Name} Weekly Schedule     | Binary Sensor | Indicates whether the weekly scheduler is on or off            |                                                                                                                                     |
+| {Robot Name} LED                 | Light         | Turned on or off the led                                       |                                                                                                                                     |
+| {Robot Name} LED Intensity       | Number        | Sets the LED intensity values between 0-100                    |                                                                                                                                     |
+| {Robot Name} LED Mode            | Select        | Select led mode                                                | Blinking, Always on, Disco                                                                                                          |
+| {Robot Name} Status              | Sensor        | Presents the calculated status of the device                   |                                                                                                                                     |
+| {Robot Name} RSSI                | Sensor        | Presents the WIFI signal strength in DB                        |                                                                                                                                     |
+| {Robot Name} Network Name        | Sensor        | Presents the name of the network (WIFI SSID)                   |                                                                                                                                     |
+| {Robot Name} Clean Mode          | Sensor        | Presents the current clean mode                                |                                                                                                                                     |
+| {Robot Name} Main Unit Status    | Sensor        | Presents the status of the main unit (PWS)                     |                                                                                                                                     |
+| {Robot Name} Robot Status        | Sensor        | Presents the status of the robot                               |                                                                                                                                     |
+| {Robot Name} Robot Model         | Sensor        | Presents the type of the robot                                 |                                                                                                                                     |
+| {Robot Name} Cycle Count         | Sensor        | Presents the number of cycles ran                              |                                                                                                                                     |
+| {Robot Name} Filter Status       | Sensor        | Presents the status of the filter bag                          |                                                                                                                                     |
+| {Robot Name} Cycle Time          | Sensor        | Indicates the time the robot is cleaning                       | Measurement of duration in minutes                                                                                                  |
+| {Robot Name} Cycle Time Left     | Sensor        | Indicates the time left for the robot to complete the cycle    | Measurement of duration in seconds                                                                                                  |
+| {Robot Name}                     | Vacuum        | Provides functionality of vacuum to the robot                  | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Navigate, Schedule, Delay Clean) |
 
 ### Cleaning Modes
 
@@ -189,6 +191,78 @@ logger:
 Please attach also diagnostic details of the integration, available in:
 Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics
 
+### Invalid Token
+
+In case you have referenced to that section, something went wrong with the encryption key,
+Encryption key should be located in `.storage/mydolphin_plus.config.json` file under `data.key` property,
+below are the steps to solve that issue.
+
+#### File not exists or File exists, data.key is not
+
+Please report as issue
+
+#### File exists, data.key is available
+
+Example:
+
+```json
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "mydolphin_plus.config.json",
+  "data": {
+    "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY=",
+    "b8fa11c50331d2647b8aa7e37935efeb": {
+      "locating": false,
+      "aws-token-encrypted-key": "AWS_TOKEN"
+    }
+  }
+}
+```
+
+OR
+
+```json
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "mydolphin_plus.config.json",
+  "data": {
+    "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY="
+  }
+}
+```
+
+1. Remove the integration
+2. Delete the file
+3. Restart HA
+4. Try to re-add the integration
+5. If still happens - report as issue
+
+#### File exists, key is available under one of the entry configurations
+
+Example:
+
+```json
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "mydolphin_plus.config.json",
+  "data": {
+    "b8fa11c50331d2647b8aa7e37935efeb": {
+      "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY=",
+      "locating": false,
+      "aws-token-encrypted-key": "AWS_TOKEN"
+    }
+  }
+}
+```
+
+1. Move the `key` to the root of the JSON
+2. Restart HA
+3. Try to re-add the integration
+4. If still happens - follow instructions of section #1 (_i._)
+
 ## Lovelace cards.
 
 We have confirmed the robot works with the custom vacuum card, built by denysdovhan
@@ -197,25 +271,14 @@ https://github.com/denysdovhan/vacuum-card
 Copy the icons from www on the repository to /config/www. Below is a suggested configuration for the card
 
 ```yaml
-entity: vacuum.my_vacuum
-image: /local/robot_icon_c.svg
-type: custom:vacuum-card
-compact_view: false
-stats:
-  default:
-    - attribute: turn_on_count
-      subtitle: Run Count
-    - entity_id: sensor.my_vacuum_filter
-      subtitle: Filter Status
-    - attribute: pws_status
-      subtitle: Base Status
-    - entity_id: binary_sensor.jmy_vacuum_broker
-      subtitle: AWS
-  cleaning:
-    - entity_id: sensor.my_vacuum_cycle_time_left
-      subtitle: Time Remaining
-    - attribute: robot_status
-      subtitle: Base Status
-    - entity_id: binary_sensor.my_vacuum_aws_broker
-      subtitle: AWS
+type: tile
+entity: vacuum.robot_name
+show_entity_picture: true
+features:
+  - type: vacuum-commands
+    commands:
+      - start_pause
+      - stop
+      - locate
+      - return_home
 ```

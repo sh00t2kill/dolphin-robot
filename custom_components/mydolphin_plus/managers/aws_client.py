@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-from collections.abc import Awaitable, Callable
 from datetime import datetime
 import json
 import logging
@@ -13,11 +11,11 @@ from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
 from homeassistant.const import CONF_MODE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from ...configuration.models.config_data import ConfigData
-from ...core.api.base_api import BaseAPI
-from ...core.helpers.enums import ConnectivityStatus
-from ..helpers.const import (
+from .. import ConfigManager
+from ..common.connectivity_status import ConnectivityStatus
+from ..common.consts import (
     API_DATA_MOTOR_UNIT_SERIAL,
     API_DATA_SERIAL_NUMBER,
     API_RESPONSE_DATA_ACCESS_KEY_ID,
@@ -71,6 +69,7 @@ from ..helpers.const import (
     MQTT_QOS_1,
     PWS_STATE_OFF,
     PWS_STATE_ON,
+    SIGNAL_AWS_CLIENT_STATUS,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
     UPDATE_API_INTERVAL,
@@ -79,34 +78,29 @@ from ..helpers.const import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
-from ..models.topic_data import TopicData
+from ..common.topic_data import TopicData
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class IntegrationWS(BaseAPI):
-    _config_data: ConfigData | None
-
+class AWSClient:
     _awsiot_client: AWSIoTMQTTClient | None
 
     _topic_data: TopicData | None
+    _status: ConnectivityStatus | None
 
-    def __init__(
-        self,
-        hass: HomeAssistant | None,
-        async_on_data_changed: Callable[[], Awaitable[None]] | None = None,
-        async_on_status_changed: Callable[[ConnectivityStatus], Awaitable[None]]
-        | None = None,
-    ):
-        super().__init__(hass, async_on_data_changed, async_on_status_changed)
-
+    def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
         try:
-            self._config_data = None
+            self._hass = hass
+            self._config_manager = config_manager
 
             self._api_data = {}
+            self._data = {}
 
             self._topic_data = None
             self._awsiot_client = None
+
+            self._status = None
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -117,21 +111,34 @@ class IntegrationWS(BaseAPI):
             )
 
     @property
-    def has_running_loop(self):
-        return self.hass.loop is not None and not self.hass.loop.is_closed()
+    def status(self) -> str | None:
+        status = self._status
+
+        return status
+
+    @property
+    def _is_home_assistant(self):
+        return self._hass is not None
+
+    @property
+    def _has_running_loop(self):
+        return self._hass.loop is not None and not self._hass.loop.is_closed()
+
+    @property
+    def data(self) -> dict:
+        return self._data
 
     async def terminate(self):
-        await super().terminate()
-
         if self._awsiot_client is not None:
             self._awsiot_client.disconnectAsync(self._ack_callback)
 
-    async def initialize(self, config_data: ConfigData):
+        self._set_status(ConnectivityStatus.Disconnected)
+
+    async def initialize(self):
         try:
             _LOGGER.info("Initializing MyDolphin AWS IOT WS")
-            self._config_data = config_data
 
-            await self.set_status(ConnectivityStatus.Connecting)
+            self._set_status(ConnectivityStatus.Connecting)
 
             awsiot_id = str(uuid.uuid4())
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
@@ -149,35 +156,35 @@ class IntegrationWS(BaseAPI):
 
             _LOGGER.debug(f"Loading CA file from {ca_file_path}")
 
-            aws_client = AWSIoTMQTTClient(awsiot_id, useWebsocket=True)
-            aws_client.configureEndpoint(AWS_IOT_URL, AWS_IOT_PORT)
-            aws_client.configureCredentials(ca_file_path)
-            aws_client.configureIAMCredentials(aws_key, aws_secret, aws_token)
-            aws_client.configureAutoReconnectBackoffTime(1, 32, 20)
-            aws_client.configureOfflinePublishQueueing(
+            client = AWSIoTMQTTClient(awsiot_id, useWebsocket=True)
+            client.configureEndpoint(AWS_IOT_URL, AWS_IOT_PORT)
+            client.configureCredentials(ca_file_path)
+            client.configureIAMCredentials(aws_key, aws_secret, aws_token)
+            client.configureAutoReconnectBackoffTime(1, 32, 20)
+            client.configureOfflinePublishQueueing(
                 -1
             )  # Infinite offline Publish queueing
-            aws_client.configureDrainingFrequency(2)  # Draining: 2 Hz
-            aws_client.configureConnectDisconnectTimeout(10)
-            aws_client.configureMQTTOperationTimeout(10)
-            aws_client.enableMetricsCollection()
-            aws_client.onOnline = self._handle_aws_client_online
-            aws_client.onOffline = self._handle_aws_client_offline
+            client.configureDrainingFrequency(2)  # Draining: 2 Hz
+            client.configureConnectDisconnectTimeout(10)
+            client.configureMQTTOperationTimeout(10)
+            client.enableMetricsCollection()
+            client.onOnline = self._handle_aws_client_online
+            client.onOffline = self._handle_aws_client_offline
 
             for topic in self._topic_data.subscribe:
-                aws_client.subscribeAsync(
+                client.subscribeAsync(
                     topic, MQTT_QOS_0, self._ack_callback, self._message_callback
                 )
 
-            connected = aws_client.connectAsync(ackCallback=self._ack_callback)
+            connected = client.connectAsync(ackCallback=self._ack_callback)
 
             if connected:
                 _LOGGER.debug(f"Connected to {AWS_IOT_URL}")
-                self._awsiot_client = aws_client
+                self._awsiot_client = client
 
             else:
                 _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
-                await self.set_status(ConnectivityStatus.Failed)
+                self._set_status(ConnectivityStatus.Failed)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -187,13 +194,13 @@ class IntegrationWS(BaseAPI):
                 f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
             )
 
-            await self.set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed)
 
     async def update_api_data(self, api_data: dict):
         self._api_data = api_data
 
-    async def async_update(self):
-        if self.status == ConnectivityStatus.Connected:
+    async def update(self):
+        if self._status == ConnectivityStatus.Connected:
             _LOGGER.debug("Connected. Refresh details")
             await self._refresh_details()
 
@@ -220,32 +227,18 @@ class IntegrationWS(BaseAPI):
     def _handle_aws_client_online(self):
         _LOGGER.debug("AWS IOT Client is Online")
 
-        if self.is_home_assistant:
-            if self.has_running_loop:
-                self.hass.async_create_task(
-                    self.set_status(ConnectivityStatus.Connected)
-                )
-
-        else:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.set_status(ConnectivityStatus.Connected))
+        self._set_status(ConnectivityStatus.Connected)
 
     def _handle_aws_client_offline(self):
         _LOGGER.debug("AWS IOT Client is Offline")
 
-        if self.is_home_assistant:
-            if self.has_running_loop:
-                self.hass.async_create_task(self.set_status(ConnectivityStatus.Failed))
-
-        else:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.set_status(ConnectivityStatus.Failed))
+        self._set_status(ConnectivityStatus.Failed)
 
     @staticmethod
     def _ack_callback(mid, data):
         _LOGGER.debug(f"ACK packet ID: {mid}, QoS: {data}")
 
-    def _message_callback(self, client, userdata, message):
+    def _message_callback(self, _client, _userdata, message):
         message_topic: str = message.topic
         message_payload = message.payload.decode(MQTT_MESSAGE_ENCODING)
 
@@ -254,7 +247,7 @@ class IntegrationWS(BaseAPI):
             payload = {} if has_message else json.loads(message_payload)
 
             motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
-            _LOGGER.info(
+            _LOGGER.debug(
                 f"Message received for device {motor_unit_serial}, Topic: {message_topic}"
             )
 
@@ -291,14 +284,6 @@ class IntegrationWS(BaseAPI):
                 if message_topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
 
-                if self.is_home_assistant:
-                    if self.has_running_loop:
-                        self.hass.async_create_task(self.fire_data_changed_event())
-
-                else:
-                    loop = asyncio.get_running_loop()
-                    loop.create_task(self.fire_data_changed_event())
-
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -323,7 +308,7 @@ class IntegrationWS(BaseAPI):
     def _publish(self, topic: str, data: dict | None):
         payload = "" if data is None else json.dumps(data)
 
-        if self.status == ConnectivityStatus.Connected:
+        if self._status == ConnectivityStatus.Connected:
             try:
                 if self._awsiot_client is not None:
                     published = self._awsiot_client.publishAsync(
@@ -421,8 +406,8 @@ class IntegrationWS(BaseAPI):
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def _read_temperature_and_in_water_details(self):
-        motor_unit_serial = self.data.get(API_DATA_SERIAL_NUMBER)
-        serial_number = self.data.get(API_DATA_SERIAL_NUMBER)
+        motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
+        serial_number = self._api_data.get(API_DATA_SERIAL_NUMBER)
 
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
@@ -488,3 +473,22 @@ class IntegrationWS(BaseAPI):
         data = {DATA_SECTION_LED: request_data}
 
         return data
+
+    def _set_status(self, status: ConnectivityStatus):
+        if status != self._status:
+            log_level = ConnectivityStatus.get_log_level(status)
+
+            _LOGGER.log(
+                log_level,
+                f"Status changed from '{self._status}' to '{status}'",
+            )
+
+            self._status = status
+
+            if self._hass is not None:
+                async_dispatcher_send(
+                    self._hass,
+                    SIGNAL_AWS_CLIENT_STATUS,
+                    self._config_manager.entry_id,
+                    status,
+                )

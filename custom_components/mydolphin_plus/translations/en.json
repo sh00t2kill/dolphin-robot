@@ -12,7 +12,9 @@
     },
     "error": {
       "invalid_admin_credentials": "Invalid administrator credentials",
+      "invalid_server_details": "Invalid server details",
       "already_configured": "Integration already configured with the name",
+      "missing_permanent_api_key": "Missing permanent API key",
       "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it"
     }
   },
@@ -30,9 +32,127 @@
     "error": {
       "invalid_admin_credentials": "Invalid administrator credentials",
       "invalid_server_details": "Invalid server details",
-      "already_configured": "Integration already configured with the name",
-      "missing_permanent_api_key": "Missing permanent API key",
+      "already_configured": "integration already configured with the name",
       "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "aws_broker": {
+        "name": "AWS Broker"
+      },
+      "weekly_scheduler": {
+        "name": "Weekly Scheduler"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "number": {
+      "led_intensity": {
+        "name": "LED Intensity"
+      }
+    },
+    "sensor": {
+      "rssi": {
+        "name": "RSSI"
+      },
+      "network_name": {
+        "name": "Network Name"
+      },
+      "robot_type": {
+        "name": "Robot Type"
+      },
+      "cycle_count": {
+        "name": "Cycle Count"
+      },
+      "cycle_time_left": {
+        "name": "Cycle Time Left"
+      },
+      "filter_status": {
+        "name": "Filter Status",
+        "state": {
+          "unknown": "Unknown",
+          "empty": "Empty",
+          "partially_full": "Partially full",
+          "getting_full": "Getting full",
+          "almost_full": "Almost full",
+          "full": "Full",
+          "fault": "Fault",
+          "not_available": "Not available"
+        }
+      },
+      "robot_status": {
+        "name": "Robot Status",
+        "state": {
+          "finished": "Finished",
+          "fault": "Fault",
+          "notconnected": "Disconnected",
+          "programming": "Programming",
+          "init": "Initialized",
+          "scanning": "Scanning"
+        }
+      },
+      "main_unit_status": {
+        "name": "Main Unit Status",
+        "state": {
+          "on": "On",
+          "off": "Off",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
+          "programming": "Programming",
+          "error": "Error",
+          "cleaning": "Cleaning"
+        }
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "on": "On",
+          "off": "Off",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
+          "programming": "Programming",
+          "notconnected": "Disconnected"
+        }
+      },
+      "clean_mode": {
+        "name": "Clean Mode",
+        "state": {
+          "all": "Regular",
+          "short": "Fast mode",
+          "floor": "Floor only",
+          "water": "Water line",
+          "ultra": "Ultra clean"
+        }
+      }
+    },
+    "select": {
+      "led_mode": {
+        "name": "LED Mode",
+        "state": {
+          "1": "Blinking",
+          "2": "Always on",
+          "3": "Disco"
+        }
+      }
+    },
+    "vacuum": {
+      "vacuum": {
+        "state_attributes": {
+          "fan_speed": {
+            "state": {
+              "all": "Regular",
+              "short": "Fast mode",
+              "floor": "Floor only",
+              "water": "Water line",
+              "ultra": "Ultra clean"
+            }
+          }
+        }
+      }
     }
   }
 }
