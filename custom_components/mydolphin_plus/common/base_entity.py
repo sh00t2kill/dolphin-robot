@@ -53,16 +53,18 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
         self,
         entity_description: EntityDescription,
         coordinator: MyDolphinPlusCoordinator,
-        platform: Platform,
     ):
         super().__init__(coordinator)
 
         device_info = coordinator.get_device()
-        device_name = device_info.get("name")
         identifiers = device_info.get("identifiers")
         serial_number = list(identifiers)[0][1]
 
-        entity_name = device_name
+        platform = self.platform.domain
+
+        entity_name = coordinator.config_manager.get_entity_name(
+            platform, entity_description, device_info
+        )
 
         if entity_description.name is not None and len(entity_description.name) > 0:
             entity_name = f"{entity_name} {entity_description.name}"

@@ -12,8 +12,6 @@ from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-CURRENT_DOMAIN = Platform.SENSOR
-
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
@@ -26,7 +24,7 @@ async def async_setup_entry(
         async_setup_entities(
             hass,
             entry,
-            CURRENT_DOMAIN,
+            Platform.SENSOR,
             SensorEntityDescription,
             MyDolphinPlusSensorEntity,
             async_add_entities,
@@ -45,7 +43,7 @@ class MyDolphinPlusSensorEntity(MyDolphinPlusBaseEntity, SensorEntity):
         entity_description: SensorEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):
-        super().__init__(entity_description, coordinator, CURRENT_DOMAIN)
+        super().__init__(entity_description, coordinator)
 
         self._attr_device_class = entity_description.device_class
 

@@ -17,8 +17,6 @@ from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-CURRENT_DOMAIN = Platform.NUMBER
-
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
@@ -31,7 +29,7 @@ async def async_setup_entry(
         async_setup_entities(
             hass,
             entry,
-            CURRENT_DOMAIN,
+            Platform.NUMBER,
             NumberEntityDescription,
             MyDolphinPlusNumberEntity,
             async_add_entities,
@@ -50,7 +48,7 @@ class MyDolphinPlusNumberEntity(MyDolphinPlusBaseEntity, NumberEntity, ABC):
         entity_description: NumberEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):
-        super().__init__(entity_description, coordinator, CURRENT_DOMAIN)
+        super().__init__(entity_description, coordinator)
 
         self._attr_native_min_value = entity_description.native_min_value
         self._attr_native_max_value = entity_description.native_max_value

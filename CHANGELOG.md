@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.7
+
+- Fix binary sensor loading
+- Fix support for entities names
+
 ## v0.4.6
 
 - Italian translation by [@tigers75](https://github.com/tigers75)
