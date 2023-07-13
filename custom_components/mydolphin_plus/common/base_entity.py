@@ -5,11 +5,11 @@ from typing import Any
 from custom_components.mydolphin_plus import DOMAIN, MyDolphinPlusCoordinator
 from custom_components.mydolphin_plus.common.entity_descriptions import (
     ENTITY_DESCRIPTIONS,
+    MyDolphinPlusEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
@@ -20,7 +20,6 @@ def async_setup_entities(
     hass: HomeAssistant,
     entry: ConfigEntry,
     platform: Platform,
-    entity_description_type: type,
     entity_type: type,
     async_add_entities,
 ):
@@ -30,7 +29,7 @@ def async_setup_entities(
         entities = []
 
         for entity_description in ENTITY_DESCRIPTIONS:
-            if isinstance(entity_description, entity_description_type):
+            if entity_description.platform == platform:
                 entity = entity_type(entity_description, coordinator)
 
                 entities.append(entity)
@@ -51,25 +50,24 @@ def async_setup_entities(
 class MyDolphinPlusBaseEntity(CoordinatorEntity):
     def __init__(
         self,
-        entity_description: EntityDescription,
+        entity_description: MyDolphinPlusEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
-        platform: Platform,
     ):
         super().__init__(coordinator)
 
         device_info = coordinator.get_device()
-        device_name = device_info.get("name")
         identifiers = device_info.get("identifiers")
         serial_number = list(identifiers)[0][1]
 
-        entity_name = device_name
-
-        if entity_description.name is not None and len(entity_description.name) > 0:
-            entity_name = f"{entity_name} {entity_description.name}"
+        entity_name = coordinator.config_manager.get_entity_name(
+            entity_description, device_info
+        )
 
         slugify_name = slugify(entity_name)
 
-        unique_id = slugify(f"{platform}_{serial_number}_{slugify_name}")
+        unique_id = slugify(
+            f"{entity_description.platform}_{serial_number}_{slugify_name}"
+        )
 
         self.entity_description = entity_description
 
