@@ -1,9 +1,6 @@
 import logging
 
-from homeassistant.components.binary_sensor import (
-    BinarySensorEntity,
-    BinarySensorEntityDescription,
-)
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ICON, Platform
 from homeassistant.core import HomeAssistant, callback
@@ -11,7 +8,10 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
 from .common.consts import ATTR_ATTRIBUTES, ATTR_IS_ON, SIGNAL_DEVICE_NEW
-from .common.entity_descriptions import MyDolphinPlusDailyBinarySensorEntityDescription
+from .common.entity_descriptions import (
+    MyDolphinPlusBinarySensorEntityDescription,
+    MyDolphinPlusDailyBinarySensorEntityDescription,
+)
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +29,6 @@ async def async_setup_entry(
             hass,
             entry,
             Platform.BINARY_SENSOR,
-            BinarySensorEntityDescription,
             MyDolphinPlusBinarySensorEntity,
             async_add_entities,
         )
@@ -44,7 +43,7 @@ class MyDolphinPlusBinarySensorEntity(MyDolphinPlusBaseEntity, BinarySensorEntit
 
     def __init__(
         self,
-        entity_description: BinarySensorEntityDescription
+        entity_description: MyDolphinPlusBinarySensorEntityDescription
         | MyDolphinPlusDailyBinarySensorEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):

@@ -1,7 +1,7 @@
 from abc import ABC
 import logging
 
-from homeassistant.components.select import SelectEntity, SelectEntityDescription
+from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_STATE, Platform
 from homeassistant.core import HomeAssistant, callback
@@ -13,6 +13,7 @@ from .common.consts import (
     ATTR_ATTRIBUTES,
     SIGNAL_DEVICE_NEW,
 )
+from .common.entity_descriptions import MyDolphinPlusSelectEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +31,6 @@ async def async_setup_entry(
             hass,
             entry,
             Platform.SELECT,
-            SelectEntityDescription,
             MyDolphinPlusSelectEntity,
             async_add_entities,
         )
@@ -45,7 +45,7 @@ class MyDolphinPlusSelectEntity(MyDolphinPlusBaseEntity, SelectEntity, ABC):
 
     def __init__(
         self,
-        entity_description: SelectEntityDescription,
+        entity_description: MyDolphinPlusSelectEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):
         super().__init__(entity_description, coordinator)

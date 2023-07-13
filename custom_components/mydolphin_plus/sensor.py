@@ -1,6 +1,6 @@
 import logging
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ICON, ATTR_STATE, Platform
 from homeassistant.core import HomeAssistant, callback
@@ -8,6 +8,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
 from .common.consts import ATTR_ATTRIBUTES, SIGNAL_DEVICE_NEW
+from .common.entity_descriptions import MyDolphinPlusSensorEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,7 +26,6 @@ async def async_setup_entry(
             hass,
             entry,
             Platform.SENSOR,
-            SensorEntityDescription,
             MyDolphinPlusSensorEntity,
             async_add_entities,
         )
@@ -40,7 +40,7 @@ class MyDolphinPlusSensorEntity(MyDolphinPlusBaseEntity, SensorEntity):
 
     def __init__(
         self,
-        entity_description: SensorEntityDescription,
+        entity_description: MyDolphinPlusSensorEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):
         super().__init__(entity_description, coordinator)

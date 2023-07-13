@@ -1,3 +1,4 @@
+import json
 import logging
 from os import path, remove
 import sys
@@ -8,7 +9,7 @@ from homeassistant.config_entries import STORAGE_VERSION, ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import translation
-from homeassistant.helpers.entity import DeviceInfo, EntityDescription
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
@@ -22,6 +23,7 @@ from ..common.consts import (
     STORAGE_DATA_KEY,
     STORAGE_DATA_LOCATING,
 )
+from ..common.entity_descriptions import MyDolphinPlusEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -150,6 +152,10 @@ class ConfigManager:
                 self._hass, self._hass.config.language, "entity", {DOMAIN}
             )
 
+            _LOGGER.debug(
+                f"Translations loaded, Data: {json.dumps(self._translations)}"
+            )
+
             self._is_initialized = True
 
         except InvalidToken:
@@ -170,11 +176,14 @@ class ConfigManager:
             )
 
     def get_entity_name(
-        self, platform, entity_description: EntityDescription, device_info: DeviceInfo
+        self,
+        entity_description: MyDolphinPlusEntityDescription,
+        device_info: DeviceInfo,
     ) -> str:
         entity_key = entity_description.key
 
         device_name = device_info.get("name")
+        platform = entity_description.platform
 
         translation_key = f"component.{DOMAIN}.entity.{platform}.{entity_key}.name"
 
@@ -182,7 +191,16 @@ class ConfigManager:
             translation_key, entity_description.name
         )
 
-        entity_name = f"{device_name} {translated_name}"
+        _LOGGER.debug(
+            f"Translations requested, Key: {translation_key}, "
+            f"Entity: {entity_description.name}, Value: {translated_name}"
+        )
+
+        entity_name = (
+            device_name
+            if translated_name is None or translated_name == ""
+            else f"{device_name} {translated_name}"
+        )
 
         return entity_name
 

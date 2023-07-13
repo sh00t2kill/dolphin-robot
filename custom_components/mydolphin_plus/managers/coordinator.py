@@ -208,6 +208,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     def robot_name(self):
         robot_name = self._api.data.get(DATA_ROBOT_NAME)
 
+        if robot_name is None or robot_name == "":
+            robot_name = DEFAULT_NAME
+
         return robot_name
 
     @property

@@ -42,7 +42,6 @@ async def async_setup_entry(
             hass,
             entry,
             Platform.VACUUM,
-            MyDolphinPlusVacuumEntityDescription,
             MyDolphinPlusLightEntity,
             async_add_entities,
         )

@@ -4,6 +4,7 @@
 
 - Fix binary sensor loading
 - Fix support for entities names
+- Set default robot name when empty to "MyDolphin Plus"
 
 ## v0.4.6
 
