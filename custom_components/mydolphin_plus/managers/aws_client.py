@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import uuid
+from typing import Any
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
@@ -101,6 +102,8 @@ class AWSClient:
             self._awsiot_client = None
 
             self._status = None
+
+            self._local_async_dispatcher_send = None
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -485,10 +488,19 @@ class AWSClient:
 
             self._status = status
 
-            if self._hass is not None:
-                async_dispatcher_send(
-                    self._hass,
-                    SIGNAL_AWS_CLIENT_STATUS,
-                    self._config_manager.entry_id,
-                    status,
-                )
+            self._async_dispatcher_send(
+                self._hass,
+                SIGNAL_AWS_CLIENT_STATUS,
+                self._config_manager.entry_id,
+                status,
+            )
+
+    def set_local_async_dispatcher_send(self, callback):
+        self._local_async_dispatcher_send = callback
+
+    def _async_dispatcher_send(self, hass: HomeAssistant, signal: str, *args: Any) -> None:
+        if hass is None:
+            self._local_async_dispatcher_send(signal, *args)
+
+        else:
+            async_dispatcher_send(hass, signal, *args)

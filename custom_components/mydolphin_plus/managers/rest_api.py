@@ -5,6 +5,7 @@ import hashlib
 import logging
 import secrets
 import sys
+from typing import Any
 
 from aiohttp import ClientResponseError, ClientSession
 from cryptography.hazmat.backends import default_backend
@@ -71,6 +72,8 @@ class RestAPI:
 
             self._session = None
             self._device_loaded = False
+
+            self._local_async_dispatcher_send = None
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -228,7 +231,7 @@ class RestAPI:
             if not self._device_loaded:
                 self._device_loaded = True
 
-                async_dispatcher_send(
+                self._async_dispatcher_send(
                     self._hass, SIGNAL_DEVICE_NEW, self._config_manager.entry_id
                 )
 
@@ -477,7 +480,16 @@ class RestAPI:
 
             self._status = status
 
-            if self._hass is not None:
-                async_dispatcher_send(
-                    self._hass, SIGNAL_API_STATUS, self._config_manager.entry_id, status
-                )
+            self._async_dispatcher_send(
+                self._hass, SIGNAL_API_STATUS, self._config_manager.entry_id, status
+            )
+
+    def set_local_async_dispatcher_send(self, callback):
+        self._local_async_dispatcher_send = callback
+
+    def _async_dispatcher_send(self, hass: HomeAssistant, signal: str, *args: Any) -> None:
+        if hass is None:
+            self._local_async_dispatcher_send(signal, *args)
+
+        else:
+            async_dispatcher_send(hass, signal, *args)
