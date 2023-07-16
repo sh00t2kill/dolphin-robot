@@ -2,7 +2,7 @@ from abc import ABC
 import logging
 from typing import Any
 
-from homeassistant.components.light import LightEntity, LightEntityDescription
+from homeassistant.components.light import LightEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -16,11 +16,10 @@ from .common.consts import (
     ATTR_IS_ON,
     SIGNAL_DEVICE_NEW,
 )
+from .common.entity_descriptions import MyDolphinPlusLightEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-
-CURRENT_DOMAIN = Platform.LIGHT
 
 
 async def async_setup_entry(
@@ -34,8 +33,7 @@ async def async_setup_entry(
         async_setup_entities(
             hass,
             entry,
-            CURRENT_DOMAIN,
-            LightEntityDescription,
+            Platform.LIGHT,
             MyDolphinPlusLightEntity,
             async_add_entities,
         )
@@ -50,10 +48,10 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, LightEntity, ABC):
 
     def __init__(
         self,
-        entity_description: LightEntityDescription,
+        entity_description: MyDolphinPlusLightEntityDescription,
         coordinator: MyDolphinPlusCoordinator,
     ):
-        super().__init__(entity_description, coordinator, CURRENT_DOMAIN)
+        super().__init__(entity_description, coordinator)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self.async_execute_device_action(ACTION_ENTITY_TURN_ON)

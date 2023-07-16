@@ -115,7 +115,8 @@
           "holddelay": "Fermo (in attesa)",
           "holdweekly": "Fermo (Settimanale)",
           "programming": "In programmazione",
-          "notconnected": "Disconnesso"
+          "notconnected": "Disconnesso",
+          "cleaning": "In pulizia"
         }
       },
       "clean_mode": {

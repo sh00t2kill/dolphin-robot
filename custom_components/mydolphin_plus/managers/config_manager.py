@@ -1,3 +1,4 @@
+import json
 import logging
 from os import path, remove
 import sys
@@ -7,6 +8,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from homeassistant.config_entries import STORAGE_VERSION, ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import translation
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
@@ -20,6 +23,7 @@ from ..common.consts import (
     STORAGE_DATA_KEY,
     STORAGE_DATA_LOCATING,
 )
+from ..common.entity_descriptions import MyDolphinPlusEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +36,7 @@ class ConfigManager:
     _store: Store | None
     _store_data: dict | None
     _entry_data: dict | None
+    _translations: dict | None
     _password: str | None
     _entry_title: str
     _entry_id: str
@@ -53,6 +58,7 @@ class ConfigManager:
         self._store = None
         self._entry_data = None
         self._store_data = None
+        self._translations = None
 
         self._is_set_up_mode = entry is None
         self._is_initialized = False
@@ -142,6 +148,14 @@ class ConfigManager:
             self._data[CONF_USERNAME] = self._entry_data.get(CONF_USERNAME)
             self._data[CONF_PASSWORD] = password
 
+            self._translations = await translation.async_get_translations(
+                self._hass, self._hass.config.language, "entity", {DOMAIN}
+            )
+
+            _LOGGER.debug(
+                f"Translations loaded, Data: {json.dumps(self._translations)}"
+            )
+
             self._is_initialized = True
 
         except InvalidToken:
@@ -160,6 +174,35 @@ class ConfigManager:
             _LOGGER.error(
                 f"Failed to initialize configuration manager, Error: {ex}, Line: {line_number}"
             )
+
+    def get_entity_name(
+        self,
+        entity_description: MyDolphinPlusEntityDescription,
+        device_info: DeviceInfo,
+    ) -> str:
+        entity_key = entity_description.key
+
+        device_name = device_info.get("name")
+        platform = entity_description.platform
+
+        translation_key = f"component.{DOMAIN}.entity.{platform}.{entity_key}.name"
+
+        translated_name = self._translations.get(
+            translation_key, entity_description.name
+        )
+
+        _LOGGER.debug(
+            f"Translations requested, Key: {translation_key}, "
+            f"Entity: {entity_description.name}, Value: {translated_name}"
+        )
+
+        entity_name = (
+            device_name
+            if translated_name is None or translated_name == ""
+            else f"{device_name} {translated_name}"
+        )
+
+        return entity_name
 
     def update_credentials(self, data: dict):
         self._entry_data = data
