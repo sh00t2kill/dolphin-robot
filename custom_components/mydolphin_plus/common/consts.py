@@ -265,6 +265,7 @@ ICON_LED_MODES = {
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline",
 }
 
+SERVICE_EXIT_NAVIGATION = "exit_navigation"
 SERVICE_NAVIGATE = "navigate"
 SERVICE_DAILY_SCHEDULE = "daily_schedule"
 SERVICE_DELAYED_CLEAN = "delayed_clean"
@@ -273,7 +274,7 @@ CONF_DIRECTION = "direction"
 CONF_DAY = "day"
 CONF_TIME = "time"
 
-JOYSTICK_SPEED = 100
+JOYSTICK_SPEED = 1000
 
 JOYSTICK_STOP = "stop"
 JOYSTICK_FORWARD = "forward"

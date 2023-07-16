@@ -487,7 +487,9 @@ class RestAPI:
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
 
-    def _async_dispatcher_send(self, hass: HomeAssistant, signal: str, *args: Any) -> None:
+    def _async_dispatcher_send(
+        self, hass: HomeAssistant, signal: str, *args: Any
+    ) -> None:
         if hass is None:
             self._local_async_dispatcher_send(signal, *args)
 

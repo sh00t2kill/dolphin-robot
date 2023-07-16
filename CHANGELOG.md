@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.8
+
+- Fix actions (functionality, translations and attach to relevant services)
+  - Turn off
+  - Stop
+  - Pickup (return to dock / home)
+  - Set fan mode (change clean mode)
+  - Navigate (integration service)
+  - Stop navigation (integration service)
+- Improve API test util
+
 ## v0.4.7
 
 - Fix binary sensor loading

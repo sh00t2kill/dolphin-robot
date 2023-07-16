@@ -12,7 +12,9 @@ from custom_components.mydolphin_plus.common.connectivity_status import (
 )
 from custom_components.mydolphin_plus.common.consts import (
     API_RECONNECT_INTERVAL,
-    WS_RECONNECT_INTERVAL, SIGNAL_API_STATUS, SIGNAL_AWS_CLIENT_STATUS,
+    SIGNAL_API_STATUS,
+    SIGNAL_AWS_CLIENT_STATUS,
+    WS_RECONNECT_INTERVAL,
 )
 from custom_components.mydolphin_plus.managers.aws_client import AWSClient
 from custom_components.mydolphin_plus.managers.config_manager import ConfigManager
@@ -23,6 +25,7 @@ DEBUG = str(os.environ.get("DEBUG", False)).lower() == str(True).lower()
 
 log_level = logging.DEBUG if DEBUG else logging.INFO
 
+
 root = logging.getLogger()
 root.setLevel(log_level)
 
@@ -31,6 +34,9 @@ stream_handler.setLevel(log_level)
 formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
 stream_handler.setFormatter(formatter)
 root.addHandler(stream_handler)
+
+aws_logger = logging.getLogger("AWSIoTPythonSDK")
+aws_logger.setLevel(logging.WARNING)
 
 _LOGGER = logging.getLogger(__name__)
 

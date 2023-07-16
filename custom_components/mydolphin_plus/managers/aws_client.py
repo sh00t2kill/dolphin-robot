@@ -5,8 +5,8 @@ import json
 import logging
 import os
 import sys
-import uuid
 from typing import Any
+import uuid
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
@@ -41,7 +41,6 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
     DATA_SCHEDULE_TRIGGERED_BY,
-    DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DELAY,
     DATA_SECTION_FILTER_BAG_INDICATION,
     DATA_SECTION_LED,
@@ -334,11 +333,7 @@ class AWSClient:
             )
 
     def set_cleaning_mode(self, cleaning_mode):
-        data = {
-            DATA_SECTION_CYCLE_INFO: {
-                DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: cleaning_mode}
-            }
-        }
+        data = {DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: cleaning_mode}}
 
         _LOGGER.info(f"Set cleaning mode, Desired: {data}")
         self._send_desired_command(data)
@@ -401,7 +396,7 @@ class AWSClient:
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
-    def quit_navigation(self):
+    def exit_navigation(self):
         request_data = {
             DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
         }
@@ -498,7 +493,9 @@ class AWSClient:
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
 
-    def _async_dispatcher_send(self, hass: HomeAssistant, signal: str, *args: Any) -> None:
+    def _async_dispatcher_send(
+        self, hass: HomeAssistant, signal: str, *args: Any
+    ) -> None:
         if hass is None:
             self._local_async_dispatcher_send(signal, *args)
 
