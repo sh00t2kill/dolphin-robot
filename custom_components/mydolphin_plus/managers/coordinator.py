@@ -54,8 +54,6 @@ from ..common.consts import (
     ATTR_TIME_ZONE,
     ATTR_TURN_ON_COUNT,
     CLEANING_MODE_REGULAR,
-    CLEANING_MODES,
-    CLEANING_MODES_SHORT,
     CLOCK_HOURS_ICONS,
     CONF_DAY,
     CONF_DIRECTION,
@@ -118,6 +116,7 @@ from ..common.consts import (
     DEFAULT_NAME,
     DEFAULT_TIME_PART,
     DEFAULT_TIME_ZONE_NAME,
+    DOMAIN,
     FILTER_BAG_ICONS,
     FILTER_BAG_STATUS,
     ICON_LED_MODES,
@@ -137,6 +136,7 @@ from ..common.consts import (
     ROBOT_STATE_SCANNING,
     SERVICE_DAILY_SCHEDULE,
     SERVICE_DELAYED_CLEAN,
+    SERVICE_EXIT_NAVIGATION,
     SERVICE_NAVIGATE,
     SERVICE_VALIDATION,
     SIGNAL_API_STATUS,
@@ -200,6 +200,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
             SERVICE_NAVIGATE: self._command_navigate,
+            SERVICE_EXIT_NAVIGATION: self._command_navigate,
             SERVICE_DAILY_SCHEDULE: self._command_set_schedule,
             SERVICE_DELAYED_CLEAN: self._command_set_delay,
         }
@@ -227,6 +228,14 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     async def initialize(self):
         self._build_data_mapping()
+
+        for service_name in self._robot_actions:
+            service_handler = self._robot_actions.get(service_name)
+            schema = SERVICE_VALIDATION.get(service_name)
+
+            self.hass.services.async_register(
+                DOMAIN, service_name, service_handler, schema
+            )
 
         await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
@@ -725,11 +734,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         _LOGGER.debug(f"Change cleaning mode, State: {mode}, New: {fan_speed}")
 
         if mode != fan_speed:
-            for cleaning_mode in CLEANING_MODES_SHORT:
-                value = CLEANING_MODES[cleaning_mode]
-
-                if value == fan_speed:
-                    self._aws_client.set_cleaning_mode(cleaning_mode)
+            self._aws_client.set_cleaning_mode(fan_speed)
 
     async def _set_led_mode(self, option: str):
         _LOGGER.debug(f"Change led mode, New: {option}")
@@ -761,7 +766,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         _LOGGER.debug(f"Set vacuum power state, State: {state}, Power: {desired_state}")
 
         if considered_state != desired_state:
-            self._aws_client.set_power_state(True)
+            self._aws_client.set_power_state(desired_state)
 
     async def _vacuum_turn_on(self, state):
         await self._switch_power(state, True)
@@ -818,6 +823,11 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 action(params)
             except MultipleInvalid as ex:
                 _LOGGER.error(ex.msg)
+
+    def _command_exit_navigation(self):
+        _LOGGER.debug("Exit navigation mode")
+
+        self._aws_client.exit_navigation()
 
     def _command_navigate(self, data: dict[str, Any] | list[Any] | None):
         direction = data.get(CONF_DIRECTION)

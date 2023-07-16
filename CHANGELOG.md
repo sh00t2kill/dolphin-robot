@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0
+
+- Fix actions (functionality, translations and attach to relevant services)
+  - Turn off
+  - Stop
+  - Pickup (return to dock / home)
+  - Set fan mode (change clean mode)
+  - Navigate (integration service)
+  - Stop navigation (integration service)
+- Improve API test util
+- Removed schedule delay / daily services (all functionality of robot available from integration, please use HA automation)
+
 ## v0.4.7
 
 - Fix binary sensor loading

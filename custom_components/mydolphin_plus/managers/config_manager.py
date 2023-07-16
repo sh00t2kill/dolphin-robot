@@ -148,9 +148,13 @@ class ConfigManager:
             self._data[CONF_USERNAME] = self._entry_data.get(CONF_USERNAME)
             self._data[CONF_PASSWORD] = password
 
-            self._translations = await translation.async_get_translations(
-                self._hass, self._hass.config.language, "entity", {DOMAIN}
-            )
+            if self._hass is None:
+                self._translations = {}
+
+            else:
+                self._translations = await translation.async_get_translations(
+                    self._hass, self._hass.config.language, "entity", {DOMAIN}
+                )
 
             _LOGGER.debug(
                 f"Translations loaded, Data: {json.dumps(self._translations)}"
