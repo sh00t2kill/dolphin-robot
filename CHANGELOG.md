@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.8
+## v1.0.0
 
 - Fix actions (functionality, translations and attach to relevant services)
   - Turn off
@@ -10,6 +10,7 @@
   - Navigate (integration service)
   - Stop navigation (integration service)
 - Improve API test util
+- Removed schedule delay / daily services (all functionality of robot available from integration, please use HA automation)
 
 ## v0.4.7
 

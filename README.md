@@ -2,24 +2,9 @@
 
 ## Description
 
-Integration with MyDolphin Plus. Creates the following components:
+Integration with MyDolphin Plus to monitor and control your robot
 
 [Changelog](https://github.com/sh00t2kill/dolphin-robot/blob/master/CHANGELOG.md)
-
-## Status: WIP
-
-Integration is still work in progress, not tested with HA with all its functionality,
-to test you can run the CLI mode or within the HA.
-
-### TODO
-
-- ~~On startup trigger the get topic from MQTT as happens when the mobile app is being opened~~
-- ~~Implement publish commands to the robot (currently stubs that logs the action only)~~
-- ~~Map the select values to the real one from the app (currently available assumed values)~~
-- ~~Align consts to the real values of select~~
-- ~~Map remote commands~~
-- ~~Create services~~
-- Test ~~, test and more test~~ actions
 
 ## How to
 
@@ -130,50 +115,23 @@ Description: Manually navigate the robot
 Payload:
 
 ```yaml
-service: vacuum.send_command
+service: mydolphin_plus.navigate
 target:
   entity_id: vacuum.{Robot Name}
 data:
-  command: navigate
-  params:
-    direction: stop / forward / backward / left / right
+  direction: stop / forward / backward / left / right
 ```
 
-### Set Daily Schedule
+### Exit Navigation
 
-Description: Set the schedule for a specific day
+Description: Exit manual navigation mode
 
 Payload:
 
 ```yaml
-service: vacuum.send_command
+service: mydolphin_plus.exit_navigation
 target:
   entity_id: vacuum.{Robot Name}
-data:
-  command: daily_schedule
-  params:
-    day: Sunday
-    enabled: true
-    time: 00:00
-    mode: all
-```
-
-### Delayed Cleaning
-
-Description: Set a delayed job for cleaning
-
-Payload:
-
-```yaml
-service: vacuum.send_command
-target:
-  entity_id: vacuum.{Robot Name}
-data:
-  command: delayed_clean
-  params:
-    enabled: true
-    time: 00:00
-    mode: all
 ```
 
 ## Troubleshooting

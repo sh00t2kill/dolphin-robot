@@ -43,83 +43,13 @@
       "fields": {
         "direction": {
           "name": "Direction",
-          "description": "Joystick navigation (Backward, Forward, Left, Right and Stop).",
-          "options": {
-            "stop": "Stop",
-            "forward": "Forward",
-            "backward": "Backward",
-            "right": "Right",
-            "left": "Left"
-          }
+          "description": "Joystick navigation (Backward, Forward, Left, Right and Stop)."
         }
       }
     },
     "exit_navigation": {
       "name": "Exit navigation mode",
       "description": "Stop controlling robot manually"
-    },
-    "daily_schedule": {
-      "name": "Set daily schedule",
-      "description": "Configuration daily schedule.",
-      "fields": {
-        "enable": {
-          "name": "Is enabled?",
-          "description": "Enabled / disable daily schedule."
-        },
-        "day": {
-          "name": "Day",
-          "description": "Day for the specific schedule.",
-          "options": {
-            "sunday": "Sunday",
-            "monday": "Monday",
-            "tuesday": "Tuesday",
-            "wednesday": "Wednesday",
-            "thursday": "Thursday",
-            "friday": "Friday",
-            "saturday": "Saturday"
-          }
-        },
-        "time": {
-          "name": "Time",
-          "description": "Time for the specific schedule."
-        },
-        "mode": {
-          "name": "Mode",
-          "description": "Set cycle mode.",
-          "options": {
-            "all": "Regular",
-            "short": "Fast mode",
-            "floor": "Floor only",
-            "water": "Water line",
-            "ultra": "Ultra clean"
-          }
-        }
-      }
-    },
-    "delayed_clean": {
-      "name": "Set delayed clean",
-      "description": "Configuration delay clean.",
-      "fields": {
-        "enable": {
-          "name": "Is enabled?",
-          "description": "Enabled / disable daily schedule."
-        },
-        "time": {
-          "name": "Time",
-          "description": "Time for the specific schedule."
-        },
-        "mode": {
-          "name": "Mode",
-          "description": "Set cycle mode.",
-          "options": {
-            "all": "Regular",
-            "short": "Fast mode",
-            "floor": "Floor only",
-            "water": "Water line",
-            "ultra": "Ultra clean"
-          }
-        }
-      }
     }
   },
   "entity": {

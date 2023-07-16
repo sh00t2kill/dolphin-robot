@@ -4,92 +4,20 @@ navigate:
   fields:
     direction:
       name: Direction
-      description: Joystick navigation (Backward, Forward, Left, Right and Stop)
+      description: Joystick navigation
       required: true
       example: "backward"
       selector:
-        number:
-          min: 1
-          max: 60
-          unit_of_measurement: seconds
-          mode: box
+        select:
+          mode: dropdown
+          translation_key: service_navigate__direction
+          options:
+            - stop
+            - backward
+            - forward
+            - left
+            - right
 
 exit_navigation:
   name: Exit navigation mode
   description: Stop controlling robot manually
-
-daily_schedule:
-  name: Set daily schedule
-  description: Configuration daily schedule
-  fields:
-    enable:
-      name: Is enabled?
-      description: Enabled / disable daily schedule
-      required: true
-      example: true
-      selector:
-        boolean:
-    day:
-      name: Day
-      description: Day for the specific schedule
-      required: false
-      example: sunday
-      select:
-        options:
-          - sunday
-          - monday
-          - tuesday
-          - wednesday
-          - thursday
-          - friday
-          - saturday
-    time:
-      name: Time
-      description: Time for the specific schedule
-      required: false
-      example: "30"
-      selector:
-        time:
-    mode:
-      name: Cycle mode
-      description: Set cycle mode
-      required: false
-      example: "all"
-      select:
-        options:
-          - all
-          - short
-          - floor
-          - water
-          - ultra
-
-delayed_clean:
-  name: Set delayed clean
-  description: Configuration delay clean
-  fields:
-    enable:
-      name: Is enabled?
-      description: Enabled / disable daily schedule
-      required: true
-      example: true
-      selector:
-        boolean:
-    time:
-      name: Time
-      description: Time for the specific schedule
-      required: false
-      example: "30"
-      selector:
-        time:
-    mode:
-      name: Cycle mode
-      description: Set cycle mode
-      required: false
-      example: "all"
-      select:
-        options:
-          - all
-          - short
-          - floor
-          - water
-          - ultra
