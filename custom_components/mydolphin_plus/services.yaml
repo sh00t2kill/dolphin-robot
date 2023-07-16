@@ -10,7 +10,6 @@ navigate:
       selector:
         select:
           mode: dropdown
-          translation_key: service_navigate__direction
           options:
             - stop
             - backward
