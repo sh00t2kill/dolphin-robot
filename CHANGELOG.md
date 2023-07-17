@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.1
+
+- Breaking Change: Schedules removed (Sensors and services)
+- Add clean mode number component to set cycle time (minutes) per clean mode, defaults:
+  - Regular (all): 120
+  - Fast mode (fast): 60
+  - Floor only (floor): 120
+  - Water line (water): 120
+  - Ultra clean (ultra): 120
+  - Pickup (pickup): 5
+- Store clean mode cycle time in configuration file (per integration)
+- Starting clean uses clean cycle time configuration
+- Turn on / Start actions will start according to fan speed, default if not set: Regular (all)
+
 ## v1.0.0
 
 - Fix actions (functionality, translations and attach to relevant services)

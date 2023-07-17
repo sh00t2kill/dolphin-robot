@@ -14,7 +14,7 @@ from homeassistant.const import CONF_MODE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .. import ConfigManager
+from ..common.clean_modes import CleanModes
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     API_DATA_MOTOR_UNIT_SERIAL,
@@ -26,8 +26,7 @@ from ..common.consts import (
     AWS_IOT_PORT,
     AWS_IOT_URL,
     CA_FILE_NAME,
-    CLEANING_MODE_PICKUP,
-    CLEANING_MODE_REGULAR,
+    DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
     DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND,
     DATA_LED_ENABLE,
     DATA_LED_INTENSITY,
@@ -40,12 +39,9 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME,
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
-    DATA_SCHEDULE_TRIGGERED_BY,
-    DATA_SECTION_DELAY,
     DATA_SECTION_FILTER_BAG_INDICATION,
     DATA_SECTION_LED,
     DATA_SECTION_SYSTEM_STATE,
-    DATA_SECTION_WEEKLY_SETTINGS,
     DATA_STATE_DESIRED,
     DATA_STATE_REPORTED,
     DATA_SYSTEM_STATE_PWS_STATE,
@@ -79,6 +75,7 @@ from ..common.consts import (
     WS_LAST_UPDATE,
 )
 from ..common.topic_data import TopicData
+from .config_manager import ConfigManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -332,43 +329,18 @@ class AWSClient:
                 f"Failed to publish message: {data} to {topic}, Broker is not connected"
             )
 
-    def set_cleaning_mode(self, cleaning_mode):
-        data = {DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: cleaning_mode}}
+    def set_cleaning_mode(self, clean_mode: CleanModes):
+        cycle_time = self._config_manager.get_clean_cycle_time(clean_mode)
 
-        _LOGGER.info(f"Set cleaning mode, Desired: {data}")
-        self._send_desired_command(data)
-
-    def set_delay(
-        self,
-        enabled: bool | None = False,
-        mode: str | None = CLEANING_MODE_REGULAR,
-        job_time: str | None = None,
-    ):
-        scheduling = self._get_schedule_settings(enabled, mode, job_time)
-
-        request_data = {DATA_SECTION_DELAY: scheduling}
-
-        _LOGGER.info(f"Set delay, Desired: {request_data}")
-        self._send_desired_command(request_data)
-
-    def set_schedule(
-        self,
-        day: str,
-        enabled: bool | None = False,
-        mode: str | None = CLEANING_MODE_REGULAR,
-        job_time: str | None = None,
-    ):
-        scheduling = self._get_schedule_settings(enabled, mode, job_time)
-
-        request_data = {
-            DATA_SECTION_WEEKLY_SETTINGS: {
-                DATA_SCHEDULE_TRIGGERED_BY: 0,
-                day: scheduling,
+        data = {
+            DATA_SCHEDULE_CLEANING_MODE: {
+                CONF_MODE: str(clean_mode),
+                DATA_CYCLE_INFO_CLEANING_MODE_DURATION: cycle_time,
             }
         }
 
-        _LOGGER.info(f"Set schedule, Desired: {request_data}")
-        self._send_desired_command(request_data)
+        _LOGGER.info(f"Set cleaning mode, Desired: {data}")
+        self._send_desired_command(data)
 
     def set_led_mode(self, mode: int):
         data = self._get_led_settings(DATA_LED_MODE, mode)
@@ -415,7 +387,7 @@ class AWSClient:
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_TEMPERATURE, request_data)
 
     def pickup(self):
-        self.set_cleaning_mode(CLEANING_MODE_PICKUP)
+        self.set_cleaning_mode(CleanModes.PICKUP)
 
     def set_power_state(self, is_on: bool):
         request_data = {
