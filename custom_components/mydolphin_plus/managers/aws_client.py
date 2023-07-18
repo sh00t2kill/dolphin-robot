@@ -260,9 +260,6 @@ class AWSClient:
             elif message_topic == self._topic_data.dynamic:
                 _LOGGER.debug(f"Dynamic payload: {message_payload}")
 
-            elif message_topic.endswith("update/delta"):
-                _LOGGER.debug(f"Payload: {message_payload}")
-
             elif message_topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
 
