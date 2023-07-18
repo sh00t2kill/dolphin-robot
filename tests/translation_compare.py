@@ -29,15 +29,35 @@ def _get_gaps(lang_name: str):
     strings_keys = flatten(strings_json, separator=".")
     lang_keys = flatten(lang_json, separator=".")
 
-    gaps = [key for key in strings_keys if key not in lang_keys]
+    added_gaps = [key for key in strings_keys if key not in lang_keys]
+    removed_gaps = [key for key in lang_keys if key not in strings_keys]
+
+    gaps = {
+        "added": added_gaps,
+        "removed": removed_gaps
+    }
 
     return gaps
 
 
-for lang_name in SUPPORTED_LANGUAGES:
-    missing_keys = _get_gaps(lang_name)
+def _compare():
+    for lang_name in SUPPORTED_LANGUAGES:
+        gaps = _get_gaps(lang_name)
+        added_keys = gaps.get("added")
+        removed_keys = gaps.get("removed")
 
-    if len(missing_keys) > 0:
-        print(f"Following keys are missing for {lang_name}:")
-        for key in missing_keys:
-            print(f" - {key}")
+        if len(added_keys) + len(removed_keys) > 0:
+            print(f"Translations for '{lang_name}' is not up to date.")
+
+            if len(added_keys) > 0:
+                print(f"New keys:")
+                for key in added_keys:
+                    print(f" - {key}")
+
+            if len(removed_keys) > 0:
+                print(f"Removed keys:")
+                for key in removed_keys:
+                    print(f" - {key}")
+
+
+_compare()
