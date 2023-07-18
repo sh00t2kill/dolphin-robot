@@ -232,8 +232,8 @@ class ConfigManager:
         await self._save()
 
     async def update_clean_cycle_time(self, clean_mode: CleanModes, time: int):
-        key = self.get_clean_cycle_time(clean_mode)
-        self._data[key] = time
+        key = self._get_clean_cycle_key(clean_mode)
+        self._data[key] = int(time)
 
         await self._save()
 
@@ -274,7 +274,7 @@ class ConfigManager:
             key = self._get_clean_cycle_key(CleanModes(clean_mode))
             default_time = CLEAN_MODES_CYCLE_TIME.get(clean_mode)
 
-            data[key] = default_time
+            data[key] = int(default_time)
 
         return data
 
@@ -363,6 +363,12 @@ class ConfigManager:
             for key in self._data:
                 if key not in [CONF_PASSWORD, CONF_USERNAME]:
                     self._store_data[self._entry_id][key] = self._data[key]
+
+            if CONF_USERNAME in self._store_data[self._entry_id]:
+                self._store_data[self._entry_id].pop(CONF_USERNAME)
+
+            if CONF_PASSWORD in self._store_data[self._entry_id]:
+                self._store_data[self._entry_id].pop(CONF_PASSWORD)
 
         await self._store.async_save(self._store_data)
 

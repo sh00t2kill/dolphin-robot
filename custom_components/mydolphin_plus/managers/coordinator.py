@@ -665,7 +665,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    async def _set_cleaning_mode(self, fan_speed):
+    async def _set_cleaning_mode(
+        self, _entity_description: EntityDescription, fan_speed
+    ):
         data = self._get_vacuum_data(None)
         attributes = data.get(ATTR_ATTRIBUTES)
         mode = attributes.get(ATTR_MODE)
@@ -675,36 +677,36 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if mode != fan_speed:
             self._aws_client.set_cleaning_mode(fan_speed)
 
-    async def _set_led_mode(self, option: str):
+    async def _set_led_mode(self, _entity_description: EntityDescription, option: str):
         _LOGGER.debug(f"Change led mode, New: {option}")
 
         value = int(option)
 
         self._aws_client.set_led_mode(value)
 
-    async def _set_led_enabled(self):
+    async def _set_led_enabled(self, _entity_description: EntityDescription):
         _LOGGER.debug("Enable LED light")
 
         self._aws_client.set_led_enabled(True)
 
-    async def _set_led_disabled(self):
+    async def _set_led_disabled(self, _entity_description: EntityDescription):
         _LOGGER.debug("Disable LED light")
 
         self._aws_client.set_led_enabled(False)
 
-    def _set_led_intensity(
+    async def _set_led_intensity(
         self, _entity_description: EntityDescription, intensity: int
     ):
         self._aws_client.set_led_intensity(intensity)
 
-    def _set_clean_mode_cycle_time_data(
+    async def _set_clean_mode_cycle_time_data(
         self, entity_description: EntityDescription, cycle_time: int
     ):
         key_parts = entity_description.key.split("_")
         clean_mode_str = key_parts[len(key_parts) - 1]
         clean_mode = CleanModes(clean_mode_str)
 
-        self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
+        await self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
 
     async def _pickup(self, _entity_description: EntityDescription):
         _LOGGER.debug("Pickup robot")
@@ -723,7 +725,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         attributes = data.get(ATTR_ATTRIBUTES)
         mode = attributes.get(ATTR_MODE, CleanModes.REGULAR)
 
-        await self._aws_client.set_cleaning_mode(mode)
+        self._aws_client.set_cleaning_mode(mode)
 
     async def _vacuum_turn_off(self, _entity_description: EntityDescription, state):
         await self._switch_power(state, False)
@@ -738,7 +740,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         attributes = data.get(ATTR_ATTRIBUTES)
         mode = attributes.get(ATTR_MODE, CleanModes.REGULAR)
 
-        await self._aws_client.set_cleaning_mode(mode)
+        self._aws_client.set_cleaning_mode(mode)
 
     async def _vacuum_stop(self, _entity_description: EntityDescription, state):
         await self._switch_power(state, False)
@@ -783,12 +785,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             except MultipleInvalid as ex:
                 _LOGGER.error(ex.msg)
 
-    def _service_exit_navigation(self):
+    async def _service_exit_navigation(self):
         _LOGGER.debug("Exit navigation mode")
 
         self._aws_client.exit_navigation()
 
-    def _service_navigate(self, data: dict[str, Any] | list[Any] | None):
+    async def _service_navigate(self, data: dict[str, Any] | list[Any] | None):
         direction = data.get(CONF_DIRECTION)
         _LOGGER.debug(f"Navigate robot {direction}")
 

@@ -145,7 +145,8 @@
           "short": "Fast mode",
           "floor": "Floor only",
           "water": "Water line",
-          "ultra": "Ultra clean"
+          "ultra": "Ultra clean",
+          "pickup": "Pickup"
         }
       }
     },
@@ -178,7 +179,8 @@
               "short": "Fast mode",
               "floor": "Floor only",
               "water": "Water line",
-              "ultra": "Ultra clean"
+              "ultra": "Ultra clean",
+              "pickup": "Pickup"
             }
           }
         }

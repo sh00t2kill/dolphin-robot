@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from time import sleep
 from typing import Any
 import uuid
 
@@ -39,6 +40,7 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME,
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
+    DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_FILTER_BAG_INDICATION,
     DATA_SECTION_LED,
     DATA_SECTION_SYSTEM_STATE,
@@ -258,6 +260,9 @@ class AWSClient:
             elif message_topic == self._topic_data.dynamic:
                 _LOGGER.debug(f"Dynamic payload: {message_payload}")
 
+            elif message_topic.endswith("update/delta"):
+                _LOGGER.debug(f"Payload: {message_payload}")
+
             elif message_topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
 
@@ -282,6 +287,17 @@ class AWSClient:
 
                 if message_topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
+
+                elif message_topic == self._topic_data.update_accepted:
+                    desired = state.get(DATA_STATE_DESIRED)
+
+                    if desired is not None:
+                        cleaning_mode = desired.get(DATA_SCHEDULE_CLEANING_MODE, {})
+                        mode = cleaning_mode.get(CONF_MODE)
+
+                        if mode is not None:
+                            sleep(1)
+                            self._set_cycle_time(mode)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -330,16 +346,21 @@ class AWSClient:
             )
 
     def set_cleaning_mode(self, clean_mode: CleanModes):
+        data = {DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: str(clean_mode)}}
+
+        _LOGGER.info(f"Set cleaning mode, Desired: {data}")
+        self._send_desired_command(data)
+
+    def _set_cycle_time(self, clean_mode: CleanModes):
         cycle_time = self._config_manager.get_clean_cycle_time(clean_mode)
 
         data = {
-            DATA_SCHEDULE_CLEANING_MODE: {
-                CONF_MODE: str(clean_mode),
+            DATA_SECTION_CYCLE_INFO: {
                 DATA_CYCLE_INFO_CLEANING_MODE_DURATION: cycle_time,
             }
         }
 
-        _LOGGER.info(f"Set cleaning mode, Desired: {data}")
+        _LOGGER.info(f"Set cycle time, Desired: {data}")
         self._send_desired_command(data)
 
     def set_led_mode(self, mode: int):
