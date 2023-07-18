@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 
-from custom_components.mydolphin_plus.common.clean_modes import CleanModes
+from custom_components.mydolphin_plus.common.clean_modes import (
+    CleanModes,
+    get_clean_mode_cycle_time_key,
+    get_clean_mode_cycle_time_name,
+)
 from custom_components.mydolphin_plus.common.consts import (
     DATA_KEY_AWS_BROKER,
     DATA_KEY_CLEAN_MODE,
@@ -221,8 +225,9 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
 ]
 
 for clean_mode in list(CleanModes):
-    name = f"{DATA_KEY_CYCLE_TIME} {clean_mode}"
-    key = slugify(name)
+    name = get_clean_mode_cycle_time_name(CleanModes(clean_mode))
+    key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
+
     ed = MyDolphinPlusNumberEntityDescription(
         key=key,
         name=name,

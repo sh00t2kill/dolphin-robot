@@ -1,4 +1,5 @@
 from homeassistant.backports.enum import StrEnum
+from homeassistant.util import slugify
 
 
 class CleanModes(StrEnum):
@@ -26,6 +27,19 @@ CLEAN_MODES_CYCLE_TIME = {
     CleanModes.ULTRA_CLEAN: 120,
     CleanModes.PICKUP: 5,
 }
+
+
+def get_clean_mode_cycle_time_name(clean_mode: CleanModes):
+    name = f"Cycle Time {clean_mode}"
+
+    return name
+
+
+def get_clean_mode_cycle_time_key(clean_mode: CleanModes):
+    name = get_clean_mode_cycle_time_name(clean_mode)
+    key = slugify(name)
+
+    return key
 
 
 def get_clean_mode_icon(clean_mode: CleanModes):

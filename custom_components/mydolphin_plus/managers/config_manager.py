@@ -12,12 +12,14 @@ from homeassistant.helpers import translation
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
-from homeassistant.util import slugify
 
-from ..common.clean_modes import CLEAN_MODES_CYCLE_TIME, CleanModes
+from ..common.clean_modes import (
+    CLEAN_MODES_CYCLE_TIME,
+    CleanModes,
+    get_clean_mode_cycle_time_key,
+)
 from ..common.consts import (
     CONFIGURATION_FILE,
-    DATA_KEY_CYCLE_TIME,
     DEFAULT_NAME,
     DOMAIN,
     INVALID_TOKEN_SECTION,
@@ -212,16 +214,10 @@ class ConfigManager:
         return entity_name
 
     def get_clean_cycle_time(self, clean_mode: CleanModes) -> int:
-        key = self._get_clean_cycle_key(clean_mode)
+        key = get_clean_mode_cycle_time_key(clean_mode)
         value = self._data.get(key)
 
         return value
-
-    @staticmethod
-    def _get_clean_cycle_key(clean_mode: CleanModes) -> str:
-        key = slugify(f"{DATA_KEY_CYCLE_TIME} {clean_mode}")
-
-        return key
 
     def update_credentials(self, data: dict):
         self._entry_data = data
@@ -232,7 +228,7 @@ class ConfigManager:
         await self._save()
 
     async def update_clean_cycle_time(self, clean_mode: CleanModes, time: int):
-        key = self._get_clean_cycle_key(clean_mode)
+        key = get_clean_mode_cycle_time_key(clean_mode)
         self._data[key] = int(time)
 
         await self._save()
@@ -264,14 +260,15 @@ class ConfigManager:
         if keys_before != len(self._data.keys()):
             await self._save()
 
-    def _get_defaults(self) -> dict:
+    @staticmethod
+    def _get_defaults() -> dict:
         data = {
             STORAGE_DATA_LOCATING: False,
             STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None,
         }
 
         for clean_mode in list(CleanModes):
-            key = self._get_clean_cycle_key(CleanModes(clean_mode))
+            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
             default_time = CLEAN_MODES_CYCLE_TIME.get(clean_mode)
 
             data[key] = int(default_time)

@@ -18,7 +18,7 @@ from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
-from ..common.clean_modes import CleanModes
+from ..common.clean_modes import CleanModes, get_clean_mode_cycle_time_key
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     ACTION_ENTITY_LOCATE,
@@ -360,8 +360,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         }
 
         for clean_mode in list(CleanModes):
-            name = f"{DATA_KEY_CYCLE_TIME} {clean_mode}"
-            key = slugify(name)
+            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
 
             data_mapping[key] = self._get_clean_mode_cycle_time_data
 
@@ -748,7 +747,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     async def _vacuum_pause(self, _entity_description: EntityDescription, state):
         await self._switch_power(state, False)
 
-    async def _vacuum_locate(self, _entity_description: EntityDescription):
+    async def _vacuum_locate(self, entity_description: EntityDescription):
         led_light_entity = self._get_led_data(None)
 
         led_light_state = led_light_entity.get(CONF_STATE)
@@ -763,7 +762,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Locate robot")
 
             await self._config_manager.update_is_locating(True)
-            await self._set_led_enabled()
+            await self._set_led_enabled(entity_description)
 
     async def _send_command(
         self,
