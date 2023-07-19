@@ -10,7 +10,6 @@ from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
 from .common.consts import ATTR_ATTRIBUTES, ATTR_IS_ON, SIGNAL_DEVICE_NEW
 from .common.entity_descriptions import (
     MyDolphinPlusBinarySensorEntityDescription,
-    MyDolphinPlusDailyBinarySensorEntityDescription,
 )
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -43,9 +42,8 @@ class MyDolphinPlusBinarySensorEntity(MyDolphinPlusBaseEntity, BinarySensorEntit
 
     def __init__(
         self,
-        entity_description: MyDolphinPlusBinarySensorEntityDescription
-        | MyDolphinPlusDailyBinarySensorEntityDescription,
-        coordinator: MyDolphinPlusCoordinator,
+        entity_description: MyDolphinPlusBinarySensorEntityDescription,
+        coordinator: MyDolphinPlusCoordinator
     ):
         super().__init__(entity_description, coordinator)
 
