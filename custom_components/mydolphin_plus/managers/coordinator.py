@@ -128,7 +128,7 @@ from ..common.consts import (
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_ENTITIES_INTERVAL,
-    WS_RECONNECT_INTERVAL,
+    WS_RECONNECT_INTERVAL, ERROR_CLEAN_CODES,
 )
 from ..common.service_schema import (
     SERVICE_EXIT_NAVIGATION,
@@ -712,15 +712,23 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         turn_on_count = system_state.get(DATA_SYSTEM_STATE_TURN_ON_COUNT, 0)
 
         error_section = data.get(data_section_key, {})
-        error_code = error_section.get(DATA_ERROR_CODE, 255)
-        error_turn_on_count = error_section.get(DATA_ERROR_TURN_ON_COUNT, 255)
+        error_code = error_section.get(DATA_ERROR_CODE, 0)
+        error_turn_on_count = error_section.get(DATA_ERROR_TURN_ON_COUNT, 0)
 
         state = 0
 
         if error_turn_on_count == turn_on_count:
             state = error_code
 
-        result = {ATTR_STATE: state}
+        icon = entity_description.icon
+
+        if state not in ERROR_CLEAN_CODES:
+            icon = f"{icon}-alert"
+
+        result = {
+            ATTR_STATE: state,
+            ATTR_ICON: icon
+        }
 
         return result
 

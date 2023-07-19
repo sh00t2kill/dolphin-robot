@@ -223,14 +223,14 @@ ENTITY_DESCRIPTIONS: dict[str, list[MyDolphinPlusEntityDescription]] = {
         MyDolphinPlusSensorEntityDescription(
             key=slugify(DATA_KEY_ROBOT_ERROR),
             name=DATA_KEY_ROBOT_ERROR,
-            icon="mdi:robot-vacuum-variant-alert",
+            icon="mdi:robot-vacuum-variant",
             entity_category=EntityCategory.DIAGNOSTIC,
             translation_key=slugify(DATA_KEY_ROBOT_ERROR),
         ),
         MyDolphinPlusSensorEntityDescription(
             key=slugify(DATA_KEY_PWS_ERROR),
             name=DATA_KEY_PWS_ERROR,
-            icon="mdi:water-boiler-alert",
+            icon="mdi:water-boiler",
             entity_category=EntityCategory.DIAGNOSTIC,
             translation_key=slugify(DATA_KEY_PWS_ERROR),
         ),
