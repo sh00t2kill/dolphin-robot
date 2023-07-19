@@ -1,17 +1,7 @@
-import calendar
 from datetime import timedelta
 
-import voluptuous as vol
-
 from homeassistant.components.vacuum import VacuumEntityFeature
-from homeassistant.const import (
-    CONF_ENABLED,
-    CONF_MODE,
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    Platform,
-)
-import homeassistant.helpers.config_validation as cv
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 
 MANUFACTURER = "Maytronics"
 DEFAULT_NAME = "MyDolphin Plus"
@@ -222,38 +212,6 @@ ATTR_LED_MODE = "led_mode"
 ATTR_ATTRIBUTES = "attributes"
 ATTR_ACTIONS = "actions"
 
-CLEANING_MODE_REGULAR = "all"
-CLEANING_MODE_FAST_MODE = "short"
-CLEANING_MODE_FLOOR_ONLY = "floor"
-CLEANING_MODE_WATER_LINE = "water"
-CLEANING_MODE_ULTRA_CLEAN = "ultra"
-CLEANING_MODE_PICKUP = "pickup"
-CLEANING_MODE_ICON_DEFAULT = "mdi:border-all-variant"
-
-CLEANING_MODES = {
-    CLEANING_MODE_REGULAR: "Regular - Cleans floor, water and waterline",
-    CLEANING_MODE_FAST_MODE: "Fast mode - Cleans the floor",
-    CLEANING_MODE_FLOOR_ONLY: "Floor only - Cleans the floor only",
-    CLEANING_MODE_WATER_LINE: "Water line - Cleans the walls and water line",
-    CLEANING_MODE_ULTRA_CLEAN: "Ultra clean - Deeply cleans the floor, walls and waterline",
-}
-
-CLEANING_MODES_SHORT = {
-    CLEANING_MODE_REGULAR: "Regular",
-    CLEANING_MODE_FAST_MODE: "Fast mode",
-    CLEANING_MODE_FLOOR_ONLY: "Floor only",
-    CLEANING_MODE_WATER_LINE: "Water line",
-    CLEANING_MODE_ULTRA_CLEAN: "Ultra clean",
-}
-
-ICON_CLEANING_MODES = {
-    CLEANING_MODE_REGULAR: CLEANING_MODE_ICON_DEFAULT,
-    CLEANING_MODE_FAST_MODE: "mdi:clock-fast",
-    CLEANING_MODE_FLOOR_ONLY: "mdi:border-bottom-variant",
-    CLEANING_MODE_WATER_LINE: "mdi:format-align-top",
-    CLEANING_MODE_ULTRA_CLEAN: "mdi:border-all",
-}
-
 LED_MODE_BLINKING = "1"
 LED_MODE_ALWAYS_ON = "2"
 LED_MODE_DISCO = "3"
@@ -264,11 +222,6 @@ ICON_LED_MODES = {
     LED_MODE_ALWAYS_ON: "mdi:lightbulb-on",
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline",
 }
-
-SERVICE_EXIT_NAVIGATION = "exit_navigation"
-SERVICE_NAVIGATE = "navigate"
-SERVICE_DAILY_SCHEDULE = "daily_schedule"
-SERVICE_DELAYED_CLEAN = "delayed_clean"
 
 CONF_DIRECTION = "direction"
 CONF_DAY = "day"
@@ -289,37 +242,6 @@ JOYSTICK_DIRECTIONS = [
     JOYSTICK_RIGHT,
     JOYSTICK_LEFT,
 ]
-
-SERVICE_SCHEMA_NAVIGATE = vol.Schema(
-    {vol.Required(CONF_DIRECTION): vol.In([JOYSTICK_DIRECTIONS])}
-)
-
-SERVICE_SCHEMA_DAILY_SCHEDULE = vol.Schema(
-    {
-        vol.Optional(CONF_ENABLED, default=False): cv.boolean,
-        vol.Required(CONF_DAY): vol.In(list(calendar.day_name)),
-        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(
-            CLEANING_MODES.keys()
-        ),
-        vol.Optional(CONF_TIME, default=None): cv.string,
-    }
-)
-
-SERVICE_SCHEMA_DELAYED_CLEAN = vol.Schema(
-    {
-        vol.Optional(CONF_ENABLED, default=False): cv.boolean,
-        vol.Optional(CONF_MODE, default=CLEANING_MODE_REGULAR): vol.In(
-            CLEANING_MODES.keys()
-        ),
-        vol.Optional(CONF_TIME, default=None): cv.string,
-    }
-)
-
-SERVICE_VALIDATION = {
-    SERVICE_NAVIGATE: SERVICE_SCHEMA_NAVIGATE,
-    SERVICE_DAILY_SCHEDULE: SERVICE_SCHEMA_DAILY_SCHEDULE,
-    SERVICE_DELAYED_CLEAN: SERVICE_SCHEMA_DELAYED_CLEAN,
-}
 
 CLOCK_HOURS_ICONS = {
     0: "mdi:clock-time-twelve",
@@ -369,6 +291,7 @@ CONSIDERED_POWER_STATE = {
     PWS_STATE_ON: True,
     PWS_STATE_CLEANING: True,
     PWS_STATE_PROGRAMMING: True,
+    ROBOT_STATE_INIT: True,
 }
 
 FILTER_BAG_STATUS = {

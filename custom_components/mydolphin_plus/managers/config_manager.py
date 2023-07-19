@@ -13,6 +13,11 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
+from ..common.clean_modes import (
+    CLEAN_MODES_CYCLE_TIME,
+    CleanModes,
+    get_clean_mode_cycle_time_key,
+)
 from ..common.consts import (
     CONFIGURATION_FILE,
     DEFAULT_NAME,
@@ -208,11 +213,23 @@ class ConfigManager:
 
         return entity_name
 
+    def get_clean_cycle_time(self, clean_mode: CleanModes) -> int:
+        key = get_clean_mode_cycle_time_key(clean_mode)
+        value = self._data.get(key)
+
+        return value
+
     def update_credentials(self, data: dict):
         self._entry_data = data
 
     async def update_aws_token_encrypted_key(self, key: str):
         self._data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = key
+
+        await self._save()
+
+    async def update_clean_cycle_time(self, clean_mode: CleanModes, time: int):
+        key = get_clean_mode_cycle_time_key(clean_mode)
+        self._data[key] = int(time)
 
         await self._save()
 
@@ -228,12 +245,35 @@ class ConfigManager:
         await self._load_encryption_key()
 
         if self._data is None:
-            self._data = {
-                STORAGE_DATA_LOCATING: False,
-                STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None,
-            }
+            self._data = {}
 
+        default_configuration = self._get_defaults()
+
+        keys_before = len(self._data.keys())
+
+        for key in default_configuration:
+            value = default_configuration[key]
+
+            if key not in self._data:
+                self._data[key] = value
+
+        if keys_before != len(self._data.keys()):
             await self._save()
+
+    @staticmethod
+    def _get_defaults() -> dict:
+        data = {
+            STORAGE_DATA_LOCATING: False,
+            STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: None,
+        }
+
+        for clean_mode in list(CleanModes):
+            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
+            default_time = CLEAN_MODES_CYCLE_TIME.get(clean_mode)
+
+            data[key] = int(default_time)
+
+        return data
 
     async def _load_config_from_file(self):
         if self._store is not None:
@@ -320,6 +360,12 @@ class ConfigManager:
             for key in self._data:
                 if key not in [CONF_PASSWORD, CONF_USERNAME]:
                     self._store_data[self._entry_id][key] = self._data[key]
+
+            if CONF_USERNAME in self._store_data[self._entry_id]:
+                self._store_data[self._entry_id].pop(CONF_USERNAME)
+
+            if CONF_PASSWORD in self._store_data[self._entry_id]:
+                self._store_data[self._entry_id].pop(CONF_PASSWORD)
 
         await self._store.async_save(self._store_data)
 

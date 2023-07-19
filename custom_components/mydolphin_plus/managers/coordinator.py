@@ -1,5 +1,4 @@
 from asyncio import sleep
-import calendar
 from datetime import datetime, timedelta
 import logging
 import sys
@@ -11,8 +10,6 @@ from homeassistant.const import (
     ATTR_ICON,
     ATTR_MODE,
     ATTR_STATE,
-    CONF_ENABLED,
-    CONF_MODE,
     CONF_PASSWORD,
     CONF_STATE,
 )
@@ -21,6 +18,7 @@ from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
+from ..common.clean_modes import CleanModes, get_clean_mode_cycle_time_key
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     ACTION_ENTITY_LOCATE,
@@ -40,8 +38,6 @@ from ..common.consts import (
     ATTR_ACTIONS,
     ATTR_ATTRIBUTES,
     ATTR_CALCULATED_STATUS,
-    ATTR_DISABLED,
-    ATTR_ENABLE,
     ATTR_EXPECTED_END_TIME,
     ATTR_IS_BUSY,
     ATTR_IS_ON,
@@ -53,18 +49,14 @@ from ..common.consts import (
     ATTR_STATUS,
     ATTR_TIME_ZONE,
     ATTR_TURN_ON_COUNT,
-    CLEANING_MODE_REGULAR,
     CLOCK_HOURS_ICONS,
-    CONF_DAY,
     CONF_DIRECTION,
-    CONF_TIME,
     CONFIGURATION_URL,
     CONSIDERED_POWER_STATE,
     DATA_CYCLE_INFO_CLEANING_MODE,
     DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
     DATA_CYCLE_INFO_CLEANING_MODE_START_TIME,
     DATA_DEBUG_WIFI_RSSI,
-    DATA_FEATURE_WEEKLY_TIMER,
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BUSY,
@@ -81,27 +73,17 @@ from ..common.consts import (
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
     DATA_KEY_RSSI,
-    DATA_KEY_SCHEDULE,
     DATA_KEY_STATUS,
     DATA_KEY_VACUUM,
-    DATA_KEY_WEEKLY_SCHEDULER,
     DATA_LED_ENABLE,
     DATA_LED_INTENSITY,
     DATA_LED_MODE,
     DATA_ROBOT_NAME,
-    DATA_SCHEDULE_CLEANING_MODE,
-    DATA_SCHEDULE_IS_ENABLED,
-    DATA_SCHEDULE_TIME,
-    DATA_SCHEDULE_TIME_HOURS,
-    DATA_SCHEDULE_TIME_MINUTES,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DEBUG,
-    DATA_SECTION_DELAY,
-    DATA_SECTION_FEATURE,
     DATA_SECTION_FILTER_BAG_INDICATION,
     DATA_SECTION_LED,
     DATA_SECTION_SYSTEM_STATE,
-    DATA_SECTION_WEEKLY_SETTINGS,
     DATA_SECTION_WIFI,
     DATA_SYSTEM_STATE_IS_BUSY,
     DATA_SYSTEM_STATE_PWS_STATE,
@@ -114,7 +96,6 @@ from ..common.consts import (
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
     DEFAULT_NAME,
-    DEFAULT_TIME_PART,
     DEFAULT_TIME_ZONE_NAME,
     DOMAIN,
     FILTER_BAG_ICONS,
@@ -134,18 +115,17 @@ from ..common.consts import (
     ROBOT_STATE_INIT,
     ROBOT_STATE_NOT_CONNECTED,
     ROBOT_STATE_SCANNING,
-    SERVICE_DAILY_SCHEDULE,
-    SERVICE_DELAYED_CLEAN,
-    SERVICE_EXIT_NAVIGATION,
-    SERVICE_NAVIGATE,
-    SERVICE_VALIDATION,
     SIGNAL_API_STATUS,
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_ENTITIES_INTERVAL,
     WS_RECONNECT_INTERVAL,
 )
-from ..common.entity_descriptions import MyDolphinPlusDailyBinarySensorEntityDescription
+from ..common.service_schema import (
+    SERVICE_EXIT_NAVIGATION,
+    SERVICE_NAVIGATE,
+    SERVICE_VALIDATION,
+)
 from .aws_client import AWSClient
 from .config_manager import ConfigManager
 from .rest_api import RestAPI
@@ -199,10 +179,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._last_update = 0
 
         self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
-            SERVICE_NAVIGATE: self._command_navigate,
-            SERVICE_EXIT_NAVIGATION: self._command_navigate,
-            SERVICE_DAILY_SCHEDULE: self._command_set_schedule,
-            SERVICE_DELAYED_CLEAN: self._command_set_delay,
+            SERVICE_NAVIGATE: self._service_navigate,
+            SERVICE_EXIT_NAVIGATION: self._service_exit_navigation,
         }
 
     @property
@@ -379,16 +357,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
             slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
             slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
-            slugify(DATA_KEY_WEEKLY_SCHEDULER): self._get_weekly_schedule,
         }
 
-        schedules = list(calendar.day_name)
-        schedules.append(DATA_SECTION_DELAY)
+        for clean_mode in list(CleanModes):
+            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
 
-        for day in schedules:
-            data_mapping[
-                slugify(f"{DATA_KEY_SCHEDULE} {day}")
-            ] = self._get_daily_schedule_data
+            data_mapping[key] = self._get_clean_mode_cycle_time_data
 
         self._data_mapping = data_mapping
 
@@ -457,7 +431,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     def _get_clean_mode_data(self, _entity_description) -> dict | None:
         cycle_info = self.aws_data.get(DATA_SECTION_CYCLE_INFO, {})
         cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+        mode = cleaning_mode.get(ATTR_MODE, CleanModes.REGULAR)
 
         result = {ATTR_STATE: mode}
 
@@ -501,7 +475,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     def _get_vacuum_data(self, _entity_description) -> dict | None:
         cycle_info = self.aws_data.get(DATA_SECTION_CYCLE_INFO, {})
         cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
+        mode = cleaning_mode.get(ATTR_MODE, CleanModes.REGULAR)
 
         state = self._system_status_details.get(ATTR_CALCULATED_STATUS)
 
@@ -563,54 +537,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    def _get_weekly_schedule(self, _entity_description) -> dict | None:
-        features = self.aws_data.get(DATA_SECTION_FEATURE, {})
-
-        weekly_timer = features.get(DATA_FEATURE_WEEKLY_TIMER, {})
-        status = weekly_timer.get(ATTR_STATUS, ATTR_DISABLED)
-
-        is_enabled = status == ATTR_ENABLE
-
-        result = {
-            ATTR_IS_ON: is_enabled,
-            ATTR_ATTRIBUTES: {ATTR_STATUS: status},
-            ATTR_ICON: "mdi:calendar-check" if is_enabled else "mdi:calendar-remove",
-        }
-
-        return result
-
-    def _get_daily_schedule_data(self, entity_description) -> dict | None:
-        local_entity: MyDolphinPlusDailyBinarySensorEntityDescription = (
-            entity_description
-        )
-
-        if local_entity.day == DATA_SECTION_DELAY:
-            schedule_settings = self.aws_data.get(local_entity.day, {})
-
-        else:
-            weekly_settings = self.aws_data.get(DATA_SECTION_WEEKLY_SETTINGS, {})
-
-            schedule_settings = weekly_settings.get(local_entity.day.lower(), {})
-
-        is_enabled = schedule_settings.get(DATA_SCHEDULE_IS_ENABLED, DEFAULT_ENABLE)
-        cleaning_mode = schedule_settings.get(DATA_SCHEDULE_CLEANING_MODE, {})
-        job_time = schedule_settings.get(DATA_SCHEDULE_TIME, {})
-
-        mode = cleaning_mode.get(ATTR_MODE, CLEANING_MODE_REGULAR)
-        hours = job_time.get(DATA_SCHEDULE_TIME_HOURS, DEFAULT_TIME_PART)
-        minutes = job_time.get(DATA_SCHEDULE_TIME_MINUTES, DEFAULT_TIME_PART)
-
-        job_start_time = None
-        if hours < DEFAULT_TIME_PART and minutes < DEFAULT_TIME_PART:
-            job_start_time = str(timedelta(hours=hours, minutes=minutes))
+    def _get_clean_mode_cycle_time_data(self, entity_description) -> dict | None:
+        key = entity_description.key
+        key_parts = key.split("_")
+        clean_mode_str = key_parts[len(key_parts) - 1]
+        clean_mode = CleanModes(clean_mode_str)
+        state = self.config_manager.get_clean_cycle_time(clean_mode)
 
         result = {
-            ATTR_IS_ON: is_enabled,
-            ATTR_ATTRIBUTES: {
-                ATTR_MODE: mode,
-                ATTR_START_TIME: job_start_time,
+            ATTR_STATE: state,
+            ATTR_ACTIONS: {
+                ACTION_ENTITY_SET_NATIVE_VALUE: self._set_clean_mode_cycle_time_data,
             },
-            ATTR_ICON: "mdi:calendar-check" if is_enabled else "mdi:calendar-remove",
         }
 
         return result
@@ -726,7 +664,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    async def _set_cleaning_mode(self, fan_speed):
+    async def _set_cleaning_mode(
+        self, _entity_description: EntityDescription, fan_speed
+    ):
         data = self._get_vacuum_data(None)
         attributes = data.get(ATTR_ATTRIBUTES)
         mode = attributes.get(ATTR_MODE)
@@ -736,27 +676,38 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if mode != fan_speed:
             self._aws_client.set_cleaning_mode(fan_speed)
 
-    async def _set_led_mode(self, option: str):
+    async def _set_led_mode(self, _entity_description: EntityDescription, option: str):
         _LOGGER.debug(f"Change led mode, New: {option}")
 
         value = int(option)
 
         self._aws_client.set_led_mode(value)
 
-    async def _set_led_enabled(self):
+    async def _set_led_enabled(self, _entity_description: EntityDescription):
         _LOGGER.debug("Enable LED light")
 
         self._aws_client.set_led_enabled(True)
 
-    async def _set_led_disabled(self):
+    async def _set_led_disabled(self, _entity_description: EntityDescription):
         _LOGGER.debug("Disable LED light")
 
         self._aws_client.set_led_enabled(False)
 
-    def _set_led_intensity(self, intensity: int):
+    async def _set_led_intensity(
+        self, _entity_description: EntityDescription, intensity: int
+    ):
         self._aws_client.set_led_intensity(intensity)
 
-    async def _pickup(self):
+    async def _set_clean_mode_cycle_time_data(
+        self, entity_description: EntityDescription, cycle_time: int
+    ):
+        key_parts = entity_description.key.split("_")
+        clean_mode_str = key_parts[len(key_parts) - 1]
+        clean_mode = CleanModes(clean_mode_str)
+
+        await self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
+
+    async def _pickup(self, _entity_description: EntityDescription):
         _LOGGER.debug("Pickup robot")
 
         self._aws_client.pickup()
@@ -768,27 +719,35 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if considered_state != desired_state:
             self._aws_client.set_power_state(desired_state)
 
-    async def _vacuum_turn_on(self, state):
-        await self._switch_power(state, True)
+    async def _vacuum_turn_on(self, _entity_description: EntityDescription, _state):
+        data = self._get_vacuum_data(None)
+        attributes = data.get(ATTR_ATTRIBUTES)
+        mode = attributes.get(ATTR_MODE, CleanModes.REGULAR)
 
-    async def _vacuum_turn_off(self, state):
+        self._aws_client.set_cleaning_mode(mode)
+
+    async def _vacuum_turn_off(self, _entity_description: EntityDescription, state):
         await self._switch_power(state, False)
 
-    async def _vacuum_toggle(self, state):
+    async def _vacuum_toggle(self, _entity_description: EntityDescription, state):
         considered_state = CONSIDERED_POWER_STATE.get(state, False)
 
         await self._switch_power(state, not considered_state)
 
-    async def _vacuum_start(self, state):
-        await self._switch_power(state, True)
+    async def _vacuum_start(self, _entity_description: EntityDescription, _state):
+        data = self._get_vacuum_data(None)
+        attributes = data.get(ATTR_ATTRIBUTES)
+        mode = attributes.get(ATTR_MODE, CleanModes.REGULAR)
 
-    async def _vacuum_stop(self, state):
+        self._aws_client.set_cleaning_mode(mode)
+
+    async def _vacuum_stop(self, _entity_description: EntityDescription, state):
         await self._switch_power(state, False)
 
-    async def _vacuum_pause(self, state):
+    async def _vacuum_pause(self, _entity_description: EntityDescription, state):
         await self._switch_power(state, False)
 
-    async def _vacuum_locate(self):
+    async def _vacuum_locate(self, entity_description: EntityDescription):
         led_light_entity = self._get_led_data(None)
 
         led_light_state = led_light_entity.get(CONF_STATE)
@@ -803,10 +762,11 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Locate robot")
 
             await self._config_manager.update_is_locating(True)
-            await self._set_led_enabled()
+            await self._set_led_enabled(entity_description)
 
     async def _send_command(
         self,
+        _entity_description: EntityDescription,
         command: str,
         params: dict[str, Any] | list[Any] | None,
     ):
@@ -824,12 +784,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             except MultipleInvalid as ex:
                 _LOGGER.error(ex.msg)
 
-    def _command_exit_navigation(self):
+    async def _service_exit_navigation(self):
         _LOGGER.debug("Exit navigation mode")
 
         self._aws_client.exit_navigation()
 
-    def _command_navigate(self, data: dict[str, Any] | list[Any] | None):
+    async def _service_navigate(self, data: dict[str, Any] | list[Any] | None):
         direction = data.get(CONF_DIRECTION)
         _LOGGER.debug(f"Navigate robot {direction}")
 
@@ -838,21 +798,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             return
 
         self._aws_client.navigate(direction)
-
-    def _command_set_schedule(self, data: dict[str, Any] | list[Any] | None):
-        day = data.get(CONF_DAY)
-        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
-        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
-        job_time = data.get(CONF_TIME)
-
-        self._aws_client.set_schedule(day, enabled, cleaning_mode, job_time)
-
-    def _command_set_delay(self, data: dict[str, Any] | list[Any] | None):
-        enabled = data.get(CONF_ENABLED, DEFAULT_ENABLE)
-        cleaning_mode = data.get(CONF_MODE, CLEANING_MODE_REGULAR)
-        job_time = data.get(CONF_TIME)
-
-        self._aws_client.set_delay(enabled, cleaning_mode, job_time)
 
     def _set_system_status_details(self):
         data = self.aws_data

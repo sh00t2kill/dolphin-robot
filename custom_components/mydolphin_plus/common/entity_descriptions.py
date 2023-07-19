@@ -1,8 +1,11 @@
-import calendar
 from dataclasses import dataclass
 
+from custom_components.mydolphin_plus.common.clean_modes import (
+    CleanModes,
+    get_clean_mode_cycle_time_key,
+    get_clean_mode_cycle_time_name,
+)
 from custom_components.mydolphin_plus.common.consts import (
-    CLEANING_MODES_SHORT,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_CLEAN_MODE,
     DATA_KEY_CYCLE_COUNT,
@@ -17,11 +20,8 @@ from custom_components.mydolphin_plus.common.consts import (
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
     DATA_KEY_RSSI,
-    DATA_KEY_SCHEDULE,
     DATA_KEY_STATUS,
     DATA_KEY_VACUUM,
-    DATA_KEY_WEEKLY_SCHEDULER,
-    DATA_SECTION_DELAY,
     ICON_LED_MODES,
     VACUUM_FEATURES,
 )
@@ -118,7 +118,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         key=slugify(DATA_KEY_VACUUM),
         name="",
         features=VACUUM_FEATURES,
-        fan_speed_list=list(CLEANING_MODES_SHORT.keys()),
+        fan_speed_list=list(CleanModes),
         translation_key=slugify(DATA_KEY_VACUUM),
     ),
     MyDolphinPlusLightEntityDescription(
@@ -222,21 +222,20 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_AWS_BROKER),
     ),
-    MyDolphinPlusBinarySensorEntityDescription(
-        key=slugify(DATA_KEY_WEEKLY_SCHEDULER),
-        name=DATA_KEY_WEEKLY_SCHEDULER,
-        translation_key=slugify(DATA_KEY_WEEKLY_SCHEDULER),
-    ),
 ]
 
-schedules = list(calendar.day_name)
-schedules.append(DATA_SECTION_DELAY)
+for clean_mode in list(CleanModes):
+    name = get_clean_mode_cycle_time_name(CleanModes(clean_mode))
+    key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
 
-for day in schedules:
-    binary_sensor = MyDolphinPlusDailyBinarySensorEntityDescription(
-        key=slugify(f"{DATA_KEY_SCHEDULE} {day}"),
-        name=f"{DATA_KEY_SCHEDULE} {day.capitalize()}",
-        day=day,
+    ed = MyDolphinPlusNumberEntityDescription(
+        key=key,
+        name=name,
+        native_min_value=0,
+        native_max_value=600,
+        entity_category=EntityCategory.CONFIG,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        translation_key=key,
     )
 
-    ENTITY_DESCRIPTIONS.append(binary_sensor)
+    ENTITY_DESCRIPTIONS.append(ed)

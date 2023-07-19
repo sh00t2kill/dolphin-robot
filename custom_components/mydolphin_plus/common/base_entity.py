@@ -90,7 +90,7 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
             self.entity_description, key
         )
 
-        await async_device_action(*kwargs)
+        await async_device_action(self.entity_description, *kwargs)
 
         await self.coordinator.async_request_refresh()
 
