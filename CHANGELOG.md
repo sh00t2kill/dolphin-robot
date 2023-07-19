@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.2
+
+- Breaking change: Renamed sensor of `Main Unit Status` to `Power Supply Status`
+- Support for defining entities according to robot family (All, M600, M700)
+- Add `Temperature` sensor for M700
+- Add `Robot Error` and `Power Supply Error` sensors
+  - Presents error only when related to latest cycle (if error is available in data and not related to latest, treat as no-error)
+  - Fires event `mydolphin_plus_error`
+
 ## v1.0.1
 
 - Breaking Change: Schedules removed (Sensors and services)

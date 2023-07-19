@@ -29,6 +29,7 @@ PLATFORMS = [
     Platform.NUMBER,
 ]
 
+ATTR_EVENT = "Error"
 ATTR_IS_ON = "is_on"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_START_TIME = "start_time"
@@ -58,6 +59,9 @@ DYNAMIC_DESCRIPTION = "description"
 DYNAMIC_DESCRIPTION_JOYSTICK = "joystick"
 DYNAMIC_DESCRIPTION_TEMPERATURE = "temperature"
 DYNAMIC_TYPE_PWS_REQUEST = "pwsRequest"
+DYNAMIC_TYPE_PWS_RESPONSE = "pwsResponse"
+DYNAMIC_TYPE_IOT_RESPONSE = "iotResponse"
+DYNAMIC_CONTENT = "content"
 DYNAMIC_CONTENT_SERIAL_NUMBER = "robotSerial"
 DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL = "msmu"
 DYNAMIC_CONTENT_REMOTE_CONTROL_MODE = "rcMode"
@@ -74,6 +78,7 @@ WS_DATA_DIFF = "diff-seconds"
 WS_DATA_TIMESTAMP = "timestamp"
 WS_DATA_VERSION = "version"
 
+DATA_SECTION_DYNAMIC = "dynamic"
 DATA_SECTION_LED = "led"
 DATA_SECTION_DEBUG = "debug"
 DATA_SECTION_WIFI = "wifi"
@@ -83,6 +88,8 @@ DATA_SECTION_WEEKLY_SETTINGS = "weeklySettings"
 DATA_SECTION_DELAY = "delay"
 DATA_SECTION_FEATURE = "featureEn"
 DATA_SECTION_SYSTEM_STATE = "systemState"
+DATA_SECTION_ROBOT_ERROR = "robotError"
+DATA_SECTION_PWS_ERROR = "pwsError"
 
 DATA_STATE_REPORTED = "reported"
 DATA_STATE_DESIRED = "desired"
@@ -116,6 +123,9 @@ DATA_LED_INTENSITY = "ledIntensity"
 DATA_LED_ENABLE = "ledEnable"
 DATA_DEBUG_WIFI_RSSI = "WIFI_RSSI"
 DATA_WIFI_NETWORK_NAME = "netName"
+
+DATA_ERROR_CODE = "errorCode"
+DATA_ERROR_TURN_ON_COUNT = "turnOnCount"
 
 DEFAULT_LED_INTENSITY = 80
 DEFAULT_ENABLE = False
@@ -196,6 +206,7 @@ TOPIC_CALLBACK_ACCEPTED = "accepted"
 TOPIC_CALLBACK_REJECTED = "rejected"
 
 DATA_ROBOT_NAME = "Robot Name"
+DATA_ROBOT_FAMILY = "Robot Family"
 
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Motor Unit Serial",
@@ -205,12 +216,14 @@ DATA_ROBOT_DETAILS = {
     "RegDate": "Registration Date",
     "MyRobotName": DATA_ROBOT_NAME,
     "isReg": "Is Registered",
-    "RobotFamily": "Product Family",
+    "RobotFamily": DATA_ROBOT_FAMILY,
 }
 
+ATTR_ERROR_DESCRIPTIONS = "Description"
 ATTR_LED_MODE = "led_mode"
 ATTR_ATTRIBUTES = "attributes"
 ATTR_ACTIONS = "actions"
+ATTR_INSTRUCTIONS = "instructions"
 
 LED_MODE_BLINKING = "1"
 LED_MODE_ALWAYS_ON = "2"
@@ -353,11 +366,13 @@ DATA_KEY_SCHEDULE = "Schedule"
 DATA_KEY_RSSI = "RSSI"
 DATA_KEY_NETWORK_NAME = "Network Name"
 DATA_KEY_CLEAN_MODE = "Clean Mode"
-DATA_KEY_MAIN_UNIT_STATUS = "Main Unit Status"
+DATA_KEY_POWER_SUPPLY_STATUS = "Power Supply Status"
 DATA_KEY_ROBOT_STATUS = "Robot Status"
 DATA_KEY_ROBOT_TYPE = "Robot Type"
 DATA_KEY_BUSY = "Busy"
 DATA_KEY_CYCLE_COUNT = "Cycle Count"
+DATA_KEY_ROBOT_ERROR = "Robot Error"
+DATA_KEY_PWS_ERROR = "Power Supply Error"
 
 ACTION_ENTITY_RETURN_TO_BASE = "return_to_base"
 ACTION_ENTITY_SET_FAN_SPEED = "set_fan_speed"
@@ -371,3 +386,8 @@ ACTION_ENTITY_SEND_COMMAND = "send_command"
 ACTION_ENTITY_LOCATE = "locate"
 ACTION_ENTITY_SELECT_OPTION = "select_option"
 ACTION_ENTITY_SET_NATIVE_VALUE = "set_native_value"
+
+TRANSLATION_KEY_ERROR_INSTRUCTIONS = "state_attributes.instructions.state"
+ERROR_CLEAN_CODES = [0, 255]
+
+EVENT_ERROR = f"{DOMAIN}_error"

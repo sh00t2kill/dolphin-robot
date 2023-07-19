@@ -57,6 +57,8 @@ from ..common.consts import (
     DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
     DATA_CYCLE_INFO_CLEANING_MODE_START_TIME,
     DATA_DEBUG_WIFI_RSSI,
+    DATA_ERROR_CODE,
+    DATA_ERROR_TURN_ON_COUNT,
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BUSY,
@@ -68,8 +70,10 @@ from ..common.consts import (
     DATA_KEY_LED,
     DATA_KEY_LED_INTENSITY,
     DATA_KEY_LED_MODE,
-    DATA_KEY_MAIN_UNIT_STATUS,
     DATA_KEY_NETWORK_NAME,
+    DATA_KEY_POWER_SUPPLY_STATUS,
+    DATA_KEY_PWS_ERROR,
+    DATA_KEY_ROBOT_ERROR,
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
     DATA_KEY_RSSI,
@@ -81,8 +85,11 @@ from ..common.consts import (
     DATA_ROBOT_NAME,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DEBUG,
+    DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
     DATA_SECTION_LED,
+    DATA_SECTION_PWS_ERROR,
+    DATA_SECTION_ROBOT_ERROR,
     DATA_SECTION_SYSTEM_STATE,
     DATA_SECTION_WIFI,
     DATA_SYSTEM_STATE_IS_BUSY,
@@ -98,6 +105,8 @@ from ..common.consts import (
     DEFAULT_NAME,
     DEFAULT_TIME_ZONE_NAME,
     DOMAIN,
+    DYNAMIC_DESCRIPTION_TEMPERATURE,
+    DYNAMIC_TYPE_IOT_RESPONSE,
     FILTER_BAG_ICONS,
     FILTER_BAG_STATUS,
     ICON_LED_MODES,
@@ -185,12 +194,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     @property
     def robot_name(self):
-        robot_name = self._api.data.get(DATA_ROBOT_NAME)
+        robot_name = self.api_data.get(DATA_ROBOT_NAME)
 
         if robot_name is None or robot_name == "":
             robot_name = DEFAULT_NAME
 
         return robot_name
+
+    @property
+    def api_data(self) -> dict:
+        data = self._api.data
+
+        return data
 
     @property
     def aws_data(self) -> dict:
@@ -218,7 +233,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
     def get_device_serial_number(self) -> str:
-        serial_number = self._api.data.get(API_DATA_SERIAL_NUMBER)
+        serial_number = self.api_data.get(API_DATA_SERIAL_NUMBER)
 
         return serial_number
 
@@ -232,14 +247,14 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         data = {
             "config": config_data,
-            "api": self._api.data,
+            "api": self.api_data,
             "aws_client": self._aws_client.data,
         }
 
         return data
 
     def get_device(self) -> DeviceInfo:
-        data = self._api.data
+        data = self.api_data
         device_name = self.robot_name
         model = data.get("Product Description")
         versions = data.get("versions", {})
@@ -278,7 +293,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
             await self._api.update()
 
-            await self._aws_client.update_api_data(self._api.data)
+            await self._aws_client.update_api_data(self.api_data)
 
             await self._aws_client.initialize()
 
@@ -344,7 +359,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_RSSI): self._get_rssi_data,
             slugify(DATA_KEY_NETWORK_NAME): self._get_network_name_data,
             slugify(DATA_KEY_CLEAN_MODE): self._get_clean_mode_data,
-            slugify(DATA_KEY_MAIN_UNIT_STATUS): self._get_main_unit_status_data,
+            slugify(DATA_KEY_POWER_SUPPLY_STATUS): self._get_power_supply_status_data,
             slugify(DATA_KEY_ROBOT_STATUS): self._get_robot_status_data,
             slugify(DATA_KEY_ROBOT_TYPE): self._get_robot_type_data,
             slugify(DATA_KEY_BUSY): self._get_busy_data,
@@ -357,6 +372,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
             slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
             slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
+            slugify(DATA_KEY_ROBOT_ERROR): self._get_robot_error_data,
+            slugify(DATA_KEY_PWS_ERROR): self._get_pws_error_data,
+            slugify(DYNAMIC_DESCRIPTION_TEMPERATURE): self._get_temperature_data,
         }
 
         for clean_mode in list(CleanModes):
@@ -414,9 +432,22 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     def _get_rssi_data(self, _entity_description) -> dict | None:
         debug = self.aws_data.get(DATA_SECTION_DEBUG, {})
-        wifi_rssi = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
+        state = debug.get(DATA_DEBUG_WIFI_RSSI, 0)
 
-        result = {ATTR_STATE: wifi_rssi}
+        result = {ATTR_STATE: state}
+
+        return result
+
+    def _get_temperature_data(self, _entity_description) -> dict | None:
+        dynamic = self.aws_data.get(DATA_SECTION_DYNAMIC, {})
+        iot_response = dynamic.get(DYNAMIC_TYPE_IOT_RESPONSE, {})
+        temperature_int = iot_response.get(DYNAMIC_DESCRIPTION_TEMPERATURE, 0)
+
+        state_str = str(temperature_int)
+        state_str_fixed = f"{state_str[:2]}.{state_str[2:].ljust(2, '0')}"
+        state = float(state_str_fixed)
+
+        result = {ATTR_STATE: state}
 
         return result
 
@@ -437,7 +468,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    def _get_main_unit_status_data(self, _entity_description) -> dict | None:
+    def _get_power_supply_status_data(self, _entity_description) -> dict | None:
         state = self._system_status_details.get(ATTR_PWS_STATUS)
 
         result = {ATTR_STATE: state}
@@ -661,6 +692,35 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ATTR_IS_ON: is_on,
             ATTR_ATTRIBUTES: {ATTR_STATUS: self._aws_client.status},
         }
+
+        return result
+
+    def _get_robot_error_data(self, entity_description) -> dict | None:
+        result = self._get_error_code(entity_description, DATA_SECTION_ROBOT_ERROR)
+
+        return result
+
+    def _get_pws_error_data(self, entity_description) -> dict | None:
+        result = self._get_error_code(entity_description, DATA_SECTION_PWS_ERROR)
+
+        return result
+
+    def _get_error_code(self, entity_description, data_section_key) -> dict | None:
+        data = self.aws_data
+
+        system_state = data.get(DATA_SECTION_SYSTEM_STATE, {})
+        turn_on_count = system_state.get(DATA_SYSTEM_STATE_TURN_ON_COUNT, 0)
+
+        error_section = data.get(data_section_key, {})
+        error_code = error_section.get(DATA_ERROR_CODE, 255)
+        error_turn_on_count = error_section.get(DATA_ERROR_TURN_ON_COUNT, 255)
+
+        state = 0
+
+        if error_turn_on_count == turn_on_count:
+            state = error_code
+
+        result = {ATTR_STATE: state}
 
         return result
 

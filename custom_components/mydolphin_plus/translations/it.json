@@ -95,7 +95,7 @@
           "scanning": "Ricognizione"
         }
       },
-      "main_unit_status": {
+      "power_supply_status": {
         "name": "Stato unità principale",
         "state": {
           "on": "On",
