@@ -8,6 +8,7 @@
 - Add `Robot Error` and `Power Supply Error` sensors
   - Presents error only when related to latest cycle (if error is available in data and not related to latest, treat as no-error)
   - Fires event `mydolphin_plus_error`
+- Add feature to translation tool to complete gaps of missing translations with default values surrounded by asterisks (\*)
 
 ## v1.0.1
 

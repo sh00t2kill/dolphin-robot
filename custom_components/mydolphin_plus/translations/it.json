@@ -13,7 +13,7 @@
     "error": {
       "invalid_admin_credentials": "Credenziali amministratore non valide",
       "invalid_server_details": "Dettagli server non validi",
-      "already_configured": "Un'integrazione con lo stesso nome è già stata configurata",
+      "already_configured": "Un'integrazione con lo stesso nome \u00e8 gi\u00e0 stata configurata",
       "missing_permanent_api_key": "Chiave API permanente mancante",
       "corrupted_encryption_key": "Chiave di criptazione corrotta, rimuovere l'integrazione ed aggiungerla di nuovo"
     }
@@ -32,7 +32,7 @@
     "error": {
       "invalid_admin_credentials": "Credenziali amministratore non valide",
       "invalid_server_details": "Dettagli server non validi",
-      "already_configured": "Un'integrazione con lo stesso nome è già stata configurata",
+      "already_configured": "Un'integrazione con lo stesso nome \u00e8 gi\u00e0 stata configurata",
       "corrupted_encryption_key": "Chiave di criptazione corrotta, rimuovere l'integrazione ed aggiungerla di nuovo"
     }
   },
@@ -52,7 +52,25 @@
     },
     "number": {
       "led_intensity": {
-        "name": "Intensità LED"
+        "name": "Intensit\u00e0 LED"
+      },
+      "cycle_time_all": {
+        "name": "*Cycle Time Regular*"
+      },
+      "cycle_time_short": {
+        "name": "*Cycle Time Fast mode*"
+      },
+      "cycle_time_floor": {
+        "name": "*Cycle Time Floor only*"
+      },
+      "cycle_time_water": {
+        "name": "*Cycle Time Water line*"
+      },
+      "cycle_time_ultra": {
+        "name": "*Cycle Time Ultra clean*"
+      },
+      "cycle_time_pickup": {
+        "name": "*Cycle Time Pickup*"
       }
     },
     "sensor": {
@@ -96,7 +114,7 @@
         }
       },
       "power_supply_status": {
-        "name": "Stato unità principale",
+        "name": "Stato unit\u00e0 principale",
         "state": {
           "on": "On",
           "off": "Off",
@@ -116,7 +134,8 @@
           "holdweekly": "Fermo (Settimanale)",
           "programming": "In programmazione",
           "notconnected": "Disconnesso",
-          "cleaning": "In pulizia"
+          "cleaning": "In pulizia",
+          "init": "*Checking Environment*"
         }
       },
       "clean_mode": {
@@ -126,7 +145,92 @@
           "short": "Veloce",
           "floor": "Solo fondo",
           "water": "Pelo acqua",
-          "ultra": "Ultra pulito"
+          "ultra": "Ultra pulito",
+          "pickup": "*Pickup*"
+        }
+      },
+      "robot_error": {
+        "name": "*Robot Error*",
+        "state": {
+          "0": "*Ok*",
+          "1": "*DC in voltage*",
+          "2": "*Out of water*",
+          "3": "*Impeller overload problem has been detected*",
+          "4": "*Impeller 1 underload*",
+          "5": "*Impeller overload problem has been detected*",
+          "6": "*Impeller 2 underload*",
+          "7": "*Drive overload problem has been detected*",
+          "8": "*Drive 1 underload*",
+          "9": "*Drive overload problem has been detected*",
+          "10": "*Drive 2 underload*",
+          "11": "*Wall/floor sensor*",
+          "12": "*DC in voltage 23V*",
+          "13": "*Wall floor sensor 2*",
+          "14": "*Robot stuck*",
+          "15": "*Power supply overheat*",
+          "16": "*Power supply overload*",
+          "17": "*Impeller 1 Driver failure*",
+          "18": "*Impeller 2  Driver failure*",
+          "19": "*Drive 1 Driver failure*",
+          "20": "*Drive 2  Driver failure*",
+          "21": "*Servo over  load*",
+          "22": "*Impeller 1 Motor failure*",
+          "23": "*Impeller 2  Motor failure*",
+          "24": "*Drive 1 Motor failure*",
+          "25": "*Drive 2  Motor failure*",
+          "255": "*Ok*"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Clean the debris from the impeller opening.<br />3. Dismantle the impeller compartment if the debris is inaccessible.<br />4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn\u2019t help, contact your dealer*",
+              "5": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Clean the debris from the impeller opening.<br />3. Dismantle the impeller compartment if the debris is inaccessible.<br />4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn\u2019t help, contact your dealer*",
+              "7": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Remove any object or blockage from the driving system.<br />3. Plug in the power supply and try to operate again.<br />4. If the above doesn\u2019t help, please contact your dealer*",
+              "9": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Remove any object or blockage from the driving system.<br /> 3. Plug in the power supply and try to operate again.<br />4. If the above doesn\u2019t help, please contact your dealer*"
+            }
+          }
+        }
+      },
+      "power_supply_error": {
+        "name": "*Power Supply Error*",
+        "state": {
+          "0": "*Ok*",
+          "1": "*DC in voltage*",
+          "2": "*Out of water*",
+          "3": "*Impeller overload problem has been detected*",
+          "4": "*Impeller 1 underload*",
+          "5": "*Impeller overload problem has been detected*",
+          "6": "*Impeller 2 underload*",
+          "7": "*Drive overload problem has been detected*",
+          "8": "*Drive 1 underload*",
+          "9": "*Drive overload problem has been detected*",
+          "10": "*Drive 2 underload*",
+          "11": "*Wall/floor sensor*",
+          "12": "*DC in voltage 23V*",
+          "13": "*Wall floor sensor 2*",
+          "14": "*Robot stuck*",
+          "15": "*Power supply overheat*",
+          "16": "*Power supply overload*",
+          "17": "*Impeller 1 Driver failure*",
+          "18": "*Impeller 2  Driver failure*",
+          "19": "*Drive 1 Driver failure*",
+          "20": "*Drive 2  Driver failure*",
+          "21": "*Servo over  load*",
+          "22": "*Impeller 1 Motor failure*",
+          "23": "*Impeller 2  Motor failure*",
+          "24": "*Drive 1 Motor failure*",
+          "25": "*Drive 2  Motor failure*",
+          "255": "*Ok*"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Clean the debris from the impeller opening.<br />3. Dismantle the impeller compartment if the debris is inaccessible.<br />4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn\u2019t help, contact your dealer*",
+              "5": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Clean the debris from the impeller opening.<br />3. Dismantle the impeller compartment if the debris is inaccessible.<br />4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn\u2019t help, contact your dealer*",
+              "7": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Remove any object or blockage from the driving system.<br />3. Plug in the power supply and try to operate again.<br />4. If the above doesn\u2019t help, please contact your dealer*",
+              "9": "*Please follow these steps:<br />1. Unplug the power supply.<br />2. Remove any object or blockage from the driving system.<br /> 3. Plug in the power supply and try to operate again.<br />4. If the above doesn\u2019t help, please contact your dealer*"
+            }
+          }
         }
       }
     },
@@ -149,9 +253,20 @@
               "short": "Veloce",
               "floor": "Solo fondo",
               "water": "Pelo acqua",
-              "ultra": "Ultra pulito"
+              "ultra": "Ultra pulito",
+              "pickup": "*Pickup*"
             }
           }
+        },
+        "state": {
+          "on": "*On*",
+          "off": "*Off*",
+          "holddelay": "*Idle (Delay)*",
+          "holdweekly": "*Idle (Weekly)*",
+          "programming": "*Programming*",
+          "notconnected": "*Disconnected*",
+          "cleaning": "*Cleaning*",
+          "init": "*Checking Environment*"
         }
       }
     }

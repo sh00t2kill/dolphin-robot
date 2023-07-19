@@ -22,6 +22,18 @@ def _get_json_file(path):
         return content
 
 
+def _set_json_file(path, content):
+    full_path = os.path.join(
+        os.path.dirname(__file__),
+        f"..\\custom_components\\{DOMAIN}\\{path}"
+    )
+
+    data = json.dumps(content, indent=4)
+
+    with open(full_path, "w", encoding="utf-8") as json_file:
+        json_file.write(data)
+
+
 def _get_gaps(lang_name: str):
     strings_json = _get_json_file("strings.json")
     lang_json = _get_json_file(f"translations\\{lang_name}.json")
@@ -31,6 +43,28 @@ def _get_gaps(lang_name: str):
 
     added_gaps = [key for key in strings_keys if key not in lang_keys]
     removed_gaps = [key for key in lang_keys if key not in strings_keys]
+
+    if len(added_gaps) > 0:
+        for key in strings_keys:
+            if key not in lang_keys:
+                print (key)
+                key_parts = key.split(".")
+                data_to_handle = lang_json
+                data_source = strings_json
+                for i in range(0, len(key_parts)):
+                    key_item = key_parts[i]
+                    print (i)
+                    print (key_item)
+                    if i == len(key_parts) - 1:
+                        data_to_handle[key_item] = f"*{data_source[key_item]}*"
+
+                    else:
+                        if key_item not in data_to_handle:
+                            data_to_handle[key_item] = {}
+                        data_to_handle = data_to_handle[key_item]
+                        data_source = data_source[key_item]
+
+        _set_json_file(f"translations\\{lang_name}.json", lang_json)
 
     gaps = {
         "added": added_gaps,
@@ -48,7 +82,7 @@ def _compare():
 
         if len(added_keys) + len(removed_keys) > 0:
             print(f"Translations for '{lang_name}' is not up to date.")
-
+            """
             if len(added_keys) > 0:
                 print(f"New keys:")
                 for key in added_keys:
@@ -58,6 +92,6 @@ def _compare():
                 print(f"Removed keys:")
                 for key in removed_keys:
                     print(f" - {key}")
-
+            """
 
 _compare()
