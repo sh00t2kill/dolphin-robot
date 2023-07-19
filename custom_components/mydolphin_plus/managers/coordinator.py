@@ -107,6 +107,7 @@ from ..common.consts import (
     DOMAIN,
     DYNAMIC_DESCRIPTION_TEMPERATURE,
     DYNAMIC_TYPE_IOT_RESPONSE,
+    ERROR_CLEAN_CODES,
     FILTER_BAG_ICONS,
     FILTER_BAG_STATUS,
     ICON_LED_MODES,
@@ -128,7 +129,7 @@ from ..common.consts import (
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_ENTITIES_INTERVAL,
-    WS_RECONNECT_INTERVAL, ERROR_CLEAN_CODES,
+    WS_RECONNECT_INTERVAL,
 )
 from ..common.service_schema import (
     SERVICE_EXIT_NAVIGATION,
@@ -725,10 +726,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if state not in ERROR_CLEAN_CODES:
             icon = f"{icon}-alert"
 
-        result = {
-            ATTR_STATE: state,
-            ATTR_ICON: icon
-        }
+        result = {ATTR_STATE: state, ATTR_ICON: icon}
 
         return result
 
