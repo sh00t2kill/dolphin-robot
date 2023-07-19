@@ -9,7 +9,7 @@ import secrets
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from custom_components.mydolphin_plus.component.helpers import (
+from custom_components.mydolphin_plus.common.consts import (
     API_REQUEST_SERIAL_EMAIL,
     API_REQUEST_SERIAL_NUMBER,
 )

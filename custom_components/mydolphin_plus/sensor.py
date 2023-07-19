@@ -1,13 +1,25 @@
 import logging
+from typing import Callable
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_ICON, ATTR_STATE, Platform
+from homeassistant.const import ATTR_ICON, ATTR_NAME, ATTR_STATE, CONF_NAME, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
-from .common.consts import ATTR_ATTRIBUTES, SIGNAL_DEVICE_NEW
+from .common.consts import (
+    ATTR_ATTRIBUTES,
+    ATTR_ERROR_DESCRIPTIONS,
+    ATTR_INSTRUCTIONS,
+    DATA_KEY_PWS_ERROR,
+    DATA_KEY_ROBOT_ERROR,
+    DATA_ROBOT_NAME,
+    ERROR_CLEAN_CODES,
+    EVENT_ERROR,
+    SIGNAL_DEVICE_NEW,
+    TRANSLATION_KEY_ERROR_INSTRUCTIONS,
+)
 from .common.entity_descriptions import MyDolphinPlusSensorEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -47,6 +59,11 @@ class MyDolphinPlusSensorEntity(MyDolphinPlusBaseEntity, SensorEntity):
 
         self._attr_device_class = entity_description.device_class
 
+        self._notify_handlers: dict[str, Callable] = {
+            DATA_KEY_ROBOT_ERROR: self._notify_error,
+            DATA_KEY_PWS_ERROR: self._notify_error,
+        }
+
     def update_component(self, data):
         """Fetch new state parameters for the sensor."""
         if data is not None:
@@ -60,5 +77,26 @@ class MyDolphinPlusSensorEntity(MyDolphinPlusBaseEntity, SensorEntity):
             if icon is not None:
                 self._attr_icon = icon
 
+            handler = self._notify_handlers.get(self.entity_description.name)
+
+            if handler is not None:
+                handler()
+
         else:
             self._attr_native_value = None
+
+    def _notify_error(self):
+        state = self._attr_native_value
+
+        if state not in ERROR_CLEAN_CODES:
+            attribute_key = f"{TRANSLATION_KEY_ERROR_INSTRUCTIONS}.{state}"
+
+            event_data = {
+                ATTR_NAME: self.entity_description.name,
+                DATA_ROBOT_NAME: self.robot_name,
+                ATTR_STATE: state,
+                ATTR_ERROR_DESCRIPTIONS: self.get_translation(CONF_NAME),
+                ATTR_INSTRUCTIONS: self.get_translation(attribute_key),
+            }
+
+            self.hass.bus.fire(EVENT_ERROR, event_data)

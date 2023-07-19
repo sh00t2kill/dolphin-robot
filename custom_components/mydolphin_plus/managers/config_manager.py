@@ -6,7 +6,7 @@ import sys
 from cryptography.fernet import Fernet, InvalidToken
 
 from homeassistant.config_entries import STORAGE_VERSION, ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_NAME, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import translation
 from homeassistant.helpers.entity import DeviceInfo
@@ -184,6 +184,28 @@ class ConfigManager:
                 f"Failed to initialize configuration manager, Error: {ex}, Line: {line_number}"
             )
 
+    def get_translation(
+        self,
+        platform: Platform,
+        entity_key: str,
+        attribute: str,
+        default_value: str | None = None,
+    ) -> str | None:
+        translation_key = (
+            f"component.{DOMAIN}.entity.{platform}.{entity_key}.{attribute}"
+        )
+
+        translated_value = self._translations.get(translation_key, default_value)
+
+        _LOGGER.debug(
+            "Translations requested, "
+            f"Key: {translation_key}, "
+            f"Default value: {default_value}, "
+            f"Value: {translated_value}"
+        )
+
+        return translated_value
+
     def get_entity_name(
         self,
         entity_description: MyDolphinPlusEntityDescription,
@@ -194,15 +216,8 @@ class ConfigManager:
         device_name = device_info.get("name")
         platform = entity_description.platform
 
-        translation_key = f"component.{DOMAIN}.entity.{platform}.{entity_key}.name"
-
-        translated_name = self._translations.get(
-            translation_key, entity_description.name
-        )
-
-        _LOGGER.debug(
-            f"Translations requested, Key: {translation_key}, "
-            f"Entity: {entity_description.name}, Value: {translated_name}"
+        translated_name = self.get_translation(
+            platform, entity_key, CONF_NAME, entity_description.name
         )
 
         entity_name = (

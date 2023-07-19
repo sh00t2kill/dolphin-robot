@@ -113,8 +113,8 @@
           "scanning": "Scanning"
         }
       },
-      "main_unit_status": {
-        "name": "Main Unit Status",
+      "power_supply_status": {
+        "name": "Power Supply Status",
         "state": {
           "on": "On",
           "off": "Off",
@@ -147,6 +147,90 @@
           "water": "Water line",
           "ultra": "Ultra clean",
           "pickup": "Pickup"
+        }
+      },
+      "robot_error": {
+        "name": "Robot Error",
+        "state": {
+          "0": "Ok",
+          "1": "DC in voltage",
+          "2": "Out of water",
+          "3": "Impeller overload",
+          "4": "Impeller 1 under load",
+          "5": "Impeller overload",
+          "6": "Impeller 2 under load",
+          "7": "Drive overload",
+          "8": "Drive 1 under load",
+          "9": "Drive overload",
+          "10": "Drive 2 under load",
+          "11": "Wall/floor sensor",
+          "12": "DC in voltage 23V",
+          "13": "Wall floor sensor 2",
+          "14": "Robot stuck",
+          "15": "Power supply overheat",
+          "16": "Power supply overload",
+          "17": "Impeller 1 Driver failure",
+          "18": "Impeller 2 Driver failure",
+          "19": "Drive 1 Driver failure",
+          "20": "Drive 2 Driver failure",
+          "21": "Servo over  load",
+          "22": "Impeller 1 Motor failure",
+          "23": "Impeller 2 Motor failure",
+          "24": "Drive 1 Motor failure",
+          "25": "Drive 2 Motor failure",
+          "255": "Ok"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn’t help, contact your dealer",
+              "5": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn’t help, contact your dealer",
+              "7": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer",
+              "9": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer"
+            }
+          }
+        }
+      },
+      "power_supply_error": {
+        "name": "Power Supply Error",
+        "state": {
+          "0": "Ok",
+          "1": "DC in voltage",
+          "2": "Out of water",
+          "3": "Impeller overload",
+          "4": "Impeller 1 under load",
+          "5": "Impeller overload",
+          "6": "Impeller 2 under load",
+          "7": "Drive overload",
+          "8": "Drive 1 under load",
+          "9": "Drive overload",
+          "10": "Drive 2 under load",
+          "11": "Wall/floor sensor",
+          "12": "DC in voltage 23V",
+          "13": "Wall floor sensor 2",
+          "14": "Robot stuck",
+          "15": "Power supply overheat",
+          "16": "Power supply overload",
+          "17": "Impeller 1 Driver failure",
+          "18": "Impeller 2 Driver failure",
+          "19": "Drive 1 Driver failure",
+          "20": "Drive 2 Driver failure",
+          "21": "Servo over  load",
+          "22": "Impeller 1 Motor failure",
+          "23": "Impeller 2 Motor failure",
+          "24": "Drive 1 Motor failure",
+          "25": "Drive 2 Motor failure",
+          "255": "Ok"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn’t help, contact your dealer",
+              "5": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn’t help, contact your dealer",
+              "7": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer",
+              "9": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer"
+            }
+          }
         }
       }
     },

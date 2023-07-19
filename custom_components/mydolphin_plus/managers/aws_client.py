@@ -41,6 +41,7 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
     DATA_SECTION_CYCLE_INFO,
+    DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
     DATA_SECTION_LED,
     DATA_SECTION_SYSTEM_STATE,
@@ -50,6 +51,7 @@ from ..common.consts import (
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
     DEFAULT_TIME_PART,
+    DYNAMIC_CONTENT,
     DYNAMIC_CONTENT_DIRECTION,
     DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL,
     DYNAMIC_CONTENT_REMOTE_CONTROL_MODE,
@@ -284,6 +286,15 @@ class AWSClient:
 
                 if message_topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
+
+                elif message_topic == self._topic_data.dynamic:
+                    response_type = payload.get(DYNAMIC_TYPE)
+                    data = payload.get(DYNAMIC_CONTENT)
+
+                    if response_type not in self.data:
+                        self.data[DATA_SECTION_DYNAMIC] = {}
+
+                    self.data[DATA_SECTION_DYNAMIC][response_type] = data
 
                 elif message_topic == self._topic_data.update_accepted:
                     desired = state.get(DATA_STATE_DESIRED)
