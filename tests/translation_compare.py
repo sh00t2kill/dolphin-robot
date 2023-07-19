@@ -47,14 +47,13 @@ def _get_gaps(lang_name: str):
     if len(added_gaps) > 0:
         for key in strings_keys:
             if key not in lang_keys:
-                print (key)
                 key_parts = key.split(".")
                 data_to_handle = lang_json
                 data_source = strings_json
+
                 for i in range(0, len(key_parts)):
                     key_item = key_parts[i]
-                    print (i)
-                    print (key_item)
+
                     if i == len(key_parts) - 1:
                         data_to_handle[key_item] = f"*{data_source[key_item]}*"
 
@@ -82,7 +81,7 @@ def _compare():
 
         if len(added_keys) + len(removed_keys) > 0:
             print(f"Translations for '{lang_name}' is not up to date.")
-            """
+
             if len(added_keys) > 0:
                 print(f"New keys:")
                 for key in added_keys:
@@ -92,6 +91,6 @@ def _compare():
                 print(f"Removed keys:")
                 for key in removed_keys:
                     print(f" - {key}")
-            """
+
 
 _compare()
