@@ -2,10 +2,15 @@ import logging
 import sys
 from typing import Any
 
-from custom_components.mydolphin_plus import DOMAIN, MyDolphinPlusCoordinator
+from custom_components.mydolphin_plus import (
+    DOMAIN,
+    ConfigManager,
+    MyDolphinPlusCoordinator,
+)
+from custom_components.mydolphin_plus.common.consts import DATA_ROBOT_FAMILY
 from custom_components.mydolphin_plus.common.entity_descriptions import (
-    ENTITY_DESCRIPTIONS,
     MyDolphinPlusEntityDescription,
+    get_entity_descriptions,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -26,13 +31,13 @@ def async_setup_entities(
     try:
         coordinator = hass.data[DOMAIN][entry.entry_id]
 
-        entities = []
+        robot_family = coordinator.api_data.get(DATA_ROBOT_FAMILY)
+        entity_descriptions = get_entity_descriptions(platform, robot_family)
 
-        for entity_description in ENTITY_DESCRIPTIONS:
-            if entity_description.platform == platform:
-                entity = entity_type(entity_description, coordinator)
-
-                entities.append(entity)
+        entities = [
+            entity_type(entity_description, coordinator)
+            for entity_description in entity_descriptions
+        ]
 
         _LOGGER.debug(f"Setting up {platform} entities: {entities}")
 
@@ -70,6 +75,7 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
         )
 
         self.entity_description = entity_description
+        self._local_entity_description = entity_description
 
         self._attr_device_info = device_info
         self._attr_name = entity_name
@@ -80,6 +86,16 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
     @property
     def _local_coordinator(self) -> MyDolphinPlusCoordinator:
         return self.coordinator
+
+    @property
+    def config_manager(self) -> ConfigManager:
+        return self._local_coordinator.config_manager
+
+    @property
+    def robot_name(self) -> str:
+        robot_name = self._local_coordinator.robot_name
+
+        return robot_name
 
     @property
     def data(self) -> dict | None:
@@ -96,6 +112,13 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
 
     def update_component(self, data):
         pass
+
+    def get_translation(self, key) -> str | None:
+        data = self.config_manager.get_translation(
+            self._local_entity_description.platform, self.entity_description.key, key
+        )
+
+        return data
 
     def _handle_coordinator_update(self) -> None:
         """Fetch new state parameters for the sensor."""

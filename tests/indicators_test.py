@@ -37,9 +37,9 @@ available_states = []
 def indicator(
     pws_state: str,
     robot_state: str,
-    pws_cloud_state: str,
-    is_busy: bool,
-    connectivity_type: str,
+    _pws_cloud_state: str,
+    _is_busy: bool,
+    _connectivity_type: str,
 ):
     """Assumption: indicator to present failed to connect."""
     result = IndicatorType.ROBOT_STATE_NOT_CONNECTED
@@ -52,9 +52,9 @@ def indicator(
 def indicator2(
     pws_state: str,
     robot_state: str,
-    pws_cloud_state: str,
-    is_busy: bool,
-    connectivity_type: str,
+    _pws_cloud_state: str,
+    _is_busy: bool,
+    _connectivity_type: str,
 ):
     """Assumption: Is in programming (setup?) state."""
     result = None
@@ -67,9 +67,9 @@ def indicator2(
 def indicator3(
     pws_state: str,
     robot_state: str,
-    pws_cloud_state: str,
-    is_busy: bool,
-    connectivity_type: str,
+    _pws_cloud_state: str,
+    _is_busy: bool,
+    _connectivity_type: str,
 ):
     """Assumption: Off."""
     result = None
@@ -90,9 +90,9 @@ def indicator3(
 def indicator4(
     pws_state: str,
     robot_state: str,
-    pws_cloud_state: str,
-    is_busy: bool,
-    connectivity_type: str,
+    _pws_cloud_state: str,
+    _is_busy: bool,
+    _connectivity_type: str,
 ):
     """Assumption: On."""
     result = None
@@ -112,9 +112,9 @@ def indicator4(
 
 
 def indicator5(
-    pws_state: str,
-    robot_state: str,
-    pws_cloud_state: str,
+    _pws_state: str,
+    _robot_state: str,
+    _pws_cloud_state: str,
     is_busy: bool,
     connectivity_type: str,
 ):
@@ -131,10 +131,10 @@ def indicator5(
 
 
 def indicator6(
-    pws_state: str,
-    robot_state: str,
+    _pws_state: str,
+    _robot_state: str,
     pws_cloud_state: str,
-    is_busy: bool,
+    _is_busy: bool,
     connectivity_type: str,
 ):
     """Assumption: Not connected to cloud."""
