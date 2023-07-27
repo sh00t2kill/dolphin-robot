@@ -317,8 +317,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if status == ConnectivityStatus.Connected:
             await self._aws_client.update()
 
-        if status == ConnectivityStatus.Failed:
-            await self._api.initialize(None)
+        if status in [ConnectivityStatus.Failed, ConnectivityStatus.NotConnected]:
+            await self._aws_client.terminate()
 
             await sleep(WS_RECONNECT_INTERVAL.total_seconds())
 

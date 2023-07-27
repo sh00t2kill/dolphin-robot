@@ -9,5 +9,5 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
   "requirements": ["AWSIoTPythonSDK"],
-  "version": "1.0.2"
+  "version": "1.0.3"
 }
