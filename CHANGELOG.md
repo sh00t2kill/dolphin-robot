@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.3
+
+- Improve AWS client connection recovery process (unsubscribe topics and disconnect before trying to connect again)
+
 ## v1.0.2
 
 - Breaking change: Renamed sensor of `Main Unit Status` to `Power Supply Status`

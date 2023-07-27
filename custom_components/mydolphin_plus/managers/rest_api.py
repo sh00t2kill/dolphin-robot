@@ -232,7 +232,7 @@ class RestAPI:
                 self._device_loaded = True
 
                 self._async_dispatcher_send(
-                    self._hass, SIGNAL_DEVICE_NEW, self._config_manager.entry_id
+                    SIGNAL_DEVICE_NEW, self._config_manager.entry_id
                 )
 
             _LOGGER.info(f"API Data updated: {self.data}")
@@ -481,17 +481,15 @@ class RestAPI:
             self._status = status
 
             self._async_dispatcher_send(
-                self._hass, SIGNAL_API_STATUS, self._config_manager.entry_id, status
+                SIGNAL_API_STATUS, self._config_manager.entry_id, status
             )
 
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
 
-    def _async_dispatcher_send(
-        self, hass: HomeAssistant, signal: str, *args: Any
-    ) -> None:
-        if hass is None:
+    def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
+        if self._hass is None:
             self._local_async_dispatcher_send(signal, *args)
 
         else:
-            async_dispatcher_send(hass, signal, *args)
+            async_dispatcher_send(self._hass, signal, *args)

@@ -133,6 +133,9 @@ class AWSClient:
 
     async def terminate(self):
         if self._awsiot_client is not None:
+            for topic in self._topic_data.subscribe:
+                self._awsiot_client.unsubscribeAsync(topic)
+
             self._awsiot_client.disconnectAsync(self._ack_callback)
 
         self._set_status(ConnectivityStatus.Disconnected)
@@ -485,7 +488,6 @@ class AWSClient:
             self._status = status
 
             self._async_dispatcher_send(
-                self._hass,
                 SIGNAL_AWS_CLIENT_STATUS,
                 self._config_manager.entry_id,
                 status,
@@ -494,11 +496,9 @@ class AWSClient:
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
 
-    def _async_dispatcher_send(
-        self, hass: HomeAssistant, signal: str, *args: Any
-    ) -> None:
-        if hass is None:
+    def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
+        if self._hass is None:
             self._local_async_dispatcher_send(signal, *args)
 
         else:
-            async_dispatcher_send(hass, signal, *args)
+            async_dispatcher_send(self._hass, signal, *args)
