@@ -78,7 +78,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
-from ..common.topic_data import TopicData
+from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
 
 _LOGGER = logging.getLogger(__name__)

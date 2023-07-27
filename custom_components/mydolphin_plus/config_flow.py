@@ -3,15 +3,12 @@ from __future__ import annotations
 
 import logging
 
-import voluptuous as vol
-
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 
-from .common.connectivity_status import ConnectivityStatus
-from .common.consts import DEFAULT_NAME, DOMAIN
-from .managers.config_manager import ConfigManager
-from .managers.rest_api import RestAPI
+from .common.consts import DOMAIN
+from .managers.flow_manager import IntegrationFlowManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,37 +23,32 @@ class DomainFlowHandler(config_entries.ConfigFlow):
     def __init__(self):
         super().__init__()
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return DomainOptionsFlowHandler(config_entry)
+
     async def async_step_user(self, user_input=None):
         """Handle a flow start."""
-        _LOGGER.debug(f"Starting async_step_user of {DEFAULT_NAME}")
+        flow_manager = IntegrationFlowManager(self.hass, self)
 
-        errors = None
+        return await flow_manager.async_step(user_input)
 
-        if user_input is not None:
-            config_manager = ConfigManager(self.hass, None)
-            config_manager.update_credentials(user_input)
 
-            await config_manager.initialize()
+class DomainOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle domain options."""
 
-            api = RestAPI(self.hass, config_manager)
+    _config_entry: ConfigEntry
 
-            await api.validate()
+    def __init__(self, config_entry: ConfigEntry):
+        """Initialize domain options flow."""
+        super().__init__()
 
-            if api.status == ConnectivityStatus.TemporaryConnected:
-                _LOGGER.debug("User inputs are valid")
+        self._config_entry = config_entry
 
-                user_input[CONF_PASSWORD] = config_manager.password_hashed
+    async def async_step_init(self, user_input=None):
+        """Manage the domain options."""
+        flow_manager = IntegrationFlowManager(self.hass, self, self._config_entry)
 
-                return self.async_create_entry(title=DEFAULT_NAME, data=user_input)
-
-            else:
-                _LOGGER.warning("Failed to create integration")
-
-        new_user_input = {
-            vol.Required(CONF_USERNAME): str,
-            vol.Required(CONF_PASSWORD): str,
-        }
-
-        schema = vol.Schema(new_user_input)
-
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        return await flow_manager.async_step(user_input)

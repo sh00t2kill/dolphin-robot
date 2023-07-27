@@ -3,6 +3,11 @@
 ## v1.0.3
 
 - Improve AWS client connection recovery process (unsubscribe topics and disconnect before trying to connect again)
+- Refactor password encryption flow
+- Refactor integration loading (will be loaded only after HA is loaded, re-load will be performed immediately)
+- Integration setup
+  - Add support for edit integration details
+  - Add title to the form (Add / Edit), will set the integration name
 
 ## v1.0.2
 
