@@ -40,3 +40,6 @@ class ConnectivityStatus(StrEnum):
         error_id = errors.get(status)
 
         return error_id
+
+
+IGNORED_TRANSITIONS = {ConnectivityStatus.Disconnected: [ConnectivityStatus.Failed]}

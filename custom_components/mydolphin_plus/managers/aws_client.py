@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ..common.clean_modes import CleanModes
-from ..common.connectivity_status import ConnectivityStatus
+from ..common.connectivity_status import IGNORED_TRANSITIONS, ConnectivityStatus
 from ..common.consts import (
     API_DATA_MOTOR_UNIT_SERIAL,
     API_DATA_SERIAL_NUMBER,
@@ -133,12 +133,18 @@ class AWSClient:
 
     async def terminate(self):
         if self._awsiot_client is not None:
+            topics = self._topic_data.subscribe
+            _LOGGER.debug(f"Unsubscribing topics: {', '.join(topics)}")
             for topic in self._topic_data.subscribe:
                 self._awsiot_client.unsubscribeAsync(topic)
 
+            _LOGGER.debug("Disconnecting AWS Client")
             self._awsiot_client.disconnectAsync(self._ack_callback)
 
+            self._awsiot_client = None
+
         self._set_status(ConnectivityStatus.Disconnected)
+        _LOGGER.debug("AWS Client is disconnected")
 
     async def initialize(self):
         try:
@@ -478,6 +484,11 @@ class AWSClient:
 
     def _set_status(self, status: ConnectivityStatus):
         if status != self._status:
+            ignored_transitions = IGNORED_TRANSITIONS.get(self._status, [])
+
+            if status in ignored_transitions:
+                return
+
             log_level = ConnectivityStatus.get_log_level(status)
 
             _LOGGER.log(
