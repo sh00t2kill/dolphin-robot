@@ -7,12 +7,14 @@ import logging
 import sys
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EVENT_HOMEASSISTANT_START
 from homeassistant.core import HomeAssistant
 
 from .common.consts import DEFAULT_NAME, DOMAIN, PLATFORMS
-from .common.exceptions import LoginError
 from .managers.config_manager import ConfigManager
 from .managers.coordinator import MyDolphinPlusCoordinator
+from .managers.password_manager import PasswordManager
+from .models.exceptions import LoginError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,24 +28,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     initialized = False
 
     try:
+        entry_config = {key: entry.data[key] for key in entry.data}
+
+        await PasswordManager.decrypt(hass, entry_config, entry.entry_id)
+
         config_manager = ConfigManager(hass, entry)
-        await config_manager.initialize()
+        await config_manager.initialize(entry_config)
 
         is_initialized = config_manager.is_initialized
 
         if is_initialized:
             coordinator = MyDolphinPlusCoordinator(hass, config_manager)
-            await coordinator.initialize()
 
             hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-            await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+            if hass.is_running:
+                await coordinator.initialize()
 
-            _LOGGER.info(
-                f"Start loading {DOMAIN} integration, Entry ID: {entry.entry_id}"
-            )
-
-            await coordinator.async_config_entry_first_refresh()
+            else:
+                hass.bus.async_listen_once(
+                    EVENT_HOMEASSISTANT_START, coordinator.on_home_assistant_start
+                )
 
             _LOGGER.info("Finished loading integration")
 
@@ -67,13 +72,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     _LOGGER.info(f"Unloading {DOMAIN} integration, Entry ID: {entry.entry_id}")
 
-    coordinator: MyDolphinPlusCoordinator = hass.data[DOMAIN][entry.entry_id]
+    entry_id = entry.entry_id
 
-    await coordinator.config_manager.remove()
+    coordinator: MyDolphinPlusCoordinator = hass.data[DOMAIN][entry_id]
+
+    await coordinator.terminate()
+
+    await coordinator.config_manager.remove(entry_id)
 
     for platform in PLATFORMS:
         await hass.config_entries.async_forward_entry_unload(entry, platform)
 
-    del hass.data[DOMAIN][entry.entry_id]
+    del hass.data[DOMAIN][entry_id]
 
     return True
