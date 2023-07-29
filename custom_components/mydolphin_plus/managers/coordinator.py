@@ -219,6 +219,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     async def on_home_assistant_start(self, _event_data: Event):
         await self.initialize()
 
+    async def terminate(self):
+        await self._aws_client.terminate()
+
     async def initialize(self):
         self._build_data_mapping()
 

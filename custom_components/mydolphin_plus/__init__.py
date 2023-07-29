@@ -76,6 +76,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     coordinator: MyDolphinPlusCoordinator = hass.data[DOMAIN][entry_id]
 
+    await coordinator.terminate()
+
     await coordinator.config_manager.remove(entry_id)
 
     for platform in PLATFORMS:
