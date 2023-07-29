@@ -72,13 +72,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     _LOGGER.info(f"Unloading {DOMAIN} integration, Entry ID: {entry.entry_id}")
 
-    coordinator: MyDolphinPlusCoordinator = hass.data[DOMAIN][entry.entry_id]
+    entry_id = entry.entry_id
 
-    await coordinator.config_manager.remove()
+    coordinator: MyDolphinPlusCoordinator = hass.data[DOMAIN][entry_id]
+
+    await coordinator.config_manager.remove(entry_id)
 
     for platform in PLATFORMS:
         await hass.config_entries.async_forward_entry_unload(entry, platform)
 
-    del hass.data[DOMAIN][entry.entry_id]
+    del hass.data[DOMAIN][entry_id]
 
     return True

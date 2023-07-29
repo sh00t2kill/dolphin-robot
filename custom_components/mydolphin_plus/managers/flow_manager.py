@@ -71,7 +71,7 @@ class IntegrationFlowManager:
 
                 await api.validate()
 
-                if api.status == ConnectivityStatus.Connected:
+                if api.status == ConnectivityStatus.TemporaryConnected:
                     _LOGGER.debug("User inputs are valid")
 
                     if self._entry is None:
