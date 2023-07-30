@@ -2,21 +2,16 @@ import logging
 import sys
 from typing import Any
 
-from custom_components.mydolphin_plus import (
-    DOMAIN,
-    ConfigManager,
-    MyDolphinPlusCoordinator,
-)
-from custom_components.mydolphin_plus.common.consts import DATA_ROBOT_FAMILY
-from custom_components.mydolphin_plus.common.entity_descriptions import (
-    MyDolphinPlusEntityDescription,
-    get_entity_descriptions,
-)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
+
+from ..managers.config_manager import ConfigManager
+from ..managers.coordinator import MyDolphinPlusCoordinator
+from .consts import DATA_ROBOT_FAMILY, DOMAIN
+from .entity_descriptions import MyDolphinPlusEntityDescription, get_entity_descriptions
 
 _LOGGER = logging.getLogger(__name__)
 

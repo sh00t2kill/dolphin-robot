@@ -44,6 +44,7 @@ from ..common.consts import (
     STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     TOKEN_URL,
 )
+from ..models.config_data import ConfigData
 from .config_manager import ConfigManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,6 +87,12 @@ class RestAPI:
     @property
     def is_connected(self):
         result = self._session is not None
+
+        return result
+
+    @property
+    def config_data(self) -> ConfigData:
+        result = self._config_manager.config_data
 
         return result
 
@@ -232,7 +239,7 @@ class RestAPI:
                 self._device_loaded = True
 
                 self._async_dispatcher_send(
-                    self._hass, SIGNAL_DEVICE_NEW, self._config_manager.entry_id
+                    SIGNAL_DEVICE_NEW, self._config_manager.entry_id
                 )
 
             _LOGGER.info(f"API Data updated: {self.data}")
@@ -253,8 +260,8 @@ class RestAPI:
         try:
             self._set_status(ConnectivityStatus.Connecting)
 
-            username = self._config_manager.username
-            password = self._config_manager.password
+            username = self.config_data.username
+            password = self.config_data.password
 
             request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}&{API_REQUEST_SERIAL_PASSWORD}={password}"
 
@@ -458,7 +465,7 @@ class RestAPI:
         return result
 
     def _get_aes_key(self):
-        email_beginning = self._config_manager.username[:2]
+        email_beginning = self.config_data.username[:2]
 
         password = f"{email_beginning}ha".lower()
 
@@ -481,17 +488,15 @@ class RestAPI:
             self._status = status
 
             self._async_dispatcher_send(
-                self._hass, SIGNAL_API_STATUS, self._config_manager.entry_id, status
+                SIGNAL_API_STATUS, self._config_manager.entry_id, status
             )
 
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
 
-    def _async_dispatcher_send(
-        self, hass: HomeAssistant, signal: str, *args: Any
-    ) -> None:
-        if hass is None:
+    def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
+        if self._hass is None:
             self._local_async_dispatcher_send(signal, *args)
 
         else:
-            async_dispatcher_send(hass, signal, *args)
+            async_dispatcher_send(self._hass, signal, *args)

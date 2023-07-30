@@ -27,3 +27,19 @@ class ConnectivityStatus(StrEnum):
             return logging.WARNING
         else:
             return logging.ERROR
+
+    @staticmethod
+    def get_ha_error(status: str) -> str | None:
+        errors = {
+            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials",
+            str(ConnectivityStatus.MissingAPIKey): "missing_permanent_api_key",
+            str(ConnectivityStatus.Failed): "invalid_server_details",
+            str(ConnectivityStatus.NotFound): "invalid_server_details",
+        }
+
+        error_id = errors.get(status)
+
+        return error_id
+
+
+IGNORED_TRANSITIONS = {ConnectivityStatus.Disconnected: [ConnectivityStatus.Failed]}

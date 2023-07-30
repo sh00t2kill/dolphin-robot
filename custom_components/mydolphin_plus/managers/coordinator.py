@@ -6,13 +6,8 @@ from typing import Any, Callable
 
 from voluptuous import MultipleInvalid
 
-from homeassistant.const import (
-    ATTR_ICON,
-    ATTR_MODE,
-    ATTR_STATE,
-    CONF_PASSWORD,
-    CONF_STATE,
-)
+from homeassistant.const import ATTR_ICON, ATTR_MODE, ATTR_STATE, CONF_STATE
+from homeassistant.core import Event
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -114,6 +109,7 @@ from ..common.consts import (
     LED_MODE_BLINKING,
     LED_MODE_ICON_DEFAULT,
     MANUFACTURER,
+    PLATFORMS,
     PWS_STATE_CLEANING,
     PWS_STATE_ERROR,
     PWS_STATE_HOLD_DELAY,
@@ -220,8 +216,21 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return config_manager
 
+    async def on_home_assistant_start(self, _event_data: Event):
+        await self.initialize()
+
+    async def terminate(self):
+        await self._aws_client.terminate()
+
     async def initialize(self):
         self._build_data_mapping()
+
+        entry = self.config_manager.entry
+        await self.hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        _LOGGER.info(f"Start loading {DOMAIN} integration, Entry ID: {entry.entry_id}")
+
+        await self.async_config_entry_first_refresh()
 
         for service_name in self._robot_actions:
             service_handler = self._robot_actions.get(service_name)
@@ -239,12 +248,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return serial_number
 
     def get_device_debug_data(self) -> dict:
-        config_data = {}
-        for config_item_key in self._config_manager.data:
-            if config_item_key not in [CONF_PASSWORD]:
-                config_data[config_item_key] = self._config_manager.data[
-                    config_item_key
-                ]
+        config_data = self._config_manager.get_debug_data()
 
         data = {
             "config": config_data,
@@ -317,8 +321,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if status == ConnectivityStatus.Connected:
             await self._aws_client.update()
 
-        if status == ConnectivityStatus.Failed:
-            await self._api.initialize(None)
+        if status in [ConnectivityStatus.Failed, ConnectivityStatus.NotConnected]:
+            await self._aws_client.terminate()
 
             await sleep(WS_RECONNECT_INTERVAL.total_seconds())
 

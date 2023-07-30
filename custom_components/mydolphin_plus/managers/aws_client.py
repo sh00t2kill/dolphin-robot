@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ..common.clean_modes import CleanModes
-from ..common.connectivity_status import ConnectivityStatus
+from ..common.connectivity_status import IGNORED_TRANSITIONS, ConnectivityStatus
 from ..common.consts import (
     API_DATA_MOTOR_UNIT_SERIAL,
     API_DATA_SERIAL_NUMBER,
@@ -78,7 +78,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
-from ..common.topic_data import TopicData
+from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -133,9 +133,18 @@ class AWSClient:
 
     async def terminate(self):
         if self._awsiot_client is not None:
+            topics = self._topic_data.subscribe
+            _LOGGER.debug(f"Unsubscribing topics: {', '.join(topics)}")
+            for topic in self._topic_data.subscribe:
+                self._awsiot_client.unsubscribeAsync(topic)
+
+            _LOGGER.debug("Disconnecting AWS Client")
             self._awsiot_client.disconnectAsync(self._ack_callback)
 
+            self._awsiot_client = None
+
         self._set_status(ConnectivityStatus.Disconnected)
+        _LOGGER.debug("AWS Client is disconnected")
 
     async def initialize(self):
         try:
@@ -475,6 +484,11 @@ class AWSClient:
 
     def _set_status(self, status: ConnectivityStatus):
         if status != self._status:
+            ignored_transitions = IGNORED_TRANSITIONS.get(self._status, [])
+
+            if status in ignored_transitions:
+                return
+
             log_level = ConnectivityStatus.get_log_level(status)
 
             _LOGGER.log(
@@ -485,7 +499,6 @@ class AWSClient:
             self._status = status
 
             self._async_dispatcher_send(
-                self._hass,
                 SIGNAL_AWS_CLIENT_STATUS,
                 self._config_manager.entry_id,
                 status,
@@ -494,11 +507,9 @@ class AWSClient:
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
 
-    def _async_dispatcher_send(
-        self, hass: HomeAssistant, signal: str, *args: Any
-    ) -> None:
-        if hass is None:
+    def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
+        if self._hass is None:
             self._local_async_dispatcher_send(signal, *args)
 
         else:
-            async_dispatcher_send(hass, signal, *args)
+            async_dispatcher_send(self._hass, signal, *args)

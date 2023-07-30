@@ -53,7 +53,6 @@ class APITest:
         _LOGGER.info("Creating configuration manager instance")
 
         self._config_manager = ConfigManager(None)
-        self._config_manager.update_credentials(self._login_credentials)
 
         self._api = RestAPI(None, self._config_manager)
         self._aws_client = AWSClient(None, self._config_manager)
