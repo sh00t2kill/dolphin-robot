@@ -271,6 +271,14 @@ class AWSClient:
             elif message_topic == self._topic_data.dynamic:
                 _LOGGER.debug(f"Dynamic payload: {message_payload}")
 
+                response_type = payload.get(DYNAMIC_TYPE)
+                data = payload.get(DYNAMIC_CONTENT)
+
+                if response_type not in self.data:
+                    self.data[DATA_SECTION_DYNAMIC] = {}
+
+                self.data[DATA_SECTION_DYNAMIC][response_type] = data
+
             elif message_topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
 
@@ -295,15 +303,6 @@ class AWSClient:
 
                 if message_topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
-
-                elif message_topic == self._topic_data.dynamic:
-                    response_type = payload.get(DYNAMIC_TYPE)
-                    data = payload.get(DYNAMIC_CONTENT)
-
-                    if response_type not in self.data:
-                        self.data[DATA_SECTION_DYNAMIC] = {}
-
-                    self.data[DATA_SECTION_DYNAMIC][response_type] = data
 
                 elif message_topic == self._topic_data.update_accepted:
                     desired = state.get(DATA_STATE_DESIRED)
