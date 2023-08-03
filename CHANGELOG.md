@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.4
+
+- Fix dynamic reporting into AWS Client data
+
 ## v1.0.3
 
 - Improve AWS client connection recovery process (unsubscribe topics and disconnect before trying to connect again)
