@@ -3,6 +3,7 @@
 ## v1.0.4
 
 - Fix dynamic reporting into AWS Client data
+- Fix reset data of robot type, is busy, turn on count and timezone reporting when message of pwsState doesn't contain data
 
 ## v1.0.3
 

@@ -299,7 +299,14 @@ class AWSClient:
                     category_data = reported.get(category)
 
                     if category_data is not None:
-                        self.data[category] = category_data
+                        if category in self.data:
+                            for category_data_key in category_data:
+                                self.data[category][category_data_key] = category_data[
+                                    category_data_key
+                                ]
+
+                        else:
+                            self.data[category] = category_data
 
                 if message_topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
