@@ -55,22 +55,22 @@
         "name": "Intensit\u00e0 LED"
       },
       "cycle_time_all": {
-        "name": "*Cycle Time Regular*"
+        "name": "Tempo ciclo Normale"
       },
       "cycle_time_short": {
-        "name": "*Cycle Time Fast mode*"
+        "name": "Tempo ciclo Rapido"
       },
       "cycle_time_floor": {
-        "name": "*Cycle Time Floor only*"
+        "name": "Tempo ciclo solo pavimento"
       },
       "cycle_time_water": {
-        "name": "*Cycle Time Water line*"
+        "name": "Tempo ciclo Pelo Acqua"
       },
       "cycle_time_ultra": {
-        "name": "*Cycle Time Ultra clean*"
+        "name": "Tempo ciclo Ultra pulito"
       },
       "cycle_time_pickup": {
-        "name": "*Cycle Time Pickup*"
+        "name": "Tempo ciclo Raccolta"
       }
     },
     "sensor": {
@@ -150,85 +150,85 @@
         }
       },
       "robot_error": {
-        "name": "*Robot Error*",
+        "name": "Errore Robot",
         "state": {
-          "0": "*Ok*",
-          "1": "*DC in voltage*",
-          "2": "*Out of water*",
-          "3": "*Impeller overload*",
-          "4": "*Impeller 1 under load*",
-          "5": "*Impeller overload*",
-          "6": "*Impeller 2 under load*",
-          "7": "*Drive overload*",
-          "8": "*Drive 1 under load*",
-          "9": "*Drive overload*",
-          "10": "*Drive 2 under load*",
-          "11": "*Wall/floor sensor*",
-          "12": "*DC in voltage 23V*",
-          "13": "*Wall floor sensor 2*",
-          "14": "*Robot stuck*",
-          "15": "*Power supply overheat*",
-          "16": "*Power supply overload*",
-          "17": "*Impeller 1 Driver failure*",
-          "18": "*Impeller 2 Driver failure*",
-          "19": "*Drive 1 Driver failure*",
-          "20": "*Drive 2 Driver failure*",
-          "21": "*Servo over  load*",
-          "22": "*Impeller 1 Motor failure*",
-          "23": "*Impeller 2 Motor failure*",
-          "24": "*Drive 1 Motor failure*",
-          "25": "*Drive 2 Motor failure*",
-          "255": "*Ok*"
+          "0": "OK",
+          "1": "Voltaggio alimentazione DC",
+          "2": "Fuori dall'acqua",
+          "3": "Sovraccarico rotore",
+          "4": "Rotore 1 sotto carico",
+          "5": "Sovraccarico rotore",
+          "6": "Rotore 2 sotto carico",
+          "7": "Sovraccarico trazione",
+          "8": "Trazione 1 sotto carico",
+          "9": "Sovraccarico trazione",
+          "10": "Trazione 2 sotto carico",
+          "11": "Sensore fondo/parete",
+          "12": "voltaggio ingresso 23V DC",
+          "13": "Sensore fondo/parete 2",
+          "14": "Robot bloccato",
+          "15": "Surriscaldamento Alimentazione",
+          "16": "Sovraccarico Alimentazione",
+          "17": "Guasto motore Rotore 1",
+          "18": "Guasto motore Rotore 2",
+          "19": "Guasto motore Trazione 1",
+          "20": "Guasto motore Trazione 2",
+          "21": "Sovraccarico Servo motore",
+          "22": "Guasto motore Rotore 1",
+          "23": "Guasto motore Rotore 2",
+          "24": "Guasto motore Trazione 1",
+          "25": "Guasto motore Trazione 2",
+          "255": "OK"
         },
         "state_attributes": {
           "instructions": {
             "state": {
-              "3": "*Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u2019t help, contact your dealer*",
-              "5": "*Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u2019t help, contact your dealer*",
-              "7": "*Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn\u2019t help, please contact your dealer*",
-              "9": "*Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn\u2019t help, please contact your dealer*"
+              "3": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
+              "5": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
+              "7": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore",
+              "9": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore"
             }
           }
         }
       },
       "power_supply_error": {
-        "name": "*Power Supply Error*",
+        "name": "Errore Alimentazione",
         "state": {
-          "0": "*Ok*",
-          "1": "*DC in voltage*",
-          "2": "*Out of water*",
-          "3": "*Impeller overload*",
-          "4": "*Impeller 1 under load*",
-          "5": "*Impeller overload*",
-          "6": "*Impeller 2 under load*",
-          "7": "*Drive overload*",
-          "8": "*Drive 1 under load*",
-          "9": "*Drive overload*",
-          "10": "*Drive 2 under load*",
-          "11": "*Wall/floor sensor*",
-          "12": "*DC in voltage 23V*",
-          "13": "*Wall floor sensor 2*",
-          "14": "*Robot stuck*",
-          "15": "*Power supply overheat*",
-          "16": "*Power supply overload*",
-          "17": "*Impeller 1 Driver failure*",
-          "18": "*Impeller 2 Driver failure*",
-          "19": "*Drive 1 Driver failure*",
-          "20": "*Drive 2 Driver failure*",
-          "21": "*Servo over  load*",
-          "22": "*Impeller 1 Motor failure*",
-          "23": "*Impeller 2 Motor failure*",
-          "24": "*Drive 1 Motor failure*",
-          "25": "*Drive 2 Motor failure*",
-          "255": "*Ok*"
+          "0": "OK",
+          "1": "Voltaggio ingresso DC",
+          "2": "Fuori dall'acqua",
+          "3": "Sovraccarico rotore",
+          "4": "Rotore 1 sotto carico",
+          "5": "Sovraccarico rotore",
+          "6": "Rotore 2 sotto carico",
+          "7": "Sovraccarico trazione",
+          "8": "Trazione 1 sotto carico",
+          "9": "Sovraccarico trazione",
+          "10": "Trazione 2 sotto carico",
+          "11": "Sensore fondo/parete",
+          "12": "voltaggio ingresso 23V DC",
+          "13": "Sensore fondo/parete 2",
+          "14": "Robot bloccato",
+          "15": "Surriscaldamento Alimentazione",
+          "16": "Sovraccarico Alimentazione",
+          "17": "Guasto motore Rotore 1",
+          "18": "Guasto motore Rotore 2",
+          "19": "Guasto motore Trazione 1",
+          "20": "Guasto motore Trazione 2",
+          "21": "Sovraccarico Servo motore",
+          "22": "Guasto motore Rotore 1",
+          "23": "Guasto motore Rotore 2",
+          "24": "Guasto motore Trazione 1",
+          "25": "Guasto motore Trazione 2",
+          "255": "OK"
         },
         "state_attributes": {
           "instructions": {
             "state": {
-              "3": "*Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u2019t help, contact your dealer*",
-              "5": "*Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u2019t help, contact your dealer*",
-              "7": "*Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn\u2019t help, please contact your dealer*",
-              "9": "*Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn\u2019t help, please contact your dealer*"
+              "3": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
+              "5": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
+              "7": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore",
+              "9": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore"
             }
           }
         }
@@ -254,19 +254,19 @@
               "floor": "Solo fondo",
               "water": "Pelo acqua",
               "ultra": "Ultra pulito",
-              "pickup": "*Pickup*"
+              "pickup": "Recupero"
             }
           }
         },
         "state": {
-          "on": "*On*",
-          "off": "*Off*",
-          "holddelay": "*Idle (Delay)*",
-          "holdweekly": "*Idle (Weekly)*",
-          "programming": "*Programming*",
-          "notconnected": "*Disconnected*",
-          "cleaning": "*Cleaning*",
-          "init": "*Checking Environment*"
+          "on": "Acceso",
+          "off": "Spento",
+          "holddelay": "In attesa (Ritardato)",
+          "holdweekly": "In attesa (Settimanale)",
+          "programming": "In programmazione",
+          "notconnected": "Disconnesso",
+          "cleaning": "In Pulizia",
+          "init": "Inizializzazione"
         }
       }
     }
