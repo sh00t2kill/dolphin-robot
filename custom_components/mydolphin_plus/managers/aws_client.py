@@ -299,11 +299,10 @@ class AWSClient:
                     category_data = reported.get(category)
 
                     if category_data is not None:
-                        if category in self.data:
-                            for category_data_key in category_data:
-                                self.data[category][category_data_key] = category_data[
-                                    category_data_key
-                                ]
+                        latest_data = self.data.get(category)
+
+                        if isinstance(latest_data, dict):
+                            self.data[category].update(category_data)
 
                         else:
                             self.data[category] = category_data
