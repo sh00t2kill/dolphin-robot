@@ -176,7 +176,10 @@ class RestAPI:
                 f"Failed to post JSON to {url}, HTTP Status: {crex.message} ({crex.status})"
             )
 
-            if crex.status in [404, 405]:
+            if crex.status in [401, 403]:
+                self._set_status(ConnectivityStatus.Failed)
+
+            elif crex.status in [404, 405]:
                 self._set_status(ConnectivityStatus.NotFound)
 
         except Exception as ex:
@@ -406,21 +409,22 @@ class RestAPI:
 
             payload = await self._async_post(ROBOT_DETAILS_URL, headers, request_data)
 
-            response_status = payload.get(
-                API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE
-            )
-            alert = payload.get(API_RESPONSE_STATUS, API_RESPONSE_ALERT)
+            if payload is not None:
+                response_status = payload.get(
+                    API_RESPONSE_STATUS, API_RESPONSE_STATUS_FAILURE
+                )
+                alert = payload.get(API_RESPONSE_STATUS, API_RESPONSE_ALERT)
 
-            if response_status == API_RESPONSE_STATUS_SUCCESS:
-                data = payload.get(API_RESPONSE_DATA, {})
+                if response_status == API_RESPONSE_STATUS_SUCCESS:
+                    data = payload.get(API_RESPONSE_DATA, {})
 
-                for key in DATA_ROBOT_DETAILS:
-                    new_key = DATA_ROBOT_DETAILS.get(key)
+                    for key in DATA_ROBOT_DETAILS:
+                        new_key = DATA_ROBOT_DETAILS.get(key)
 
-                    self.data[new_key] = data.get(key)
+                        self.data[new_key] = data.get(key)
 
-            else:
-                _LOGGER.error(f"Failed to reload details, Error: {alert}")
+                else:
+                    _LOGGER.error(f"Failed to reload details, Error: {alert}")
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
