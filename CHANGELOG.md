@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.5
+
+- Fix error while trying to parse AWS message
+
 ## v1.0.4
 
 - Fix dynamic reporting into AWS Client data
