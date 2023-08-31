@@ -4,11 +4,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
-from .common.consts import DOMAIN
+from .common.consts import DOMAIN, TO_REDACT
 from .managers.coordinator import MyDolphinPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,7 +35,9 @@ def _async_get_diagnostics(
 
     device_data = coordinator.get_device()
     identifiers = device_data.get("identifiers")
-    data = coordinator.get_device_debug_data()
+    debug_data = coordinator.get_device_debug_data()
+
+    data = async_redact_data(debug_data, TO_REDACT)
 
     data["disabled_by"] = entry.disabled_by
     data["disabled_polling"] = entry.pref_disable_polling

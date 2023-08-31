@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.6
+
+- Redact sensitive information from diagnostic file
+
 ## v1.0.5
 
 - Fix error while trying to parse AWS message
