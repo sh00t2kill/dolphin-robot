@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.7
+
+_Minimum HA Version: 2024.1.0_
+
+- Adjust code to HA 2024.1.0
+
 ## v1.0.6
 
 - Redact sensitive information from diagnostic file

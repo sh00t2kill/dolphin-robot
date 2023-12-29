@@ -1,8 +1,8 @@
 pre-commit
-homeassistant~=2023.5.2
-AWSIoTPythonSDK~=1.5.2
-aiohttp~=3.8.4
-cryptography~=40.0.2
-voluptuous~=0.13.1
+homeassistant
+AWSIoTPythonSDK
+aiohttp
+cryptography
+voluptuous
 
-python-slugify~=4.0.1
+python-slugify
