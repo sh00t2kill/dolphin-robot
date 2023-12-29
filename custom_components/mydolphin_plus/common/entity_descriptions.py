@@ -57,12 +57,12 @@ from .consts import (
 from .robot_family import RobotFamily
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusEntityDescription(EntityDescription):
     platform: Platform | None = None
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusVacuumEntityDescription(
     StateVacuumEntityDescription, MyDolphinPlusEntityDescription
 ):
@@ -73,7 +73,7 @@ class MyDolphinPlusVacuumEntityDescription(
     fan_speed_list: list[str] = ()
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusBinarySensorEntityDescription(
     BinarySensorEntityDescription, MyDolphinPlusEntityDescription
 ):
@@ -82,28 +82,28 @@ class MyDolphinPlusBinarySensorEntityDescription(
     attributes: list[str] | None = None
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusSensorEntityDescription(
     SensorEntityDescription, MyDolphinPlusEntityDescription
 ):
     platform: Platform | None = Platform.SENSOR
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusSelectEntityDescription(
     SelectEntityDescription, MyDolphinPlusEntityDescription
 ):
     platform: Platform | None = Platform.SELECT
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusNumberEntityDescription(
     NumberEntityDescription, MyDolphinPlusEntityDescription
 ):
     platform: Platform | None = Platform.NUMBER
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusLightEntityDescription(
     LightEntityDescription, MyDolphinPlusEntityDescription
 ):
