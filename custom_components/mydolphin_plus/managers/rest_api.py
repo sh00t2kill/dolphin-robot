@@ -245,7 +245,7 @@ class RestAPI:
                     SIGNAL_DEVICE_NEW, self._config_manager.entry_id
                 )
 
-            _LOGGER.info(f"API Data updated: {self.data}")
+            _LOGGER.debug(f"API Data updated: {self.data}")
 
     async def _login(self):
         await self._service_login()
