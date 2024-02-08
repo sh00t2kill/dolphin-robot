@@ -85,6 +85,11 @@ class APITest:
 
             await sleep(15)
 
+    async def terminate(self):
+        await self._api.terminate()
+
+        await self._aws_client.terminate()
+
     async def _on_api_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:
             await self._api.update()
@@ -112,10 +117,19 @@ class APITest:
             await self._aws_client.update()
 
 
-loop = asyncio.new_event_loop()
-
-try:
+if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
     instance = APITest(loop)
-    loop.run_until_complete(instance.initialize())
-finally:
-    loop.close()
+
+    try:
+        loop.run_until_complete(instance.initialize())
+
+    except KeyboardInterrupt:
+        _LOGGER.info("Aborted")
+
+    except Exception as rex:
+        _LOGGER.error(f"Error: {rex}")
+
+    finally:
+        loop.run_until_complete(instance.terminate())
+        loop.close()

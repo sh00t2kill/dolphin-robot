@@ -145,10 +145,14 @@ class AWSClient:
             topics = self._topic_data.subscribe
             _LOGGER.debug(f"Unsubscribing topics: {', '.join(topics)}")
             for topic in self._topic_data.subscribe:
-                self._awsiot_client.unsubscribe(topic)
+                future, _packet_id = self._awsiot_client.unsubscribe(topic)
+
+                future.result()
 
             _LOGGER.debug("Disconnecting AWS Client")
-            self._awsiot_client.disconnect()
+
+            disconnect_future = self._awsiot_client.disconnect()
+            disconnect_future.result()
 
             self._awsiot_client = None
 

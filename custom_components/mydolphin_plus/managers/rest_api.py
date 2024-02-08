@@ -132,6 +132,12 @@ class RestAPI:
         await self._initialize_session()
         await self._login()
 
+    async def terminate(self):
+        if self._session is not None:
+            await self._session.close()
+
+            self._set_status(ConnectivityStatus.Disconnected)
+
     async def _initialize_session(self):
         try:
             if self._is_home_assistant:
