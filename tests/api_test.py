@@ -35,9 +35,6 @@ formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
 stream_handler.setFormatter(formatter)
 root.addHandler(stream_handler)
 
-aws_logger = logging.getLogger("AWSIoTPythonSDK")
-aws_logger.setLevel(logging.WARNING)
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -73,7 +70,7 @@ class APITest:
 
     async def initialize(self):
         """Test API."""
-        await self._config_manager.initialize()
+        await self._config_manager.initialize(self._login_credentials)
 
         _LOGGER.info("Creating REST API instance")
 
