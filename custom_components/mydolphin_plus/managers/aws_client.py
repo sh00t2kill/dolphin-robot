@@ -9,13 +9,15 @@ from time import sleep
 from typing import Any
 import uuid
 
-from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+from awscrt import auth, mqtt
+from awsiot import mqtt_connection_builder
 
 from homeassistant.const import CONF_MODE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ..common.clean_modes import CleanModes
+from ..common.connection_callbacks import ConnectionCallbacks
 from ..common.connectivity_status import IGNORED_TRANSITIONS, ConnectivityStatus
 from ..common.consts import (
     API_DATA_MOTOR_UNIT_SERIAL,
@@ -26,6 +28,7 @@ from ..common.consts import (
     ATTR_REMOTE_CONTROL_MODE_EXIT,
     AWS_IOT_PORT,
     AWS_IOT_URL,
+    AWS_REGION,
     CA_FILE_NAME,
     DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
     DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND,
@@ -65,8 +68,6 @@ from ..common.consts import (
     JOYSTICK_SPEED,
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
-    MQTT_QOS_0,
-    MQTT_QOS_1,
     PWS_STATE_OFF,
     PWS_STATE_ON,
     SIGNAL_AWS_CLIENT_STATUS,
@@ -85,7 +86,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class AWSClient:
-    _awsiot_client: AWSIoTMQTTClient | None
+    _awsiot_client: mqtt.Connection | None
 
     _topic_data: TopicData | None
     _status: ConnectivityStatus | None
@@ -104,6 +105,14 @@ class AWSClient:
             self._status = None
 
             self._local_async_dispatcher_send = None
+
+            self._connection_callbacks = {
+                ConnectionCallbacks.SUCCESS: self._on_connection_success,
+                ConnectionCallbacks.FAILURE: self._on_connection_failure,
+                ConnectionCallbacks.CLOSED: self._on_connection_closed,
+                ConnectionCallbacks.INTERRUPTED: self._on_connection_interrupted,
+                ConnectionCallbacks.RESUMED: self._on_connection_resumed,
+            }
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -136,10 +145,14 @@ class AWSClient:
             topics = self._topic_data.subscribe
             _LOGGER.debug(f"Unsubscribing topics: {', '.join(topics)}")
             for topic in self._topic_data.subscribe:
-                self._awsiot_client.unsubscribeAsync(topic)
+                future, _packet_id = self._awsiot_client.unsubscribe(topic)
+
+                future.result()
 
             _LOGGER.debug("Disconnecting AWS Client")
-            self._awsiot_client.disconnectAsync(self._ack_callback)
+
+            disconnect_future = self._awsiot_client.disconnect()
+            disconnect_future.result()
 
             self._awsiot_client = None
 
@@ -169,36 +182,41 @@ class AWSClient:
             ca_file_path = os.path.join(script_dir, CA_FILE_NAME)
 
             _LOGGER.debug(f"Loading CA file from {ca_file_path}")
+            credentials_provider = auth.AwsCredentialsProvider.new_static(
+                aws_key, aws_secret, aws_token
+            )
 
-            client = AWSIoTMQTTClient(awsiot_id, useWebsocket=True)
-            client.configureEndpoint(AWS_IOT_URL, AWS_IOT_PORT)
-            client.configureCredentials(ca_file_path)
-            client.configureIAMCredentials(aws_key, aws_secret, aws_token)
-            client.configureAutoReconnectBackoffTime(1, 32, 20)
-            client.configureOfflinePublishQueueing(
-                -1
-            )  # Infinite offline Publish queueing
-            client.configureDrainingFrequency(2)  # Draining: 2 Hz
-            client.configureConnectDisconnectTimeout(10)
-            client.configureMQTTOperationTimeout(10)
-            client.enableMetricsCollection()
-            client.onOnline = self._handle_aws_client_online
-            client.onOffline = self._handle_aws_client_offline
+            client = mqtt_connection_builder.websockets_with_default_aws_signing(
+                endpoint=AWS_IOT_URL,
+                port=AWS_IOT_PORT,
+                region=AWS_REGION,
+                ca_filepath=ca_file_path,
+                credentials_provider=credentials_provider,
+                client_id=awsiot_id,
+                clean_session=False,
+                keep_alive_secs=30,
+                http_proxy_options=None,
+                on_connection_success=self._connection_callbacks.get(
+                    ConnectionCallbacks.SUCCESS
+                ),
+                on_connection_failure=self._connection_callbacks.get(
+                    ConnectionCallbacks.FAILURE
+                ),
+                on_connection_closed=self._connection_callbacks.get(
+                    ConnectionCallbacks.CLOSED
+                ),
+                on_connection_interrupted=self._connection_callbacks.get(
+                    ConnectionCallbacks.INTERRUPTED
+                ),
+                on_connection_resumed=self._connection_callbacks.get(
+                    ConnectionCallbacks.RESUMED
+                ),
+            )
 
-            for topic in self._topic_data.subscribe:
-                client.subscribeAsync(
-                    topic, MQTT_QOS_0, self._ack_callback, self._message_callback
-                )
+            connect_future = client.connect()
+            connect_future.result()
 
-            connected = client.connectAsync(ackCallback=self._ack_callback)
-
-            if connected:
-                _LOGGER.debug(f"Connected to {AWS_IOT_URL}")
-                self._awsiot_client = client
-
-            else:
-                _LOGGER.error(f"Failed to connect to {AWS_IOT_URL}")
-                self._set_status(ConnectivityStatus.Failed)
+            self._subscribe()
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -209,6 +227,19 @@ class AWSClient:
             )
 
             self._set_status(ConnectivityStatus.Failed)
+
+    def _subscribe(self):
+        _LOGGER.debug(f"Subscribing topics: {self._topic_data.subscribe}")
+
+        for topic_item in self._topic_data.subscribe:
+            subscribe_future, packet_id = self._awsiot_client.subscribe(
+                topic=topic_item,
+                qos=mqtt.QoS.AT_MOST_ONCE,
+                callback=self._message_callback,
+            )
+
+            subscribe_result = subscribe_future.result()
+            _LOGGER.info(f"Subscribed `{topic_item}` with {subscribe_result['qos']}")
 
     async def update_api_data(self, api_data: dict):
         self._api_data = api_data
@@ -238,54 +269,89 @@ class AWSClient:
                 f"Failed to refresh MyDolphin Plus WS data, error: {ex}, line: {line_number}"
             )
 
-    def _handle_aws_client_online(self):
-        _LOGGER.debug("AWS IOT Client is Online")
+    def _on_connection_success(self, connection, callback_data):
+        if isinstance(callback_data, mqtt.OnConnectionSuccessData):
+            _LOGGER.debug(f"AWS IoT successfully connected, URL: {AWS_IOT_URL}")
+            self._awsiot_client = connection
 
-        self._set_status(ConnectivityStatus.Connected)
+            self._set_status(ConnectivityStatus.Connected)
 
-    def _handle_aws_client_offline(self):
-        _LOGGER.debug("AWS IOT Client is Offline")
+    def _on_connection_failure(self, connection, callback_data):
+        if isinstance(callback_data, mqtt.OnConnectionFailureData):
+            _LOGGER.error(f"AWS IoT connection failed, Error: {callback_data.error}")
+
+            self._set_status(ConnectivityStatus.Failed)
+
+    def _on_connection_closed(self, connection, callback_data):
+        if isinstance(callback_data, mqtt.OnConnectionClosedData):
+            _LOGGER.debug("AWS IoT connection was closed")
+
+            self._set_status(ConnectivityStatus.Disconnected)
+
+    def _on_connection_interrupted(self, _connection, error, **_kwargs):
+        _LOGGER.error(f"AWS IoT connection interrupted, Error: {error}")
 
         self._set_status(ConnectivityStatus.Failed)
 
-    @staticmethod
-    def _ack_callback(mid, data):
-        _LOGGER.debug(f"ACK packet ID: {mid}, QoS: {data}")
+    def _on_connection_resumed(
+        self, connection, return_code, session_present, **_kwargs
+    ):
+        _LOGGER.debug(
+            f"AWS IoT connection resumed, Code: {return_code}, Session Present: {session_present}"
+        )
+        self._awsiot_client = connection
 
-    def _message_callback(self, _client, _userdata, message):
-        message_topic: str = message.topic
-        message_payload = message.payload.decode(MQTT_MESSAGE_ENCODING)
+        if return_code == mqtt.ConnectReturnCode.ACCEPTED and not session_present:
+            _LOGGER.debug("Resubscribing to existing topics")
+
+            resubscribe_future, _ = connection.resubscribe_existing_topics()
+
+            resubscribe_future.add_done_callback(self._on_resubscribe_complete)
+
+        self._set_status(ConnectivityStatus.Connected)
+
+    @staticmethod
+    def _on_resubscribe_complete(resubscribe_future):
+        resubscribe_results = resubscribe_future.result()
+        _LOGGER.info(f"Resubscribe results: {resubscribe_results}")
+
+        for topic, qos in resubscribe_results["topics"]:
+            if qos is None:
+                _LOGGER.error(f"Server rejected resubscribe to topic: {topic}")
+
+    def _message_callback(self, topic, payload, dup, qos, retain, **kwargs):
+        message_payload = payload.decode(MQTT_MESSAGE_ENCODING)
 
         try:
             has_message = len(message_payload) <= 0
-            payload = {} if has_message else json.loads(message_payload)
+            payload_data = {} if has_message else json.loads(message_payload)
 
             motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
             _LOGGER.debug(
-                f"Message received for device {motor_unit_serial}, Topic: {message_topic}"
+                f"Message received for device {motor_unit_serial}, Topic: {topic}"
             )
 
-            if message_topic.endswith(TOPIC_CALLBACK_REJECTED):
+            if topic.endswith(TOPIC_CALLBACK_REJECTED):
                 _LOGGER.warning(
-                    f"Rejected message for {message_topic}, Message: {message_payload}"
+                    f"Rejected message for {topic}, Message: {message_payload}"
                 )
 
-            elif message_topic == self._topic_data.dynamic:
+            elif topic == self._topic_data.dynamic:
                 _LOGGER.debug(f"Dynamic payload: {message_payload}")
 
-                response_type = payload.get(DYNAMIC_TYPE)
-                data = payload.get(DYNAMIC_CONTENT)
+                response_type = payload_data.get(DYNAMIC_TYPE)
+                data = payload_data.get(DYNAMIC_CONTENT)
 
                 if response_type not in self.data:
                     self.data[DATA_SECTION_DYNAMIC] = {}
 
                 self.data[DATA_SECTION_DYNAMIC][response_type] = data
 
-            elif message_topic.endswith(TOPIC_CALLBACK_ACCEPTED):
+            elif topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
 
-                version = payload.get(DATA_ROOT_VERSION)
-                server_timestamp = payload.get(DATA_ROOT_TIMESTAMP)
+                version = payload_data.get(DATA_ROOT_VERSION)
+                server_timestamp = payload_data.get(DATA_ROOT_TIMESTAMP)
 
                 now = datetime.now().timestamp()
                 diff = int(now) - server_timestamp
@@ -294,7 +360,7 @@ class AWSClient:
                 self.data[WS_DATA_TIMESTAMP] = server_timestamp
                 self.data[WS_DATA_DIFF] = diff
 
-                state = payload.get(DATA_ROOT_STATE, {})
+                state = payload_data.get(DATA_ROOT_STATE, {})
                 reported = state.get(DATA_STATE_REPORTED, {})
 
                 for category in reported.keys():
@@ -309,10 +375,10 @@ class AWSClient:
                         else:
                             self.data[category] = category_data
 
-                if message_topic == self._topic_data.get_accepted:
+                if topic == self._topic_data.get_accepted:
                     self._read_temperature_and_in_water_details()
 
-                elif message_topic == self._topic_data.update_accepted:
+                elif topic == self._topic_data.update_accepted:
                     desired = state.get(DATA_STATE_DESIRED)
 
                     if desired is not None:
@@ -326,7 +392,7 @@ class AWSClient:
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
-            message_details = f"Topic: {message_topic}, Data: {message_payload}"
+            message_details = f"Topic: {topic}, Data: {payload}"
             error_details = f"Error: {str(ex)}, Line: {line_number}"
 
             _LOGGER.error(
@@ -350,8 +416,8 @@ class AWSClient:
         if self._status == ConnectivityStatus.Connected:
             try:
                 if self._awsiot_client is not None:
-                    published = self._awsiot_client.publishAsync(
-                        topic, payload, MQTT_QOS_1
+                    published = self._awsiot_client.publish(
+                        topic, payload, mqtt.QoS.AT_LEAST_ONCE
                     )
 
                     if published:

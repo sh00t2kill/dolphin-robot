@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.9
+
+- Upgrade AWS IoT Device SDK to v2
+
 ## v1.0.8
 
 _Minimum HA Version: 2024.1.0b0_

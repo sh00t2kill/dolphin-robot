@@ -35,9 +35,6 @@ formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
 stream_handler.setFormatter(formatter)
 root.addHandler(stream_handler)
 
-aws_logger = logging.getLogger("AWSIoTPythonSDK")
-aws_logger.setLevel(logging.WARNING)
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -73,7 +70,7 @@ class APITest:
 
     async def initialize(self):
         """Test API."""
-        await self._config_manager.initialize()
+        await self._config_manager.initialize(self._login_credentials)
 
         _LOGGER.info("Creating REST API instance")
 
@@ -87,6 +84,11 @@ class APITest:
                 _LOGGER.info(data)
 
             await sleep(15)
+
+    async def terminate(self):
+        await self._api.terminate()
+
+        await self._aws_client.terminate()
 
     async def _on_api_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.Connected:
@@ -115,10 +117,19 @@ class APITest:
             await self._aws_client.update()
 
 
-loop = asyncio.new_event_loop()
-
-try:
+if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
     instance = APITest(loop)
-    loop.run_until_complete(instance.initialize())
-finally:
-    loop.close()
+
+    try:
+        loop.run_until_complete(instance.initialize())
+
+    except KeyboardInterrupt:
+        _LOGGER.info("Aborted")
+
+    except Exception as rex:
+        _LOGGER.error(f"Error: {rex}")
+
+    finally:
+        loop.run_until_complete(instance.terminate())
+        loop.close()

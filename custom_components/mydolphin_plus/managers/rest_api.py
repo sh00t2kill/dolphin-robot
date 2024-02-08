@@ -132,6 +132,12 @@ class RestAPI:
         await self._initialize_session()
         await self._login()
 
+    async def terminate(self):
+        if self._session is not None:
+            await self._session.close()
+
+            self._set_status(ConnectivityStatus.Disconnected)
+
     async def _initialize_session(self):
         try:
             if self._is_home_assistant:
@@ -245,7 +251,7 @@ class RestAPI:
                     SIGNAL_DEVICE_NEW, self._config_manager.entry_id
                 )
 
-            _LOGGER.info(f"API Data updated: {self.data}")
+            _LOGGER.debug(f"API Data updated: {self.data}")
 
     async def _login(self):
         await self._service_login()
