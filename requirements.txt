@@ -1,8 +1,10 @@
 pre-commit
-homeassistant
-AWSIoTPythonSDK
-aiohttp
-cryptography
-voluptuous
+homeassistant~=2024.2.0
+aiohttp~=3.9.3
+cryptography~=42.0.2
+voluptuous~=0.13.1
 
 python-slugify
+
+awsiotsdk~=1.21.0
+awscrt~=0.20.2
