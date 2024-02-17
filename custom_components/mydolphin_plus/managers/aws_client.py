@@ -101,6 +101,7 @@ class AWSClient:
 
             self._topic_data = None
             self._awsiot_client = None
+            self._messages_published: dict[int, dict[str, str]] = {}
 
             self._status = None
 
@@ -113,6 +114,10 @@ class AWSClient:
                 ConnectionCallbacks.INTERRUPTED: self._on_connection_interrupted,
                 ConnectionCallbacks.RESUMED: self._on_connection_resumed,
             }
+
+            self._on_publish_completed_callback = lambda f: self._on_publish_completed(
+                f
+            )
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -417,15 +422,15 @@ class AWSClient:
         if self._status == ConnectivityStatus.Connected:
             try:
                 if self._awsiot_client is not None:
-                    _LOGGER.debug(f"Trying to publish message {payload} to {topic}")
-
                     publish_future, packet_id = self._awsiot_client.publish(
                         topic, payload, mqtt.QoS.AT_MOST_ONCE
                     )
 
-                    publish_future.result()
+                    self._pre_publish_message(packet_id, topic, payload)
 
-                    _LOGGER.debug(f"Published message: {data} to {topic}")
+                    publish_future.add_done_callback(
+                        self._on_publish_completed_callback
+                    )
 
             except Exception as ex:
                 _LOGGER.error(
@@ -436,6 +441,30 @@ class AWSClient:
             _LOGGER.error(
                 f"Failed to publish message: {data} to {topic}, Broker is not connected"
             )
+
+    def _pre_publish_message(self, message_id: int, topic: str, payload: str):
+        _LOGGER.debug(f"Published message to {topic}, Data: {payload}")
+
+        self._messages_published[message_id] = {"topic": topic, "payload": payload}
+
+    def _post_message_published(self, message_id: int):
+        published_data = self._messages_published.get(message_id, {})
+
+        topic = published_data.get("topic")
+        payload = published_data.get("payload")
+
+        _LOGGER.info(f"Published message #{message_id} to {topic}, Data: {payload}")
+
+        del self._messages_published[message_id]
+
+    def _on_publish_completed(self, publish_future):
+        publish_results = publish_future.result()
+        _LOGGER.debug(f"Publish results: {publish_results}")
+
+        if publish_results is not None and "packet_id" in publish_results:
+            packet_id = publish_results.get("packet_id")
+
+            self._post_message_published(packet_id)
 
     def set_cleaning_mode(self, clean_mode: CleanModes):
         data = {DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: str(clean_mode)}}

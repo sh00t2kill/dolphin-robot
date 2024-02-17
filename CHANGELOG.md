@@ -8,6 +8,7 @@
 - Change clean_session parameter to start a new session on every attempt to connect
 - Set the AWS Client ID to the entry ID instead of randomize on every attempt to connect
 - Set message being sent while publishing empty message to empty JSON instead of empty string
+- Switch publish to fully async implementation
 
 ## v1.0.9
 
