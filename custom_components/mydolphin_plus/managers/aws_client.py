@@ -280,13 +280,13 @@ class AWSClient:
             self._set_status(ConnectivityStatus.Connected)
 
     def _on_connection_failure(self, connection, callback_data):
-        if isinstance(callback_data, mqtt.OnConnectionFailureData):
+        if connection is not None and isinstance(callback_data, mqtt.OnConnectionFailureData):
             _LOGGER.error(f"AWS IoT connection failed, Error: {callback_data.error}")
 
             self._set_status(ConnectivityStatus.Failed)
 
     def _on_connection_closed(self, connection, callback_data):
-        if isinstance(callback_data, mqtt.OnConnectionClosedData):
+        if connection is not None and isinstance(callback_data, mqtt.OnConnectionClosedData):
             _LOGGER.debug("AWS IoT connection was closed")
 
             self._set_status(ConnectivityStatus.Disconnected)
@@ -294,7 +294,8 @@ class AWSClient:
     def _on_connection_interrupted(self, connection, error, **_kwargs):
         _LOGGER.error(f"AWS IoT connection interrupted, Error: {error}")
 
-        self._set_status(ConnectivityStatus.Failed)
+        if connection is not None:
+            self._set_status(ConnectivityStatus.Failed)
 
     def _on_connection_resumed(
         self, connection, return_code, session_present, **_kwargs
@@ -425,7 +426,6 @@ class AWSClient:
                     publish_future, packet_id = self._awsiot_client.publish(
                         topic, payload, mqtt.QoS.AT_MOST_ONCE
                     )
-
                     self._pre_publish_message(packet_id, topic, payload)
 
                     publish_future.add_done_callback(
