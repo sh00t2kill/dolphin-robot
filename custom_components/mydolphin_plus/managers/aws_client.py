@@ -7,7 +7,6 @@ import os
 import sys
 from time import sleep
 from typing import Any
-import uuid
 
 from awscrt import auth, mqtt
 from awsiot import mqtt_connection_builder
@@ -95,6 +94,7 @@ class AWSClient:
         try:
             self._hass = hass
             self._config_manager = config_manager
+            self._awsiot_id = config_manager.entry_id
 
             self._api_data = {}
             self._data = {}
@@ -165,7 +165,6 @@ class AWSClient:
 
             self._set_status(ConnectivityStatus.Connecting)
 
-            awsiot_id = str(uuid.uuid4())
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
             aws_key = self._api_data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
             aws_secret = self._api_data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
@@ -192,10 +191,9 @@ class AWSClient:
                 region=AWS_REGION,
                 ca_filepath=ca_file_path,
                 credentials_provider=credentials_provider,
-                client_id=awsiot_id,
-                clean_session=False,
+                client_id=self._awsiot_id,
+                clean_session=True,
                 keep_alive_secs=30,
-                http_proxy_options=None,
                 on_connection_success=self._connection_callbacks.get(
                     ConnectionCallbacks.SUCCESS
                 ),
@@ -288,7 +286,7 @@ class AWSClient:
 
             self._set_status(ConnectivityStatus.Disconnected)
 
-    def _on_connection_interrupted(self, _connection, error, **_kwargs):
+    def _on_connection_interrupted(self, connection, error, **_kwargs):
         _LOGGER.error(f"AWS IoT connection interrupted, Error: {error}")
 
         self._set_status(ConnectivityStatus.Failed)
@@ -411,19 +409,23 @@ class AWSClient:
         self._publish(self._topic_data.dynamic, payload)
 
     def _publish(self, topic: str, data: dict | None):
-        payload = "" if data is None else json.dumps(data)
+        if data is None:
+            data = {}
+
+        payload = json.dumps(data)
 
         if self._status == ConnectivityStatus.Connected:
             try:
                 if self._awsiot_client is not None:
-                    published = self._awsiot_client.publish(
-                        topic, payload, mqtt.QoS.AT_LEAST_ONCE
+                    _LOGGER.debug(f"Trying to publish message {payload} to {topic}")
+
+                    publish_future, packet_id = self._awsiot_client.publish(
+                        topic, payload, mqtt.QoS.AT_MOST_ONCE
                     )
 
-                    if published:
-                        _LOGGER.debug(f"Published message: {data} to {topic}")
-                    else:
-                        _LOGGER.warning(f"Failed to publish message: {data} to {topic}")
+                    publish_future.result()
+
+                    _LOGGER.debug(f"Published message: {data} to {topic}")
 
             except Exception as ex:
                 _LOGGER.error(
