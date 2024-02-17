@@ -280,13 +280,17 @@ class AWSClient:
             self._set_status(ConnectivityStatus.Connected)
 
     def _on_connection_failure(self, connection, callback_data):
-        if connection is not None and isinstance(callback_data, mqtt.OnConnectionFailureData):
+        if connection is not None and isinstance(
+            callback_data, mqtt.OnConnectionFailureData
+        ):
             _LOGGER.error(f"AWS IoT connection failed, Error: {callback_data.error}")
 
             self._set_status(ConnectivityStatus.Failed)
 
     def _on_connection_closed(self, connection, callback_data):
-        if connection is not None and isinstance(callback_data, mqtt.OnConnectionClosedData):
+        if connection is not None and isinstance(
+            callback_data, mqtt.OnConnectionClosedData
+        ):
             _LOGGER.debug("AWS IoT connection was closed")
 
             self._set_status(ConnectivityStatus.Disconnected)
