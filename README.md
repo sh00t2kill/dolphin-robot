@@ -195,6 +195,7 @@ logger:
 
 Please attach also diagnostic details of the integration, available in:
 Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics
+See this link for further information: https://www.home-assistant.io/docs/configuration/troubleshooting/
 
 ### Invalid Token
 
@@ -288,7 +289,4 @@ features:
       - return_home
 ```
 
-## How to get debug logging information
 
-Please see these instructions on how to configure and obtain debug logs from the UI.
-https://www.home-assistant.io/docs/configuration/troubleshooting/
