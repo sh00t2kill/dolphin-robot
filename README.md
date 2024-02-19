@@ -194,8 +194,8 @@ logger:
 ```
 
 Please attach also diagnostic details of the integration, available in:
-Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics
-See this link for further information:
+<br />Settings -> Devices & Services -> MyDolphin Plus -> 3 dots menu -> Download diagnostics
+<br />See this link for further information:
 <br />https://www.home-assistant.io/docs/configuration/troubleshooting/
 
 ### Invalid Token
