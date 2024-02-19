@@ -287,3 +287,7 @@ features:
       - locate
       - return_home
 ```
+
+## How to get debug logging information 
+Please see these instructions on how to configure and obtain debug logs from the UI.
+https://www.home-assistant.io/docs/configuration/troubleshooting/
