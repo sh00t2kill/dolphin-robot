@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.10
+
+- Update manifest requirements to use only AWS IoT Device SDK v2
+- Fix parameter of callback to the right convention
+- Fix AWS IoT MQTT publish message validation and QoS
+- Change clean_session parameter to start a new session on every attempt to connect
+- Set the AWS Client ID to the entry ID instead of randomize on every attempt to connect
+- Set message being sent while publishing empty message to empty JSON instead of empty string
+- Switch publish to fully async implementation
+
 ## v1.0.9
 
 - Upgrade AWS IoT Device SDK to v2

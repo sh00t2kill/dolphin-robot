@@ -8,6 +8,6 @@
   "documentation": "https://github.com/sh00t2kill/dolphin-robot",
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/sh00t2kill/dolphin-robot/issues",
-  "requirements": ["awscrt~=0.20.2", "awsiotsdk~=1.21.0"],
-  "version": "1.0.9"
+  "requirements": ["awsiotsdk"],
+  "version": "1.0.10"
 }

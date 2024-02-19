@@ -7,7 +7,6 @@ import os
 import sys
 from time import sleep
 from typing import Any
-import uuid
 
 from awscrt import auth, mqtt
 from awsiot import mqtt_connection_builder
@@ -95,12 +94,14 @@ class AWSClient:
         try:
             self._hass = hass
             self._config_manager = config_manager
+            self._awsiot_id = config_manager.entry_id
 
             self._api_data = {}
             self._data = {}
 
             self._topic_data = None
             self._awsiot_client = None
+            self._messages_published: dict[int, dict[str, str]] = {}
 
             self._status = None
 
@@ -113,6 +114,10 @@ class AWSClient:
                 ConnectionCallbacks.INTERRUPTED: self._on_connection_interrupted,
                 ConnectionCallbacks.RESUMED: self._on_connection_resumed,
             }
+
+            self._on_publish_completed_callback = lambda f: self._on_publish_completed(
+                f
+            )
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -165,7 +170,6 @@ class AWSClient:
 
             self._set_status(ConnectivityStatus.Connecting)
 
-            awsiot_id = str(uuid.uuid4())
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
             aws_key = self._api_data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
             aws_secret = self._api_data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
@@ -192,10 +196,9 @@ class AWSClient:
                 region=AWS_REGION,
                 ca_filepath=ca_file_path,
                 credentials_provider=credentials_provider,
-                client_id=awsiot_id,
-                clean_session=False,
+                client_id=self._awsiot_id,
+                clean_session=True,
                 keep_alive_secs=30,
-                http_proxy_options=None,
                 on_connection_success=self._connection_callbacks.get(
                     ConnectionCallbacks.SUCCESS
                 ),
@@ -277,21 +280,26 @@ class AWSClient:
             self._set_status(ConnectivityStatus.Connected)
 
     def _on_connection_failure(self, connection, callback_data):
-        if isinstance(callback_data, mqtt.OnConnectionFailureData):
+        if connection is not None and isinstance(
+            callback_data, mqtt.OnConnectionFailureData
+        ):
             _LOGGER.error(f"AWS IoT connection failed, Error: {callback_data.error}")
 
             self._set_status(ConnectivityStatus.Failed)
 
     def _on_connection_closed(self, connection, callback_data):
-        if isinstance(callback_data, mqtt.OnConnectionClosedData):
+        if connection is not None and isinstance(
+            callback_data, mqtt.OnConnectionClosedData
+        ):
             _LOGGER.debug("AWS IoT connection was closed")
 
             self._set_status(ConnectivityStatus.Disconnected)
 
-    def _on_connection_interrupted(self, _connection, error, **_kwargs):
+    def _on_connection_interrupted(self, connection, error, **_kwargs):
         _LOGGER.error(f"AWS IoT connection interrupted, Error: {error}")
 
-        self._set_status(ConnectivityStatus.Failed)
+        if connection is not None:
+            self._set_status(ConnectivityStatus.Failed)
 
     def _on_connection_resumed(
         self, connection, return_code, session_present, **_kwargs
@@ -411,19 +419,22 @@ class AWSClient:
         self._publish(self._topic_data.dynamic, payload)
 
     def _publish(self, topic: str, data: dict | None):
-        payload = "" if data is None else json.dumps(data)
+        if data is None:
+            data = {}
+
+        payload = json.dumps(data)
 
         if self._status == ConnectivityStatus.Connected:
             try:
                 if self._awsiot_client is not None:
-                    published = self._awsiot_client.publish(
-                        topic, payload, mqtt.QoS.AT_LEAST_ONCE
+                    publish_future, packet_id = self._awsiot_client.publish(
+                        topic, payload, mqtt.QoS.AT_MOST_ONCE
                     )
+                    self._pre_publish_message(packet_id, topic, payload)
 
-                    if published:
-                        _LOGGER.debug(f"Published message: {data} to {topic}")
-                    else:
-                        _LOGGER.warning(f"Failed to publish message: {data} to {topic}")
+                    publish_future.add_done_callback(
+                        self._on_publish_completed_callback
+                    )
 
             except Exception as ex:
                 _LOGGER.error(
@@ -434,6 +445,30 @@ class AWSClient:
             _LOGGER.error(
                 f"Failed to publish message: {data} to {topic}, Broker is not connected"
             )
+
+    def _pre_publish_message(self, message_id: int, topic: str, payload: str):
+        _LOGGER.debug(f"Published message to {topic}, Data: {payload}")
+
+        self._messages_published[message_id] = {"topic": topic, "payload": payload}
+
+    def _post_message_published(self, message_id: int):
+        published_data = self._messages_published.get(message_id, {})
+
+        topic = published_data.get("topic")
+        payload = published_data.get("payload")
+
+        _LOGGER.info(f"Published message #{message_id} to {topic}, Data: {payload}")
+
+        del self._messages_published[message_id]
+
+    def _on_publish_completed(self, publish_future):
+        publish_results = publish_future.result()
+        _LOGGER.debug(f"Publish results: {publish_results}")
+
+        if publish_results is not None and "packet_id" in publish_results:
+            packet_id = publish_results.get("packet_id")
+
+            self._post_message_published(packet_id)
 
     def set_cleaning_mode(self, clean_mode: CleanModes):
         data = {DATA_SCHEDULE_CLEANING_MODE: {CONF_MODE: str(clean_mode)}}
