@@ -147,13 +147,6 @@ class AWSClient:
 
     async def terminate(self):
         if self._awsiot_client is not None:
-            topics = self._topic_data.subscribe
-            _LOGGER.debug(f"Unsubscribing topics: {', '.join(topics)}")
-            for topic in self._topic_data.subscribe:
-                future, _packet_id = self._awsiot_client.unsubscribe(topic)
-
-                future.result()
-
             _LOGGER.debug("Disconnecting AWS Client")
 
             disconnect_future = self._awsiot_client.disconnect()
