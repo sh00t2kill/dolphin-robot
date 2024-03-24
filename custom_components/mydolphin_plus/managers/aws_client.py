@@ -34,6 +34,7 @@ from ..common.consts import (
     DATA_LED_ENABLE,
     DATA_LED_INTENSITY,
     DATA_LED_MODE,
+    DATA_ROBOT_FAMILY,
     DATA_ROOT_STATE,
     DATA_ROOT_TIMESTAMP,
     DATA_ROOT_VERSION,
@@ -78,6 +79,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
+from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
 
@@ -146,14 +148,13 @@ class AWSClient:
         return self._data
 
     async def terminate(self):
+        self._disconnect()
+
+        self._set_status(ConnectivityStatus.Disconnected)
+        _LOGGER.debug("AWS Client is disconnected")
+
+    def _disconnect(self):
         if self._awsiot_client is not None:
-            topics = self._topic_data.subscribe
-            _LOGGER.debug(f"Unsubscribing topics: {', '.join(topics)}")
-            for topic in self._topic_data.subscribe:
-                future, _packet_id = self._awsiot_client.unsubscribe(topic)
-
-                future.result()
-
             _LOGGER.debug("Disconnecting AWS Client")
 
             disconnect_future = self._awsiot_client.disconnect()
@@ -161,12 +162,11 @@ class AWSClient:
 
             self._awsiot_client = None
 
-        self._set_status(ConnectivityStatus.Disconnected)
-        _LOGGER.debug("AWS Client is disconnected")
-
     async def initialize(self):
         try:
             _LOGGER.info("Initializing MyDolphin AWS IOT WS")
+
+            self._disconnect()
 
             self._set_status(ConnectivityStatus.Connecting)
 
@@ -274,7 +274,7 @@ class AWSClient:
 
     def _on_connection_success(self, connection, callback_data):
         if isinstance(callback_data, mqtt.OnConnectionSuccessData):
-            _LOGGER.debug(f"AWS IoT successfully connected, URL: {AWS_IOT_URL}")
+            _LOGGER.info(f"AWS IoT successfully connected, URL: {AWS_IOT_URL}")
             self._awsiot_client = connection
 
             self._set_status(ConnectivityStatus.Connected)
@@ -291,7 +291,7 @@ class AWSClient:
         if connection is not None and isinstance(
             callback_data, mqtt.OnConnectionClosedData
         ):
-            _LOGGER.debug("AWS IoT connection was closed")
+            _LOGGER.info("AWS IoT connection was closed")
 
             self._set_status(ConnectivityStatus.Disconnected)
 
@@ -522,15 +522,19 @@ class AWSClient:
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def _read_temperature_and_in_water_details(self):
-        motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
-        serial_number = self._api_data.get(API_DATA_SERIAL_NUMBER)
+        robot_family_str = self._api_data.get(DATA_ROBOT_FAMILY)
+        robot_family = RobotFamily.from_string(robot_family_str)
 
-        request_data = {
-            DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
-            DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: motor_unit_serial,
-        }
+        if robot_family == RobotFamily.M700:
+            motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
+            serial_number = self._api_data.get(API_DATA_SERIAL_NUMBER)
 
-        self._send_dynamic_command(DYNAMIC_DESCRIPTION_TEMPERATURE, request_data)
+            request_data = {
+                DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
+                DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL: motor_unit_serial,
+            }
+
+            self._send_dynamic_command(DYNAMIC_DESCRIPTION_TEMPERATURE, request_data)
 
     def pickup(self):
         self.set_cleaning_mode(CleanModes.PICKUP)

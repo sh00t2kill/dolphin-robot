@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.11
+
+- Expose temperature sensor for M700 only
+- Remove unsubscribing from topics on integration termination
+- Clean client before trying to create new one upon re-initialization of client
+
 ## v1.0.10
 
 - Update manifest requirements to use only AWS IoT Device SDK v2

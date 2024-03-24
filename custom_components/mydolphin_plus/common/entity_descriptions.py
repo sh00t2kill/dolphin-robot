@@ -60,6 +60,7 @@ from .robot_family import RobotFamily
 @dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusEntityDescription(EntityDescription):
     platform: Platform | None = None
+    supported_family: RobotFamily = RobotFamily.ALL
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -110,174 +111,184 @@ class MyDolphinPlusLightEntityDescription(
     platform: Platform | None = Platform.LIGHT
 
 
-ENTITY_DESCRIPTIONS: dict[str, list[MyDolphinPlusEntityDescription]] = {
-    RobotFamily.ALL: [
-        MyDolphinPlusVacuumEntityDescription(
-            key=slugify(DATA_KEY_VACUUM),
-            name="",
-            features=VACUUM_FEATURES,
-            fan_speed_list=list(CleanModes),
-            translation_key=slugify(DATA_KEY_VACUUM),
-        ),
-        MyDolphinPlusLightEntityDescription(
-            key=slugify(DATA_KEY_LED),
-            name=DATA_KEY_LED,
-            entity_category=EntityCategory.CONFIG,
-            translation_key=slugify(DATA_KEY_LED),
-        ),
-        MyDolphinPlusSelectEntityDescription(
-            key=slugify(DATA_KEY_LED_MODE),
-            name=DATA_KEY_LED_MODE,
-            options=list(ICON_LED_MODES.keys()),
-            entity_category=EntityCategory.CONFIG,
-            translation_key=slugify(DATA_KEY_LED_MODE),
-        ),
-        MyDolphinPlusNumberEntityDescription(
-            key=slugify(DATA_KEY_LED_INTENSITY),
-            name=DATA_KEY_LED_INTENSITY,
-            native_min_value=0,
-            native_max_value=100,
-            entity_category=EntityCategory.CONFIG,
-            device_class=NumberDeviceClass.POWER_FACTOR,
-            translation_key=slugify(DATA_KEY_LED_INTENSITY),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_STATUS),
-            name=DATA_KEY_STATUS,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_STATUS),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_RSSI),
-            name=DATA_KEY_RSSI,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-            native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
-            translation_key=slugify(DATA_KEY_RSSI),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_NETWORK_NAME),
-            name=DATA_KEY_NETWORK_NAME,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_NETWORK_NAME),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_CLEAN_MODE),
-            name=DATA_KEY_CLEAN_MODE,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_CLEAN_MODE),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_POWER_SUPPLY_STATUS),
-            name=DATA_KEY_POWER_SUPPLY_STATUS,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_POWER_SUPPLY_STATUS),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_ROBOT_STATUS),
-            name=DATA_KEY_ROBOT_STATUS,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_ROBOT_STATUS),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_ROBOT_TYPE),
-            name=DATA_KEY_ROBOT_TYPE,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_ROBOT_TYPE),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_CYCLE_COUNT),
-            name=DATA_KEY_CYCLE_COUNT,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            state_class=SensorStateClass.TOTAL_INCREASING,
-            translation_key=slugify(DATA_KEY_CYCLE_COUNT),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_FILTER_STATUS),
-            name=DATA_KEY_FILTER_STATUS,
-            translation_key=slugify(DATA_KEY_FILTER_STATUS),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_CYCLE_TIME),
-            name=DATA_KEY_CYCLE_TIME,
-            device_class=SensorDeviceClass.DURATION,
-            state_class=SensorStateClass.MEASUREMENT,
-            native_unit_of_measurement=UnitOfTime.MINUTES,
-            translation_key=slugify(DATA_KEY_CYCLE_TIME),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
-            name=DATA_KEY_CYCLE_TIME_LEFT,
-            device_class=SensorDeviceClass.DURATION,
-            state_class=SensorStateClass.MEASUREMENT,
-            native_unit_of_measurement=UnitOfTime.SECONDS,
-            translation_key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
-        ),
-        MyDolphinPlusBinarySensorEntityDescription(
-            key=slugify(DATA_KEY_AWS_BROKER),
-            name=DATA_KEY_AWS_BROKER,
-            icon="mdi:aws",
-            device_class=BinarySensorDeviceClass.CONNECTIVITY,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_AWS_BROKER),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_ROBOT_ERROR),
-            name=DATA_KEY_ROBOT_ERROR,
-            icon="mdi:robot-vacuum-variant",
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_ROBOT_ERROR),
-        ),
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DATA_KEY_PWS_ERROR),
-            name=DATA_KEY_PWS_ERROR,
-            icon="mdi:water-boiler",
-            entity_category=EntityCategory.DIAGNOSTIC,
-            translation_key=slugify(DATA_KEY_PWS_ERROR),
-        ),
-    ],
-    RobotFamily.M700: [
-        MyDolphinPlusSensorEntityDescription(
-            key=slugify(DYNAMIC_DESCRIPTION_TEMPERATURE),
-            name=DYNAMIC_DESCRIPTION_TEMPERATURE.capitalize(),
-            device_class=SensorDeviceClass.TEMPERATURE,
-            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-            state_class=SensorStateClass.MEASUREMENT,
-            translation_key=slugify(DYNAMIC_DESCRIPTION_TEMPERATURE),
-        )
-    ],
-}
-
-for clean_mode in list(CleanModes):
-    name = get_clean_mode_cycle_time_name(CleanModes(clean_mode))
-    key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
-
-    ed = MyDolphinPlusNumberEntityDescription(
-        key=key,
-        name=name,
-        native_min_value=0,
-        native_max_value=600,
+ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
+    MyDolphinPlusVacuumEntityDescription(
+        key=slugify(DATA_KEY_VACUUM),
+        name="",
+        features=VACUUM_FEATURES,
+        fan_speed_list=list(CleanModes),
+        translation_key=slugify(DATA_KEY_VACUUM),
+    ),
+    MyDolphinPlusLightEntityDescription(
+        key=slugify(DATA_KEY_LED),
+        name=DATA_KEY_LED,
         entity_category=EntityCategory.CONFIG,
+        translation_key=slugify(DATA_KEY_LED),
+    ),
+    MyDolphinPlusSelectEntityDescription(
+        key=slugify(DATA_KEY_LED_MODE),
+        name=DATA_KEY_LED_MODE,
+        options=list(ICON_LED_MODES.keys()),
+        entity_category=EntityCategory.CONFIG,
+        translation_key=slugify(DATA_KEY_LED_MODE),
+    ),
+    MyDolphinPlusNumberEntityDescription(
+        key=slugify(DATA_KEY_LED_INTENSITY),
+        name=DATA_KEY_LED_INTENSITY,
+        native_min_value=0,
+        native_max_value=100,
+        entity_category=EntityCategory.CONFIG,
+        device_class=NumberDeviceClass.POWER_FACTOR,
+        translation_key=slugify(DATA_KEY_LED_INTENSITY),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_STATUS),
+        name=DATA_KEY_STATUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_STATUS),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_RSSI),
+        name=DATA_KEY_RSSI,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
+        translation_key=slugify(DATA_KEY_RSSI),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_NETWORK_NAME),
+        name=DATA_KEY_NETWORK_NAME,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_NETWORK_NAME),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_CLEAN_MODE),
+        name=DATA_KEY_CLEAN_MODE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_CLEAN_MODE),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_POWER_SUPPLY_STATUS),
+        name=DATA_KEY_POWER_SUPPLY_STATUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_POWER_SUPPLY_STATUS),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_ROBOT_STATUS),
+        name=DATA_KEY_ROBOT_STATUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_ROBOT_STATUS),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_ROBOT_TYPE),
+        name=DATA_KEY_ROBOT_TYPE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_ROBOT_TYPE),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_CYCLE_COUNT),
+        name=DATA_KEY_CYCLE_COUNT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        translation_key=slugify(DATA_KEY_CYCLE_COUNT),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_FILTER_STATUS),
+        name=DATA_KEY_FILTER_STATUS,
+        translation_key=slugify(DATA_KEY_FILTER_STATUS),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_CYCLE_TIME),
+        name=DATA_KEY_CYCLE_TIME,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.MINUTES,
-        translation_key=key,
-    )
+        translation_key=slugify(DATA_KEY_CYCLE_TIME),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
+        name=DATA_KEY_CYCLE_TIME_LEFT,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        translation_key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
+    ),
+    MyDolphinPlusBinarySensorEntityDescription(
+        key=slugify(DATA_KEY_AWS_BROKER),
+        name=DATA_KEY_AWS_BROKER,
+        icon="mdi:aws",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_AWS_BROKER),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_ROBOT_ERROR),
+        name=DATA_KEY_ROBOT_ERROR,
+        icon="mdi:robot-vacuum-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_ROBOT_ERROR),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DATA_KEY_PWS_ERROR),
+        name=DATA_KEY_PWS_ERROR,
+        icon="mdi:water-boiler",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_PWS_ERROR),
+    ),
+    MyDolphinPlusSensorEntityDescription(
+        key=slugify(DYNAMIC_DESCRIPTION_TEMPERATURE),
+        name=DYNAMIC_DESCRIPTION_TEMPERATURE.capitalize(),
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key=slugify(DYNAMIC_DESCRIPTION_TEMPERATURE),
+        supported_family=RobotFamily.M700,
+    ),
+]
 
-    ENTITY_DESCRIPTIONS[RobotFamily.ALL].append(ed)
 
-    def get_entity_descriptions(
-        platform: Platform, robot_family: RobotFamily | None
-    ) -> list[MyDolphinPlusEntityDescription]:
-        entity_descriptions = []
+def _get_clean_modes_entity_descriptions() -> list[MyDolphinPlusEntityDescription]:
+    entity_descriptions: list[MyDolphinPlusEntityDescription] = []
 
-        for family in ENTITY_DESCRIPTIONS:
-            if family == RobotFamily.ALL or robot_family == family:
-                family_entity_description = ENTITY_DESCRIPTIONS[family]
-                entity_descriptions.extend(family_entity_description)
+    for clean_mode in list(CleanModes):
+        key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
+        name = get_clean_mode_cycle_time_name(CleanModes(clean_mode))
 
-        result = [
-            entity_description
-            for entity_description in entity_descriptions
-            if entity_description.platform == platform
-        ]
+        entity_description = MyDolphinPlusNumberEntityDescription(
+            key=key,
+            name=name,
+            native_min_value=0,
+            native_max_value=600,
+            entity_category=EntityCategory.CONFIG,
+            native_unit_of_measurement=UnitOfTime.MINUTES,
+            translation_key=key,
+        )
 
-        return result
+        entity_descriptions.append(entity_description)
+
+    return entity_descriptions
+
+
+def get_entity_descriptions(
+    platform: Platform, robot_family: RobotFamily | None
+) -> list[MyDolphinPlusEntityDescription]:
+    entity_descriptions: list[
+        MyDolphinPlusEntityDescription
+    ] = ENTITY_DESCRIPTIONS.copy()
+
+    clean_modes_entity_descriptions = _get_clean_modes_entity_descriptions()
+    entity_descriptions.extend(clean_modes_entity_descriptions)
+
+    allowed_robot_families = [RobotFamily.ALL]
+
+    if robot_family is not None and robot_family not in allowed_robot_families:
+        allowed_robot_families.append(robot_family)
+
+    result = [
+        entity_description
+        for entity_description in entity_descriptions
+        if entity_description.platform == platform
+        and entity_description.supported_family in allowed_robot_families
+    ]
+
+    return result
