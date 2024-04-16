@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.11
+
+- Fix IOT Broker disconnect
+
 ## v1.0.10
 
 - Update manifest requirements to use only AWS IoT Device SDK v2
