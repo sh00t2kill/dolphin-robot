@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.12b0
+
+- Beta release, fix home-assistant freeze
+
 ## v1.0.11
 
 - Fix IOT Broker disconnect

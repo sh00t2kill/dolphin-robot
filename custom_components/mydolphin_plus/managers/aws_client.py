@@ -147,11 +147,6 @@ class AWSClient:
 
     async def terminate(self):
         if self._awsiot_client is not None:
-            _LOGGER.debug("Disconnecting AWS Client")
-
-            disconnect_future = self._awsiot_client.disconnect()
-            disconnect_future.result()
-
             self._awsiot_client = None
 
         self._set_status(ConnectivityStatus.Disconnected)
@@ -190,7 +185,7 @@ class AWSClient:
                 ca_filepath=ca_file_path,
                 credentials_provider=credentials_provider,
                 client_id=self._awsiot_id,
-                clean_session=True,
+                clean_session=False,
                 keep_alive_secs=30,
                 on_connection_success=self._connection_callbacks.get(
                     ConnectionCallbacks.SUCCESS
