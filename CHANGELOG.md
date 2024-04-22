@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.12b1
+
+- Add thread safe handling for callbacks from AWS IoT client
+
 ## v1.0.12b0
 
 - Beta release, fix home-assistant freeze
