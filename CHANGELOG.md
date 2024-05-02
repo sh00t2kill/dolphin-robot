@@ -3,6 +3,7 @@
 ## v1.0.12
 
 - Fix light support modes warning
+- Fix StrEnum warning
 
 ## v1.0.11
 

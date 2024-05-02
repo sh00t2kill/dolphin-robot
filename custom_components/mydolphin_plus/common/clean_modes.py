@@ -1,4 +1,5 @@
-from homeassistant.backports.enum import StrEnum
+from enum import StrEnum
+
 from homeassistant.util import slugify
 
 
