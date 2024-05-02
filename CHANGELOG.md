@@ -4,12 +4,8 @@
 
 - Fix light support modes warning
 - Fix StrEnum warning
-
-## v1.0.12b1
-
 - Add thread safe handling for callbacks from AWS IoT client
-
-## v1.0.12b0
+- Remove sleep between terminating websocket connection and creating new one
 
 ## v1.0.11
 
