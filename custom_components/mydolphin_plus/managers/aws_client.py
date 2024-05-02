@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 import json
 import logging
@@ -93,6 +94,7 @@ class AWSClient:
     def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
         try:
             self._hass = hass
+            self._loop = asyncio.new_event_loop() if hass is None else hass.loop
             self._config_manager = config_manager
             self._awsiot_id = config_manager.entry_id
 
@@ -146,13 +148,14 @@ class AWSClient:
         return self._data
 
     async def terminate(self):
-        if self._awsiot_client is not None:
-            _LOGGER.debug("Disconnecting AWS Client")
-
-            disconnect_future = self._awsiot_client.disconnect()
+        def _on_terminate_future_completed(future):
             disconnect_future.result()
 
             self._awsiot_client = None
+
+        if self._awsiot_client is not None:
+            disconnect_future = self._awsiot_client.disconnect()
+            disconnect_future.add_done_callback(_on_terminate_future_completed)
 
         self._set_status(ConnectivityStatus.Disconnected)
         _LOGGER.debug("AWS Client is disconnected")
@@ -190,7 +193,7 @@ class AWSClient:
                 ca_filepath=ca_file_path,
                 credentials_provider=credentials_provider,
                 client_id=self._awsiot_id,
-                clean_session=True,
+                clean_session=False,
                 keep_alive_secs=30,
                 on_connection_success=self._connection_callbacks.get(
                     ConnectionCallbacks.SUCCESS
@@ -209,10 +212,14 @@ class AWSClient:
                 ),
             )
 
-            connect_future = client.connect()
-            connect_future.result()
+            def _on_connect_future_completed(future):
+                future_results = future.result()
+                _LOGGER.info(f"_on_connect_future_completed: {future_results}")
 
-            self._subscribe()
+                self._awsiot_client = client
+
+            connect_future = client.connect()
+            connect_future.add_done_callback(_on_connect_future_completed)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -227,15 +234,35 @@ class AWSClient:
     def _subscribe(self):
         _LOGGER.debug(f"Subscribing topics: {self._topic_data.subscribe}")
 
-        for topic_item in self._topic_data.subscribe:
-            subscribe_future, packet_id = self._awsiot_client.subscribe(
-                topic=topic_item,
-                qos=mqtt.QoS.AT_MOST_ONCE,
-                callback=self._message_callback,
+        topics_to_subscribe = self._topic_data.subscribe.copy()
+
+        def _on_subscribe_future_completed(future):
+            subscribe_result = future.result()
+            _LOGGER.info(
+                f"Subscribed `{subscribe_result}` with {subscribe_result['qos']}"
             )
 
-            subscribe_result = subscribe_future.result()
-            _LOGGER.info(f"Subscribed `{topic_item}` with {subscribe_result['qos']}")
+            if len(topics_to_subscribe) > 0:
+                next_topic = topics_to_subscribe[0]
+                topics_to_subscribe.remove(next_topic)
+
+                next_subscribe_future, next_packet_id = self._awsiot_client.subscribe(
+                    topic=next_topic,
+                    qos=mqtt.QoS.AT_MOST_ONCE,
+                    callback=self._message_callback,
+                )
+                next_subscribe_future.add_done_callback(_on_subscribe_future_completed)
+
+        first_topic = topics_to_subscribe[0]
+
+        topics_to_subscribe.remove(first_topic)
+
+        subscribe_future, packet_id = self._awsiot_client.subscribe(
+            topic=first_topic,
+            qos=mqtt.QoS.AT_MOST_ONCE,
+            callback=self._message_callback,
+        )
+        subscribe_future.add_done_callback(_on_subscribe_future_completed)
 
     async def update_api_data(self, api_data: dict):
         self._api_data = api_data
@@ -269,6 +296,8 @@ class AWSClient:
         if isinstance(callback_data, mqtt.OnConnectionSuccessData):
             _LOGGER.debug(f"AWS IoT successfully connected, URL: {AWS_IOT_URL}")
             self._awsiot_client = connection
+
+            self._subscribe()
 
             self._set_status(ConnectivityStatus.Connected)
 

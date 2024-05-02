@@ -31,7 +31,7 @@ root.setLevel(log_level)
 
 stream_handler = logging.StreamHandler(sys.stdout)
 stream_handler.setLevel(log_level)
-formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+formatter = logging.Formatter("%(asctime)s %(threadName)s[%(thread)d] %(levelname)s %(name)s %(message)s")
 stream_handler.setFormatter(formatter)
 root.addHandler(stream_handler)
 
