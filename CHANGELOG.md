@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.12
+
+- Fix light support modes warning
+
 ## v1.0.11
 
 - Fix IOT Broker disconnect
