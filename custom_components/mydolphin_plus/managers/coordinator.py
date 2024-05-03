@@ -1,4 +1,3 @@
-from asyncio import sleep
 from datetime import datetime, timedelta
 import logging
 import sys
@@ -29,7 +28,6 @@ from ..common.consts import (
     ACTION_ENTITY_TURN_OFF,
     ACTION_ENTITY_TURN_ON,
     API_DATA_SERIAL_NUMBER,
-    API_RECONNECT_INTERVAL,
     ATTR_ACTIONS,
     ATTR_ATTRIBUTES,
     ATTR_CALCULATED_STATUS,
@@ -125,7 +123,6 @@ from ..common.consts import (
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_ENTITIES_INTERVAL,
-    WS_RECONNECT_INTERVAL,
 )
 from ..common.service_schema import (
     SERVICE_EXIT_NAVIGATION,
@@ -305,8 +302,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         elif status == ConnectivityStatus.Failed:
             await self._aws_client.terminate()
 
-            await sleep(API_RECONNECT_INTERVAL.total_seconds())
-
             await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
         elif status == ConnectivityStatus.InvalidCredentials:
@@ -323,8 +318,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         if status in [ConnectivityStatus.Failed, ConnectivityStatus.NotConnected]:
             await self._aws_client.terminate()
-
-            await sleep(WS_RECONNECT_INTERVAL.total_seconds())
 
             await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 

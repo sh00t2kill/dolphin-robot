@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.12
+
+- Fix light support modes warning
+- Fix StrEnum warning
+- Add thread safe handling for callbacks from AWS IoT client
+- Remove sleep between terminating websocket connection and creating new one
+
 ## v1.0.11
 
 - Fix IOT Broker disconnect
