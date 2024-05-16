@@ -363,11 +363,6 @@ class AWSClient:
                 _LOGGER.error(f"Server rejected resubscribe to topic: {topic}")
 
     def _message_callback(self, topic, payload, dup, qos, retain, **kwargs):
-        self._message_callback(topic, payload, dup, qos, retain, kwargs)
-
-    def _internal_message_callback(
-        self, topic, payload, _dup, _qos, _retain, **_kwargs
-    ):
         message_payload = payload.decode(MQTT_MESSAGE_ENCODING)
 
         try:
