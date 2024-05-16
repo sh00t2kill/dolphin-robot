@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.13
+## v1.0.13b0
 
 - Add threadsafe handling for set status
 - Add safe block for AWS client termination process
