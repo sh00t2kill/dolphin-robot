@@ -4,6 +4,7 @@
 
 - Add threadsafe handling for set status
 - Add safe block for AWS client termination process
+- Fix color mode warning on startup
 
 ## v1.0.12
 

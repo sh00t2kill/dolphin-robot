@@ -53,7 +53,8 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, LightEntity, ABC):
     ):
         super().__init__(entity_description, coordinator)
 
-        self._attr_supported_color_modes = set(ColorMode.ONOFF)
+        self._attr_supported_color_modes = {ColorMode.ONOFF}
+        self._attr_color_mode = ColorMode.ONOFF
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self.async_execute_device_action(ACTION_ENTITY_TURN_ON)
