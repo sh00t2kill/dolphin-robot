@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.13b1
+
+- Remove typo of args in AWS client message handling
+
 ## v1.0.13b0
 
 - Add threadsafe handling for set status
