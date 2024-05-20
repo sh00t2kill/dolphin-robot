@@ -14,7 +14,7 @@ from awsiot import mqtt_connection_builder
 
 from homeassistant.const import CONF_MODE
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.dispatcher import dispatcher_send
 
 from ..common.clean_modes import CleanModes
 from ..common.connection_callbacks import ConnectionCallbacks
@@ -148,14 +148,27 @@ class AWSClient:
         return self._data
 
     async def terminate(self):
-        def _on_terminate_future_completed(future):
-            disconnect_future.result()
+        try:
+
+            def _on_terminate_future_completed(future):
+                future.result()
+
+                self._awsiot_client = None
+
+            if self._awsiot_client is not None:
+                disconnect_future = self._awsiot_client.disconnect()
+                disconnect_future.add_done_callback(_on_terminate_future_completed)
+
+        except Exception as ex:
+            exc_type, exc_obj, tb = sys.exc_info()
+            line_number = tb.tb_lineno
+
+            _LOGGER.warning(
+                "Failed to gracefully shutdown AWS IOT Client, setting it to None, "
+                f"Error: {ex}, Line: {line_number}"
+            )
 
             self._awsiot_client = None
-
-        if self._awsiot_client is not None:
-            disconnect_future = self._awsiot_client.disconnect()
-            disconnect_future.add_done_callback(_on_terminate_future_completed)
 
         self._set_status(ConnectivityStatus.Disconnected)
         _LOGGER.debug("AWS Client is disconnected")
@@ -642,4 +655,4 @@ class AWSClient:
             self._local_async_dispatcher_send(signal, *args)
 
         else:
-            async_dispatcher_send(self._hass, signal, *args)
+            dispatcher_send(self._hass, signal, *args)

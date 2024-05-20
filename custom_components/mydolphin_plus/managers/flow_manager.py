@@ -45,7 +45,7 @@ class IntegrationFlowManager:
 
     async def async_step(self, user_input: dict | None = None):
         """Manage the domain options."""
-        _LOGGER.info(f"Config flow started, Step: {self._flow_id}, Input: {user_input}")
+        _LOGGER.info(f"Config flow started, Step: {self._flow_id}")
 
         form_errors = None
 
@@ -56,8 +56,6 @@ class IntegrationFlowManager:
             else:
                 user_input = {key: self._entry.data[key] for key in self._entry.data}
                 user_input[CONF_TITLE] = self._entry.title
-
-                _LOGGER.info(user_input)
 
                 await PasswordManager.decrypt(
                     self._hass, user_input, self._entry.entry_id
