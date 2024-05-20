@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.13
+
+- Fix reconnect process
+- Fix threadsafe warning log messages
+- Fix color more error log messages
+
 ## v1.0.13b2
 
 - Remove typo of args in AWS client message handling
