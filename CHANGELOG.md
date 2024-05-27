@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.14
+
+- Fix reset configuration on integration unload (HA restart)
+
 ## v1.0.13
 
 - Fix reconnect process
