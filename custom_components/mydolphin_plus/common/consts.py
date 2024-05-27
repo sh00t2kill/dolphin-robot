@@ -12,7 +12,6 @@ CONFIGURATION_FILE = f"{DOMAIN}.config.json"
 
 INVALID_TOKEN_SECTION = "https://github.com/sh00t2kill/dolphin-robot#invalid-token"
 
-ENTRY_ID_CONFIG = "config"
 CONF_TITLE = "title"
 
 SIGNAL_DEVICE_NEW = f"{DOMAIN}_NEW_DEVICE_SIGNAL"

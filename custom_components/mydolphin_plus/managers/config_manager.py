@@ -46,7 +46,7 @@ class ConfigManager:
     def __init__(self, hass: HomeAssistant | None, entry: ConfigEntry | None = None):
         self._hass = hass
         self._entry = entry
-        self._entry_id = "config" if entry is None else entry.entry_id
+        self._entry_id = None if entry is None else entry.entry_id
         self._entry_title = DEFAULT_NAME if entry is None else entry.title
 
         self._config_data = ConfigData()
@@ -71,19 +71,19 @@ class ConfigManager:
         return is_initialized
 
     @property
-    def entry(self):
+    def entry(self) -> ConfigEntry:
         entry = self._entry
 
         return entry
 
     @property
-    def entry_id(self):
+    def entry_id(self) -> str:
         entry_id = self._entry_id
 
         return entry_id
 
     @property
-    def name(self):
+    def name(self) -> str:
         entry_title = self._entry_title
 
         return entry_title
@@ -222,18 +222,27 @@ class ConfigManager:
 
         await self._load_config_from_file()
 
+        _LOGGER.info(f"loaded: {self._data}")
+        should_save = False
+
         if self._data is None:
+            should_save = True
             self._data = {}
 
         default_configuration = self._get_defaults()
+        _LOGGER.info(f"default_configuration: {default_configuration}")
 
         for key in default_configuration:
             value = default_configuration[key]
 
             if key not in self._data:
+                _LOGGER.info(f"adding {key}")
+                should_save = True
                 self._data[key] = value
 
-        await self._save()
+        if should_save:
+            _LOGGER.info("updated")
+            await self._save()
 
     @staticmethod
     def _get_defaults() -> dict:
@@ -281,6 +290,11 @@ class ConfigManager:
 
         entry_data = store_data.get(self._entry_id, {})
 
+        _LOGGER.debug(
+            f"Storing config data: {json.dumps(self._data)}, "
+            f"Exiting: {json.dumps(entry_data)}"
+        )
+
         for key in self._data:
             stored_value = entry_data.get(key)
 
@@ -298,7 +312,7 @@ class ConfigManager:
 
                     entry_data[key] = self._data[key]
 
-        if should_save:
+        if should_save and self._entry_id is not None:
             store_data[self._entry_id] = entry_data
 
             await self._store.async_save(store_data)
