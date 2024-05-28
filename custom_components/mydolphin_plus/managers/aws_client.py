@@ -77,8 +77,9 @@ from ..common.consts import (
     WS_DATA_DIFF,
     WS_DATA_TIMESTAMP,
     WS_DATA_VERSION,
-    WS_LAST_UPDATE,
+    WS_LAST_UPDATE, DATA_ROBOT_FAMILY,
 )
+from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
 
@@ -87,6 +88,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class AWSClient:
     _awsiot_client: mqtt.Connection | None
+    _robot_family: RobotFamily | None
 
     _topic_data: TopicData | None
     _status: ConnectivityStatus | None
@@ -97,6 +99,7 @@ class AWSClient:
             self._loop = asyncio.new_event_loop() if hass is None else hass.loop
             self._config_manager = config_manager
             self._awsiot_id = config_manager.entry_id
+            self._robot_family = None
 
             self._api_data = {}
             self._data = {}
@@ -280,6 +283,13 @@ class AWSClient:
     async def update_api_data(self, api_data: dict):
         self._api_data = api_data
 
+        if api_data is None:
+            self._robot_family = RobotFamily.ALL
+
+        else:
+            robot_family_str = api_data.get(DATA_ROBOT_FAMILY)
+            self._robot_family = RobotFamily.from_string(robot_family_str)
+
     async def update(self):
         if self._status == ConnectivityStatus.Connected:
             _LOGGER.debug("Connected. Refresh details")
@@ -419,7 +429,8 @@ class AWSClient:
                             self.data[category] = category_data
 
                 if topic == self._topic_data.get_accepted:
-                    self._read_temperature_and_in_water_details()
+                    if self._robot_family == RobotFamily.M700:
+                        self._read_temperature_and_in_water_details()
 
                 elif topic == self._topic_data.update_accepted:
                     desired = state.get(DATA_STATE_DESIRED)

@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
+from .robot_family import RobotFamily
 from ..managers.config_manager import ConfigManager
 from ..managers.coordinator import MyDolphinPlusCoordinator
 from .consts import DATA_ROBOT_FAMILY, DOMAIN
@@ -26,7 +27,9 @@ def async_setup_entities(
     try:
         coordinator = hass.data[DOMAIN][entry.entry_id]
 
-        robot_family = coordinator.api_data.get(DATA_ROBOT_FAMILY)
+        robot_family_str = coordinator.api_data.get(DATA_ROBOT_FAMILY)
+        robot_family = RobotFamily.from_string(robot_family_str)
+
         entity_descriptions = get_entity_descriptions(platform, robot_family)
 
         entities = [
