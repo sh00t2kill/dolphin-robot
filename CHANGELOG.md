@@ -3,6 +3,7 @@
 ## v1.0.14
 
 - Fix reset configuration on integration unload (HA restart)
+- Fix support for temperature sensor only for M700
 
 ## v1.0.13
 
