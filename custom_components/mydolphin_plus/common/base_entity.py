@@ -8,11 +8,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
-from .robot_family import RobotFamily
 from ..managers.config_manager import ConfigManager
 from ..managers.coordinator import MyDolphinPlusCoordinator
 from .consts import DATA_ROBOT_FAMILY, DOMAIN
 from .entity_descriptions import MyDolphinPlusEntityDescription, get_entity_descriptions
+from .robot_family import RobotFamily
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -35,6 +35,7 @@ from ..common.consts import (
     DATA_LED_ENABLE,
     DATA_LED_INTENSITY,
     DATA_LED_MODE,
+    DATA_ROBOT_FAMILY,
     DATA_ROOT_STATE,
     DATA_ROOT_TIMESTAMP,
     DATA_ROOT_VERSION,
@@ -77,7 +78,7 @@ from ..common.consts import (
     WS_DATA_DIFF,
     WS_DATA_TIMESTAMP,
     WS_DATA_VERSION,
-    WS_LAST_UPDATE, DATA_ROBOT_FAMILY,
+    WS_LAST_UPDATE,
 )
 from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
