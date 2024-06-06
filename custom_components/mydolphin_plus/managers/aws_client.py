@@ -9,6 +9,7 @@ import sys
 from time import sleep
 from typing import Any
 
+import aiofiles
 from awscrt import auth, mqtt
 from awsiot import mqtt_connection_builder
 
@@ -55,6 +56,7 @@ from ..common.consts import (
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
     DEFAULT_TIME_PART,
+    DOMAIN,
     DYNAMIC_CONTENT,
     DYNAMIC_CONTENT_DIRECTION,
     DYNAMIC_CONTENT_MOTOR_UNIT_SERIAL,
@@ -96,10 +98,14 @@ class AWSClient:
 
     def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
         try:
+            awsiot_id = (
+                DOMAIN if config_manager.entry_id is None else config_manager.entry_id
+            )
+
             self._hass = hass
             self._loop = asyncio.new_event_loop() if hass is None else hass.loop
             self._config_manager = config_manager
-            self._awsiot_id = config_manager.entry_id
+            self._awsiot_id = awsiot_id
             self._robot_family = None
 
             self._api_data = {}
@@ -195,19 +201,17 @@ class AWSClient:
 
             self._topic_data = TopicData(motor_unit_serial)
 
-            script_dir = os.path.dirname(__file__)
-            ca_file_path = os.path.join(script_dir, CA_FILE_NAME)
-
-            _LOGGER.debug(f"Loading CA file from {ca_file_path}")
             credentials_provider = auth.AwsCredentialsProvider.new_static(
                 aws_key, aws_secret, aws_token
             )
+
+            ca_content = await self._get_certificate()
 
             client = mqtt_connection_builder.websockets_with_default_aws_signing(
                 endpoint=AWS_IOT_URL,
                 port=AWS_IOT_PORT,
                 region=AWS_REGION,
-                ca_filepath=ca_file_path,
+                ca_bytes=ca_content,
                 credentials_provider=credentials_provider,
                 client_id=self._awsiot_id,
                 clean_session=False,
@@ -668,3 +672,16 @@ class AWSClient:
 
         else:
             dispatcher_send(self._hass, signal, *args)
+
+    @staticmethod
+    async def _get_certificate():
+        script_dir = os.path.dirname(__file__)
+        ca_file_path = os.path.join(script_dir, CA_FILE_NAME)
+
+        _LOGGER.debug(f"Loading CA file from {ca_file_path}")
+
+        ca_file = await aiofiles.open(ca_file_path, mode="rb")
+        ca_content = await ca_file.read()
+        await ca_file.close()
+
+        return ca_content
