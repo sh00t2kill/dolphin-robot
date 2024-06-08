@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.15
+
+**Re-release**
+
+- Fix reset configuration on integration unload (HA restart)
+- Fix support for temperature sensor only for M700
+- Fix "detected blocking call to open inside the event loop by custom integration" error
+
 ## v1.0.14
 
 - Fix reset configuration on integration unload (HA restart)
