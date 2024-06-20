@@ -236,10 +236,6 @@ class RestAPI:
         return result
 
     async def update(self):
-        if self._status == ConnectivityStatus.Failed:
-            _LOGGER.debug("Connection failed. Reinitialize")
-            await self.initialize(self.aws_token_encrypted_key)
-
         if self._status == ConnectivityStatus.Connected:
             _LOGGER.debug("Connected. Refresh details")
             await self._load_details()
