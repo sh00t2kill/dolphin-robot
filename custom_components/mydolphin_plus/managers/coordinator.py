@@ -1,3 +1,4 @@
+from asyncio import sleep
 from datetime import datetime, timedelta
 import logging
 import sys
@@ -28,6 +29,7 @@ from ..common.consts import (
     ACTION_ENTITY_TURN_OFF,
     ACTION_ENTITY_TURN_ON,
     API_DATA_SERIAL_NUMBER,
+    API_RECONNECT_INTERVAL,
     ATTR_ACTIONS,
     ATTR_ATTRIBUTES,
     ATTR_CALCULATED_STATUS,
@@ -312,13 +314,11 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
             await self._aws_client.initialize()
 
-        elif status == ConnectivityStatus.Failed:
-            await self._aws_client.terminate()
-
-            await self._api.initialize(self._config_manager.aws_token_encrypted_key)
-
-        elif status == ConnectivityStatus.InvalidCredentials:
-            self.update_interval = None
+        elif status in [
+            ConnectivityStatus.Failed,
+            ConnectivityStatus.InvalidCredentials,
+        ]:
+            await self._handle_connection_failure()
 
     async def _on_aws_client_status_changed(
         self, entry_id: str, status: ConnectivityStatus
@@ -330,9 +330,14 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             await self._aws_client.update()
 
         if status in [ConnectivityStatus.Failed, ConnectivityStatus.NotConnected]:
-            await self._aws_client.terminate()
+            await self._handle_connection_failure()
 
-            await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+    async def _handle_connection_failure(self):
+        await self._aws_client.terminate()
+
+        await sleep(API_RECONNECT_INTERVAL.total_seconds())
+
+        await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
     async def _async_update_data(self):
         """Fetch parameters from API endpoint.
