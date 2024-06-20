@@ -6,7 +6,7 @@ from typing import Any, Callable
 from voluptuous import MultipleInvalid
 
 from homeassistant.const import ATTR_ICON, ATTR_MODE, ATTR_STATE, CONF_STATE
-from homeassistant.core import Event
+from homeassistant.core import Event, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -160,20 +160,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._api = RestAPI(hass, config_manager)
         self._aws_client = AWSClient(hass, config_manager)
 
-        entry = config_manager.entry
-
-        entry.async_on_unload(
-            async_dispatcher_connect(
-                hass, SIGNAL_API_STATUS, self._on_api_status_changed
-            )
-        )
-
-        entry.async_on_unload(
-            async_dispatcher_connect(
-                hass, SIGNAL_AWS_CLIENT_STATUS, self._on_aws_client_status_changed
-            )
-        )
-
         self._config_manager = config_manager
 
         self._data_mapping = None
@@ -185,6 +171,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             SERVICE_NAVIGATE: self._service_navigate,
             SERVICE_EXIT_NAVIGATION: self._service_exit_navigation,
         }
+
+        self._load_signal_handlers()
 
     @property
     def robot_name(self):
@@ -238,6 +226,31 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             )
 
         await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+
+    def _load_signal_handlers(self):
+        loop = self.hass.loop
+
+        @callback
+        def on_api_status_changed(entry_id: str, status: ConnectivityStatus):
+            loop.create_task(self._on_api_status_changed(entry_id, status)).__await__()
+
+        @callback
+        def on_aws_client_status_changed(entry_id: str, status: ConnectivityStatus):
+            loop.create_task(
+                self._on_aws_client_status_changed(entry_id, status)
+            ).__await__()
+
+        self.config_entry.async_on_unload(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_API_STATUS, on_api_status_changed
+            )
+        )
+
+        self.config_entry.async_on_unload(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_AWS_CLIENT_STATUS, on_aws_client_status_changed
+            )
+        )
 
     def get_device_serial_number(self) -> str:
         serial_number = self.api_data.get(API_DATA_SERIAL_NUMBER)
