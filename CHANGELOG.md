@@ -3,6 +3,7 @@
 ## v1.0.15
 
 - Remove startup blocking call
+- Improve reconnect process (cool-down between attempts)
 
 ## v1.0.14
 
