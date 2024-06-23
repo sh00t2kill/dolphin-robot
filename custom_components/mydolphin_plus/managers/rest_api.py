@@ -188,6 +188,9 @@ class RestAPI:
             elif crex.status in [404, 405]:
                 self._set_status(ConnectivityStatus.NotFound)
 
+        except TimeoutError:
+            _LOGGER.error(f"Failed to post JSON to {url} due to timeout")
+
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
@@ -398,7 +401,6 @@ class RestAPI:
 
     async def _load_details(self):
         if self._status != ConnectivityStatus.Connected:
-            self._set_status(ConnectivityStatus.Failed)
             return
 
         try:

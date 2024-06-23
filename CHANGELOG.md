@@ -4,6 +4,8 @@
 
 - Remove startup blocking call
 - Improve reconnect process (cool-down between attempts)
+- Handle timeouts as managed failure instead of general failure
+- Ignore update request when the connection is not established
 
 ## v1.0.14
 
