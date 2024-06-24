@@ -653,7 +653,7 @@ class AWSClient:
             if not should_perform_action:
                 log_message = f"{log_message}, no action will be performed"
 
-            if message is None:
+            if message is not None:
                 log_message = f"{log_message}, {message}"
 
             _LOGGER.log(log_level, log_message)

@@ -465,7 +465,7 @@ class RestAPI:
         if status != self._status:
             log_message = f"Status update {self._status} --> {status}"
 
-            if message is None:
+            if message is not None:
                 log_message = f"{log_message}, {message}"
 
             _LOGGER.log(log_level, log_message)
