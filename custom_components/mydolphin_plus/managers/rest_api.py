@@ -184,6 +184,9 @@ class RestAPI:
         except TimeoutError:
             self._handle_server_timeout(url, METH_POST)
 
+        except TimeoutError:
+            _LOGGER.error(f"Failed to post JSON to {url} due to timeout")
+
         except Exception as ex:
             self._handle_general_request_failure(url, METH_POST, ex)
 
