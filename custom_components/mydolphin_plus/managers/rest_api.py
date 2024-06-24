@@ -8,6 +8,7 @@ import sys
 from typing import Any
 
 from aiohttp import ClientResponseError, ClientSession
+from aiohttp.hdrs import METH_GET, METH_POST
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -136,7 +137,7 @@ class RestAPI:
         if self._session is not None:
             await self._session.close()
 
-            self._set_status(ConnectivityStatus.Disconnected)
+            self._set_status(ConnectivityStatus.Disconnected, "terminate requested")
 
     async def _initialize_session(self):
         try:
@@ -150,11 +151,11 @@ class RestAPI:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.warning(
+            message = (
                 f"Failed to initialize session, Error: {str(ex)}, Line: {line_number}"
             )
 
-            self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed, message)
 
     async def validate(self):
         await self._initialize_session()
@@ -178,28 +179,13 @@ class RestAPI:
                 )
 
         except ClientResponseError as crex:
-            _LOGGER.error(
-                f"Failed to post JSON to {url}, HTTP Status: {crex.message} ({crex.status})"
-            )
-
-            if crex.status in [401, 403]:
-                self._set_status(ConnectivityStatus.Failed)
-
-            elif crex.status in [404, 405]:
-                self._set_status(ConnectivityStatus.NotFound)
+            self._handle_client_error(url, METH_POST, crex)
 
         except TimeoutError:
-            _LOGGER.error(f"Failed to post JSON to {url} due to timeout")
+            self._handle_server_timeout(url, METH_POST)
 
         except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to post JSON to {url}, Error: {ex}, Line: {line_number}"
-            )
-
-            self._set_status(ConnectivityStatus.Failed)
+            self._handle_general_request_failure(url, METH_POST, ex)
 
         return result
 
@@ -219,22 +205,13 @@ class RestAPI:
                 )
 
         except ClientResponseError as crex:
-            _LOGGER.error(
-                f"Failed to get data from {url}, HTTP Status: {crex.message} ({crex.status})"
-            )
+            self._handle_client_error(url, METH_GET, crex)
 
-            if crex.status in [404, 405]:
-                self._set_status(ConnectivityStatus.NotFound)
+        except TimeoutError:
+            self._handle_server_timeout(url, METH_GET)
 
         except Exception as ex:
-            exc_type, exc_obj, tb = sys.exc_info()
-            line_number = tb.tb_lineno
-
-            _LOGGER.error(
-                f"Failed to get data from {url}, Error: {ex}, Line: {line_number}"
-            )
-
-            self._set_status(ConnectivityStatus.Failed)
+            self._handle_general_request_failure(url, METH_GET, ex)
 
         return result
 
@@ -262,7 +239,7 @@ class RestAPI:
             return
 
         else:
-            self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed, "general failure of login")
 
     async def _service_login(self):
         try:
@@ -276,31 +253,35 @@ class RestAPI:
             payload = await self._async_post(LOGIN_URL, LOGIN_HEADERS, request_data)
 
             if payload is None:
-                payload = {}
-
-            data = payload.get(API_RESPONSE_DATA, {})
-            if data:
-                _LOGGER.info(f"Logged in to user {username}")
-
-                motor_unit_serial = data.get(API_REQUEST_SERIAL_NUMBER)
-                token = data.get(API_REQUEST_HEADER_TOKEN)
-
-                self.data[API_DATA_SERIAL_NUMBER] = motor_unit_serial
-                self.data[API_DATA_LOGIN_TOKEN] = token
-
-                await self._set_actual_motor_unit_serial()
+                self._set_status(ConnectivityStatus.Failed, "empty response of login")
 
             else:
-                self._set_status(ConnectivityStatus.InvalidCredentials)
+                data = payload.get(API_RESPONSE_DATA)
+
+                if data is None:
+                    self._set_status(
+                        ConnectivityStatus.InvalidCredentials,
+                        "empty response payload of login",
+                    )
+
+                else:
+                    _LOGGER.info(f"Logged in to user {username}")
+
+                    motor_unit_serial = data.get(API_REQUEST_SERIAL_NUMBER)
+                    token = data.get(API_REQUEST_HEADER_TOKEN)
+
+                    self.data[API_DATA_SERIAL_NUMBER] = motor_unit_serial
+                    self.data[API_DATA_LOGIN_TOKEN] = token
+
+                    await self._set_actual_motor_unit_serial()
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(
-                f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
-            )
-            self._set_status(ConnectivityStatus.Failed)
+            message = f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
+
+            self._set_status(ConnectivityStatus.Failed, message)
 
     async def _set_actual_motor_unit_serial(self):
         try:
@@ -323,24 +304,21 @@ class RestAPI:
             data: dict = payload.get(API_RESPONSE_DATA, {})
 
             if data is not None:
-                _LOGGER.info(
-                    f"Successfully retrieved details for device {serial_serial}"
-                )
+                message = f"Successfully retrieved details for device {serial_serial}"
 
                 self.data[API_DATA_MOTOR_UNIT_SERIAL] = data.get(
                     API_RESPONSE_UNIT_SERIAL_NUMBER
                 )
 
-                self._set_status(ConnectivityStatus.TemporaryConnected)
+                self._set_status(ConnectivityStatus.TemporaryConnected, message)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(
-                f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
-            )
-            self._set_status(ConnectivityStatus.Failed)
+            message = f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
+
+            self._set_status(ConnectivityStatus.Failed, message)
 
     async def _generate_token(self):
         try:
@@ -382,11 +360,9 @@ class RestAPI:
                     self.data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = None
 
                     if get_token_attempts + 1 >= MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
-                        _LOGGER.error(
-                            f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}"
-                        )
+                        message = f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}"
 
-                        self._set_status(ConnectivityStatus.Failed)
+                        self._set_status(ConnectivityStatus.Failed, message)
 
                 get_token_attempts += 1
 
@@ -394,10 +370,9 @@ class RestAPI:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(
-                f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}"
-            )
-            self._set_status(ConnectivityStatus.Failed)
+            message = f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}"
+
+            self._set_status(ConnectivityStatus.Failed, message)
 
     async def _load_details(self):
         if self._status != ConnectivityStatus.Connected:
@@ -484,20 +459,71 @@ class RestAPI:
 
         return encryption_key
 
-    def _set_status(self, status: ConnectivityStatus):
-        if status != self._status:
-            log_level = ConnectivityStatus.get_log_level(status)
+    def _set_status(self, status: ConnectivityStatus, message: str | None = None):
+        log_level = ConnectivityStatus.get_log_level(status)
 
-            _LOGGER.log(
-                log_level,
-                f"Status changed from '{self._status}' to '{status}'",
-            )
+        if status != self._status:
+            log_message = f"Status update {self._status} --> {status}"
+
+            if message is None:
+                log_message = f"{log_message}, {message}"
+
+            _LOGGER.log(log_level, log_message)
 
             self._status = status
 
             self._async_dispatcher_send(
                 SIGNAL_API_STATUS, self._config_manager.entry_id, status
             )
+
+        else:
+            log_message = f"Status is {status}"
+
+            if message is None:
+                log_message = f"{log_message}, {message}"
+
+            _LOGGER.log(log_level, log_message)
+
+    def _handle_client_error(
+        self, endpoint: str, method: str, crex: ClientResponseError
+    ):
+        message = (
+            "Failed to send HTTP request, "
+            f"Endpoint: {endpoint}, "
+            f"Method: {method}, "
+            f"HTTP Status: {crex.message} ({crex.status})"
+        )
+
+        if crex.status in [404, 405]:
+            self._set_status(ConnectivityStatus.NotFound, message)
+
+        else:
+            self._set_status(ConnectivityStatus.Failed, message)
+
+    def _handle_server_timeout(self, endpoint: str, method: str):
+        message = (
+            "Failed to send HTTP request due to timeout, "
+            f"Endpoint: {endpoint}, "
+            f"Method: {method}"
+        )
+
+        self._set_status(ConnectivityStatus.Failed, message)
+
+    def _handle_general_request_failure(
+        self, endpoint: str, method: str, ex: Exception
+    ):
+        exc_type, exc_obj, tb = sys.exc_info()
+        line_number = tb.tb_lineno
+
+        message = (
+            "Failed to send HTTP request, "
+            f"Endpoint: {endpoint}, "
+            f"Method: {method}, "
+            f"Error: {ex}, "
+            f"Line: {line_number}"
+        )
+
+        self._set_status(ConnectivityStatus.Failed, message)
 
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback

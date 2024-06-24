@@ -6,6 +6,7 @@
 - Improve reconnect process (cool-down between attempts)
 - Handle timeouts as managed failure instead of general failure
 - Ignore update request when the connection is not established
+- Improved log messages of status changes
 
 ## v1.0.14
 
