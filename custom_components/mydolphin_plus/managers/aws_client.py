@@ -180,14 +180,13 @@ class AWSClient:
 
             self._awsiot_client = None
 
-        self._set_status(ConnectivityStatus.Disconnected)
-        _LOGGER.debug("AWS Client is disconnected")
+        self._set_status(ConnectivityStatus.Disconnected, "terminate requested")
 
     async def initialize(self):
         try:
-            _LOGGER.info("Initializing MyDolphin AWS IOT WS")
-
-            self._set_status(ConnectivityStatus.Connecting)
+            self._set_status(
+                ConnectivityStatus.Connecting, "Initializing MyDolphin AWS IOT WS"
+            )
 
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
             aws_key = self._api_data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
@@ -246,11 +245,9 @@ class AWSClient:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(
-                f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
-            )
+            message = f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
 
-            self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed, message)
 
     def _subscribe(self):
         _LOGGER.debug(f"Subscribing topics: {self._topic_data.subscribe}")
@@ -333,23 +330,26 @@ class AWSClient:
         if connection is not None and isinstance(
             callback_data, mqtt.OnConnectionFailureData
         ):
-            _LOGGER.error(f"AWS IoT connection failed, Error: {callback_data.error}")
+            message = f"AWS IoT connection failed, Error: {callback_data.error}"
 
-            self._set_status(ConnectivityStatus.Failed)
+            self._set_status(ConnectivityStatus.Failed, message)
 
     def _on_connection_closed(self, connection, callback_data):
         if connection is not None and isinstance(
             callback_data, mqtt.OnConnectionClosedData
         ):
-            _LOGGER.debug("AWS IoT connection was closed")
+            message = "AWS IoT connection was closed"
 
-            self._set_status(ConnectivityStatus.Disconnected)
+            self._set_status(ConnectivityStatus.Disconnected, message)
 
     def _on_connection_interrupted(self, connection, error, **_kwargs):
-        _LOGGER.error(f"AWS IoT connection interrupted, Error: {error}")
+        message = f"AWS IoT connection interrupted, Error: {error}"
 
-        if connection is not None:
-            self._set_status(ConnectivityStatus.Failed)
+        if connection is None:
+            _LOGGER.error(message)
+
+        else:
+            self._set_status(ConnectivityStatus.Failed, message)
 
     def _on_connection_resumed(
         self, connection, return_code, session_present, **_kwargs
@@ -641,27 +641,39 @@ class AWSClient:
 
         return data
 
-    def _set_status(self, status: ConnectivityStatus):
+    def _set_status(self, status: ConnectivityStatus, message: str | None = None):
+        log_level = ConnectivityStatus.get_log_level(status)
+
         if status != self._status:
             ignored_transitions = IGNORED_TRANSITIONS.get(self._status, [])
+            should_perform_action = status not in ignored_transitions
 
-            if status in ignored_transitions:
-                return
+            log_message = f"Status update {self._status} --> {status}"
 
-            log_level = ConnectivityStatus.get_log_level(status)
+            if not should_perform_action:
+                log_message = f"{log_message}, no action will be performed"
 
-            _LOGGER.log(
-                log_level,
-                f"Status changed from '{self._status}' to '{status}'",
-            )
+            if message is not None:
+                log_message = f"{log_message}, {message}"
 
-            self._status = status
+            _LOGGER.log(log_level, log_message)
 
-            self._async_dispatcher_send(
-                SIGNAL_AWS_CLIENT_STATUS,
-                self._config_manager.entry_id,
-                status,
-            )
+            if should_perform_action:
+                self._status = status
+
+                self._async_dispatcher_send(
+                    SIGNAL_AWS_CLIENT_STATUS,
+                    self._config_manager.entry_id,
+                    status,
+                )
+
+        else:
+            log_message = f"Status is {status}"
+
+            if message is None:
+                log_message = f"{log_message}, {message}"
+
+            _LOGGER.log(log_level, log_message)
 
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback
