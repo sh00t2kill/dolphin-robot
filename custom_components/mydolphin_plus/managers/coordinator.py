@@ -895,7 +895,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             DATA_SYSTEM_STATE_TIME_ZONE_NAME, DEFAULT_TIME_ZONE_NAME
         )
 
-        calculated_state = PWS_STATE_OFF
+        calculated_state = ROBOT_STATE_IDLE
 
         pws_on = pws_state.lower() in [
             PWS_STATE_ON,

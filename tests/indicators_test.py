@@ -9,6 +9,7 @@ from custom_components.mydolphin_plus.common.consts import (
     PWS_STATE_PROGRAMMING,
     ROBOT_STATE_FAULT,
     ROBOT_STATE_FINISHED,
+    ROBOT_STATE_IDLE,
     ROBOT_STATE_INIT,
     ROBOT_STATE_NOT_CONNECTED,
     ROBOT_STATE_PROGRAMMING,
@@ -149,7 +150,7 @@ def indicator6(
 
 def run(pws_state: str, robot_state: str):
     """Simulate calculation."""
-    calculated_status = PWS_STATE_OFF
+    calculated_status = ROBOT_STATE_IDLE
 
     pws_on = pws_state in [
         PWS_STATE_ON,
@@ -163,6 +164,7 @@ def run(pws_state: str, robot_state: str):
 
     robot_error = robot_state in [ROBOT_STATE_FAULT, ROBOT_STATE_NOT_CONNECTED]
     robot_cleaning = robot_state not in [
+        ROBOT_STATE_IDLE,
         ROBOT_STATE_INIT,
         ROBOT_STATE_SCANNING,
         ROBOT_STATE_NOT_CONNECTED,
@@ -186,13 +188,13 @@ def run(pws_state: str, robot_state: str):
 
     capabilities = []
 
-    if calculated_status in [PWS_STATE_OFF, PWS_STATE_ERROR]:
+    if calculated_status in [PWS_STATE_OFF, PWS_STATE_ERROR, ROBOT_STATE_IDLE]:
         capabilities.append("Turn On")
 
     if calculated_status in [PWS_STATE_ON, PWS_STATE_CLEANING, PWS_STATE_PROGRAMMING]:
         capabilities.append("Turn Off")
 
-    if calculated_status in [PWS_STATE_ON]:
+    if calculated_status in [PWS_STATE_ON, ROBOT_STATE_IDLE]:
         capabilities.append("Start")
 
     if calculated_status in [PWS_STATE_CLEANING]:
@@ -225,12 +227,12 @@ print(
     f"| {''.ljust(16, '-')} |"
 )
 
-run(PWS_STATE_OFF, ROBOT_STATE_NOT_CONNECTED)
-run(PWS_STATE_OFF, ROBOT_STATE_FAULT)
-run(PWS_STATE_OFF, PWS_STATE_PROGRAMMING)
-run(PWS_STATE_OFF, ROBOT_STATE_FINISHED)
-run(PWS_STATE_OFF, ROBOT_STATE_INIT)
-run(PWS_STATE_OFF, ROBOT_STATE_SCANNING)
+run(ROBOT_STATE_IDLE, ROBOT_STATE_NOT_CONNECTED)
+run(ROBOT_STATE_IDLE, ROBOT_STATE_FAULT)
+run(ROBOT_STATE_IDLE, PWS_STATE_PROGRAMMING)
+run(ROBOT_STATE_IDLE, ROBOT_STATE_FINISHED)
+run(ROBOT_STATE_IDLE, ROBOT_STATE_INIT)
+run(ROBOT_STATE_IDLE, ROBOT_STATE_SCANNING)
 
 run(PWS_STATE_ON, ROBOT_STATE_NOT_CONNECTED)
 run(PWS_STATE_ON, ROBOT_STATE_FAULT)
