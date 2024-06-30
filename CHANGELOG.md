@@ -1,7 +1,8 @@
 # Changelog
+
 ## v1.0.16
 
- - Change "off" state to "idle" as vacuum entities cannot be turned on. Note: if you use "off" in an automation, this will need to be changed to "idle"
+- Change "off" state to "idle" as vacuum entities cannot be turned on
 
 ## v1.0.15
 
