@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.16
+
+- Change "off" state to "idle" as vacuum entities cannot be turned on
+
 ## v1.0.15
 
 - Remove startup blocking call

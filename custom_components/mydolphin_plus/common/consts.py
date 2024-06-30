@@ -297,6 +297,7 @@ ROBOT_STATE_NOT_CONNECTED = "notConnected"
 ROBOT_STATE_PROGRAMMING = "programming"
 ROBOT_STATE_INIT = "init"
 ROBOT_STATE_SCANNING = "scanning"
+ROBOT_STATE_IDLE = "idle"
 
 CONSIDERED_POWER_STATE = {
     PWS_STATE_OFF: False,
@@ -305,6 +306,7 @@ CONSIDERED_POWER_STATE = {
     PWS_STATE_CLEANING: True,
     PWS_STATE_PROGRAMMING: True,
     ROBOT_STATE_INIT: True,
+    ROBOT_STATE_IDLE: True,
 }
 
 FILTER_BAG_STATUS = {
@@ -337,8 +339,6 @@ VACUUM_FEATURES = (
     | VacuumEntityFeature.START
     | VacuumEntityFeature.STOP
     | VacuumEntityFeature.PAUSE
-    | VacuumEntityFeature.TURN_ON
-    | VacuumEntityFeature.TURN_OFF
     | VacuumEntityFeature.LOCATE
 )
 
