@@ -118,6 +118,7 @@ from ..common.consts import (
     PWS_STATE_ON,
     PWS_STATE_PROGRAMMING,
     ROBOT_STATE_FAULT,
+    ROBOT_STATE_IDLE,
     ROBOT_STATE_INIT,
     ROBOT_STATE_NOT_CONNECTED,
     ROBOT_STATE_SCANNING,
@@ -530,8 +531,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ATTR_STATE: state,
             ATTR_ATTRIBUTES: {ATTR_MODE: mode},
             ATTR_ACTIONS: {
-                ACTION_ENTITY_TURN_ON: self._vacuum_turn_on,
-                ACTION_ENTITY_TURN_OFF: self._vacuum_turn_off,
                 ACTION_ENTITY_TOGGLE: self._vacuum_toggle,
                 ACTION_ENTITY_START: self._vacuum_start,
                 ACTION_ENTITY_STOP: self._vacuum_stop,
@@ -896,7 +895,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             DATA_SYSTEM_STATE_TIME_ZONE_NAME, DEFAULT_TIME_ZONE_NAME
         )
 
-        calculated_state = PWS_STATE_OFF
+        calculated_state = ROBOT_STATE_IDLE
 
         pws_on = pws_state.lower() in [
             PWS_STATE_ON,
@@ -930,7 +929,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 )
 
             else:
-                calculated_state = PWS_STATE_OFF
+                calculated_state = ROBOT_STATE_IDLE
 
         result = {
             ATTR_CALCULATED_STATUS: calculated_state,
