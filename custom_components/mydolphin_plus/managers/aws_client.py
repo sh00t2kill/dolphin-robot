@@ -179,12 +179,12 @@ class AWSClient:
 
             self._awsiot_client = None
 
-        self._set_status(ConnectivityStatus.Disconnected, "terminate requested")
+        self._set_status(ConnectivityStatus.DISCONNECTED, "terminate requested")
 
     async def initialize(self):
         try:
             self._set_status(
-                ConnectivityStatus.Connecting, "Initializing MyDolphin AWS IOT WS"
+                ConnectivityStatus.CONNECTING, "Initializing MyDolphin AWS IOT WS"
             )
 
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
@@ -220,7 +220,7 @@ class AWSClient:
 
             message = f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     def _get_client(self, aws_key, aws_secret, aws_token, ca_content):
         credentials_provider = auth.AwsCredentialsProvider.new_static(
@@ -299,7 +299,7 @@ class AWSClient:
             self._robot_family = RobotFamily.from_string(robot_family_str)
 
     async def update(self):
-        if self._status == ConnectivityStatus.Connected:
+        if self._status == ConnectivityStatus.CONNECTED:
             _LOGGER.debug("Connected. Refresh details")
             await self._refresh_details()
 
@@ -330,7 +330,7 @@ class AWSClient:
 
             self._subscribe()
 
-            self._set_status(ConnectivityStatus.Connected)
+            self._set_status(ConnectivityStatus.CONNECTED)
 
     def _on_connection_failure(self, connection, callback_data):
         if connection is not None and isinstance(
@@ -338,7 +338,7 @@ class AWSClient:
         ):
             message = f"AWS IoT connection failed, Error: {callback_data.error}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     def _on_connection_closed(self, connection, callback_data):
         if connection is not None and isinstance(
@@ -346,7 +346,7 @@ class AWSClient:
         ):
             message = "AWS IoT connection was closed"
 
-            self._set_status(ConnectivityStatus.Disconnected, message)
+            self._set_status(ConnectivityStatus.DISCONNECTED, message)
 
     def _on_connection_interrupted(self, connection, error, **_kwargs):
         message = f"AWS IoT connection interrupted, Error: {error}"
@@ -355,7 +355,7 @@ class AWSClient:
             _LOGGER.error(message)
 
         else:
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     def _on_connection_resumed(
         self, connection, return_code, session_present, **_kwargs
@@ -372,7 +372,7 @@ class AWSClient:
 
             resubscribe_future.add_done_callback(self._on_resubscribe_complete)
 
-        self._set_status(ConnectivityStatus.Connected)
+        self._set_status(ConnectivityStatus.CONNECTED)
 
     @staticmethod
     def _on_resubscribe_complete(resubscribe_future):
@@ -481,7 +481,7 @@ class AWSClient:
 
         payload = json.dumps(data)
 
-        if self._status == ConnectivityStatus.Connected:
+        if self._status == ConnectivityStatus.CONNECTED:
             try:
                 if self._awsiot_client is not None:
                     publish_future, packet_id = self._awsiot_client.publish(

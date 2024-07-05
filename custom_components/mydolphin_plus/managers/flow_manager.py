@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowHandler
 
 from ..common.connectivity_status import ConnectivityStatus
-from ..common.consts import CONF_TITLE, DEFAULT_NAME
+from ..common.consts import CONF_RESET_PASSWORD, CONF_TITLE, DEFAULT_NAME
 from ..models.config_data import DATA_KEYS, ConfigData
 from ..models.exceptions import LoginError
 from .config_manager import ConfigManager
@@ -62,36 +62,48 @@ class IntegrationFlowManager:
                 )
 
         else:
+            error_key: str | None = None
+
             try:
                 await self._config_manager.initialize(user_input)
 
                 api = RestAPI(self._hass, self._config_manager)
 
-                await api.validate()
+                reset_password_flow = user_input.get(CONF_RESET_PASSWORD, False)
 
-                if api.status == ConnectivityStatus.TemporaryConnected:
-                    _LOGGER.debug("User inputs are valid")
-
-                    if self._entry is None:
-                        data = copy(user_input)
-
-                    else:
-                        data = await self.remap_entry_data(user_input)
-
-                    await PasswordManager.encrypt(self._hass, data)
-
-                    title = data.get(CONF_TITLE, DEFAULT_NAME)
-
-                    if CONF_TITLE in data:
-                        data.pop(CONF_TITLE)
-
-                    return self._flow_handler.async_create_entry(title=title, data=data)
+                if reset_password_flow:
+                    await api.reset_password()
+                    user_input = {}
 
                 else:
-                    error_key = ConnectivityStatus.get_ha_error(api.status)
+                    await api.validate()
+
+                    if api.status == ConnectivityStatus.TEMPORARY_CONNECTED:
+                        _LOGGER.debug("User inputs are valid")
+
+                        if self._entry is None:
+                            data = copy(user_input)
+
+                        else:
+                            data = await self.remap_entry_data(user_input)
+
+                        await PasswordManager.encrypt(self._hass, data)
+
+                        title = data.get(CONF_TITLE, DEFAULT_NAME)
+
+                        new_user_data = {
+                            key: data[key] for key in data if key in DATA_KEYS
+                        }
+
+                        return self._flow_handler.async_create_entry(
+                            title=title, data=new_user_data
+                        )
+
+                    else:
+                        error_key = ConnectivityStatus.get_ha_error(api.status)
 
             except LoginError:
-                error_key = "invalid_admin_credentials"
+                error_key = "invalid_credentials"
 
             except InvalidToken:
                 error_key = "corrupted_encryption_key"
@@ -108,23 +120,23 @@ class IntegrationFlowManager:
         )
 
     async def remap_entry_data(self, options: dict[str, Any]) -> dict[str, Any]:
-        config_options = {}
-        config_data = {}
-
         entry = self._entry
         entry_data = entry.data
 
-        title = DEFAULT_NAME
+        title = options.get(CONF_TITLE, DEFAULT_NAME)
 
-        for key in options:
-            if key in DATA_KEYS:
-                config_data[key] = options.get(key, entry_data.get(key))
+        config_data = {
+            key: options.get(key, entry_data.get(key))
+            for key in options
+            if key in DATA_KEYS
+        }
 
-            elif key == CONF_TITLE:
-                title = options.get(key, DEFAULT_NAME)
+        options_excluded_keys = [CONF_TITLE, CONF_RESET_PASSWORD]
+        options_excluded_keys.extend(DATA_KEYS)
 
-            else:
-                config_options[key] = options.get(key)
+        config_options = {
+            key: options[key] for key in options if key not in options_excluded_keys
+        }
 
         await PasswordManager.encrypt(self._hass, config_data)
 
