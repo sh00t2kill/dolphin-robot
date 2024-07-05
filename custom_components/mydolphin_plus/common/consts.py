@@ -6,7 +6,6 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 MANUFACTURER = "Maytronics"
 DEFAULT_NAME = "MyDolphin Plus"
 DOMAIN = "mydolphin_plus"
-DATA = f"{DOMAIN}_DATA"
 LEGACY_KEY_FILE = f"{DOMAIN}.key"
 CONFIGURATION_FILE = f"{DOMAIN}.config.json"
 
@@ -29,37 +28,25 @@ PLATFORMS = [
     Platform.NUMBER,
 ]
 
-ATTR_EVENT = "Error"
 ATTR_IS_ON = "is_on"
-ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_START_TIME = "start_time"
 ATTR_STATUS = "status"
 ATTR_RESET_FBI = "reset_fbi"
-ATTR_RSSI = "RSSI"
-ATTR_NETWORK_NAME = "network_name"
-ATTR_INTENSITY = "intensity"
 ATTR_EXPECTED_END_TIME = "expected_end_time"
-ATTR_BATTERY_LEVEL = "battery_level"
 
-ATTR_AWS_IOT_BROKER_STATUS = "aws_iot_broker_status"
-
-ATTR_CALCULATED_STATUS = "calculated_status"
-ATTR_PWS_STATUS = "pws_status"
-ATTR_ROBOT_STATUS = "robot_status"
-ATTR_ROBOT_TYPE = "robot_type"
-ATTR_IS_BUSY = "busy"
-ATTR_TURN_ON_COUNT = "turn_on_count"
-ATTR_TIME_ZONE = "time_zone"
-
-ATTR_ENABLE = "enable"
-ATTR_DISABLED = "disabled"
+ATTR_CALCULATED_STATUS = "Calculated State"
+ATTR_POWER_SUPPLY_STATE = "Power Supply State"
+ATTR_ROBOT_STATE = "Robot State"
+ATTR_ROBOT_TYPE = "Robot Type"
+ATTR_IS_BUSY = "Busy"
+ATTR_TURN_ON_COUNT = "Turn On Count"
+ATTR_TIME_ZONE = "Time Zone"
 
 DYNAMIC_TYPE = "type"
 DYNAMIC_DESCRIPTION = "description"
 DYNAMIC_DESCRIPTION_JOYSTICK = "joystick"
 DYNAMIC_DESCRIPTION_TEMPERATURE = "temperature"
 DYNAMIC_TYPE_PWS_REQUEST = "pwsRequest"
-DYNAMIC_TYPE_PWS_RESPONSE = "pwsResponse"
 DYNAMIC_TYPE_IOT_RESPONSE = "iotResponse"
 DYNAMIC_CONTENT = "content"
 DYNAMIC_CONTENT_SERIAL_NUMBER = "robotSerial"
@@ -84,9 +71,6 @@ DATA_SECTION_DEBUG = "debug"
 DATA_SECTION_WIFI = "wifi"
 DATA_SECTION_CYCLE_INFO = "cycleInfo"
 DATA_SECTION_FILTER_BAG_INDICATION = "filterBagIndication"
-DATA_SECTION_WEEKLY_SETTINGS = "weeklySettings"
-DATA_SECTION_DELAY = "delay"
-DATA_SECTION_FEATURE = "featureEn"
 DATA_SECTION_SYSTEM_STATE = "systemState"
 DATA_SECTION_ROBOT_ERROR = "robotError"
 DATA_SECTION_PWS_ERROR = "pwsError"
@@ -102,14 +86,11 @@ DATA_SYSTEM_STATE_TURN_ON_COUNT = "rTurnOnCount"
 DATA_SYSTEM_STATE_TIME_ZONE = "timeZone"
 DATA_SYSTEM_STATE_TIME_ZONE_NAME = "timeZoneName"
 
-DATA_FEATURE_WEEKLY_TIMER = "weeklyTimer"
-
 DATA_SCHEDULE_IS_ENABLED = "isEnabled"
 DATA_SCHEDULE_CLEANING_MODE = "cleaningMode"
 DATA_SCHEDULE_TIME = "time"
 DATA_SCHEDULE_TIME_HOURS = "hours"
 DATA_SCHEDULE_TIME_MINUTES = "minutes"
-DATA_SCHEDULE_TRIGGERED_BY = "triggeredBy"
 
 DATA_FILTER_BAG_INDICATION_RESET_FBI = "resetFBI"
 DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND = "resetFbi"
@@ -131,11 +112,9 @@ DEFAULT_LED_INTENSITY = 80
 DEFAULT_ENABLE = False
 DEFAULT_TIME_ZONE_NAME = "UTC"
 DEFAULT_TIME_PART = 255
-DEFAULT_BATTERY_LEVEL = "NA"
 
 UPDATE_API_INTERVAL = timedelta(seconds=60)
 UPDATE_ENTITIES_INTERVAL = timedelta(seconds=5)
-LOCATE_OFF_INTERVAL_SECONDS = timedelta(seconds=10)
 API_RECONNECT_INTERVAL = timedelta(seconds=30)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
@@ -177,9 +156,6 @@ API_TOKEN_FIELDS = [
 
 BLOCK_SIZE = 16
 
-MQTT_QOS_0 = 0
-MQTT_QOS_1 = 1
-
 MQTT_MESSAGE_ENCODING = "utf-8"
 
 AWS_REGION = "eu-west-1"
@@ -220,7 +196,6 @@ DATA_ROBOT_DETAILS = {
 }
 
 ATTR_ERROR_DESCRIPTIONS = "Description"
-ATTR_LED_MODE = "led_mode"
 ATTR_ATTRIBUTES = "attributes"
 ATTR_ACTIONS = "actions"
 ATTR_INSTRUCTIONS = "instructions"
@@ -256,56 +231,21 @@ JOYSTICK_DIRECTIONS = [
     JOYSTICK_LEFT,
 ]
 
-CLOCK_HOURS_ICONS = {
-    0: "mdi:clock-time-twelve",
-    1: "mdi:clock-time-one",
-    2: "mdi:clock-time-two",
-    3: "mdi:clock-time-three",
-    4: "mdi:clock-time-four",
-    5: "mdi:clock-time-five",
-    6: "mdi:clock-time-six",
-    7: "mdi:clock-time-seven",
-    8: "mdi:clock-time-eight",
-    9: "mdi:clock-time-nine",
-    10: "mdi:clock-time-ten",
-    11: "mdi:clock-time-eleven",
-    12: "mdi:clock-time-twelve",
-    13: "mdi:clock-time-one",
-    14: "mdi:clock-time-two",
-    15: "mdi:clock-time-three",
-    16: "mdi:clock-time-four",
-    17: "mdi:clock-time-five",
-    18: "mdi:clock-time-six",
-    19: "mdi:clock-time-seven",
-    20: "mdi:clock-time-eight",
-    21: "mdi:clock-time-nine",
-    22: "mdi:clock-time-ten",
-    23: "mdi:clock-time-eleven",
-}
-
-PWS_STATE_ON = "on"
-PWS_STATE_OFF = "off"
-PWS_STATE_HOLD_DELAY = "holddelay"
-PWS_STATE_HOLD_WEEKLY = "holdweekly"
-PWS_STATE_PROGRAMMING = "programming"
-PWS_STATE_ERROR = "error"
-PWS_STATE_CLEANING = "cleaning"
-
-ROBOT_STATE_FINISHED = "finished"
-ROBOT_STATE_FAULT = "fault"
-ROBOT_STATE_NOT_CONNECTED = "notConnected"
-ROBOT_STATE_PROGRAMMING = "programming"
-ROBOT_STATE_INIT = "init"
-ROBOT_STATE_SCANNING = "scanning"
-
-CONSIDERED_POWER_STATE = {
-    PWS_STATE_OFF: False,
-    PWS_STATE_ERROR: False,
-    PWS_STATE_ON: True,
-    PWS_STATE_CLEANING: True,
-    PWS_STATE_PROGRAMMING: True,
-    ROBOT_STATE_INIT: True,
-}
+CLOCK_HOURS_ICON = "mdi:clock-time-"
+CLOCK_HOURS_TEXT = [
+    "twelve",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+]
 
 FILTER_BAG_STATUS = {
     "unknown": (-1, -1),
@@ -336,21 +276,12 @@ VACUUM_FEATURES = (
     | VacuumEntityFeature.SEND_COMMAND
     | VacuumEntityFeature.START
     | VacuumEntityFeature.STOP
-    | VacuumEntityFeature.PAUSE
-    | VacuumEntityFeature.TURN_ON
-    | VacuumEntityFeature.TURN_OFF
     | VacuumEntityFeature.LOCATE
 )
 
 STORAGE_DATA_KEY = "key"
 STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
-
-STORAGE_DATA_FILE_CONFIG = "config"
-
-STORAGE_DATA_FILES = [STORAGE_DATA_FILE_CONFIG]
-
-DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]
 
 DATA_KEY_STATUS = "Status"
 DATA_KEY_VACUUM = "Vacuum"
@@ -361,7 +292,6 @@ DATA_KEY_FILTER_STATUS = "Filter Status"
 DATA_KEY_CYCLE_TIME = "Cycle Time"
 DATA_KEY_CYCLE_TIME_LEFT = "Cycle Time Left"
 DATA_KEY_AWS_BROKER = "AWS Broker"
-DATA_KEY_WEEKLY_SCHEDULER = "Weekly Scheduler"
 DATA_KEY_SCHEDULE = "Schedule"
 DATA_KEY_RSSI = "RSSI"
 DATA_KEY_NETWORK_NAME = "Network Name"
@@ -378,10 +308,8 @@ ACTION_ENTITY_RETURN_TO_BASE = "return_to_base"
 ACTION_ENTITY_SET_FAN_SPEED = "set_fan_speed"
 ACTION_ENTITY_START = "start"
 ACTION_ENTITY_STOP = "stop"
-ACTION_ENTITY_PAUSE = "stop"
 ACTION_ENTITY_TURN_ON = "turn_on"
 ACTION_ENTITY_TURN_OFF = "turn_off"
-ACTION_ENTITY_TOGGLE = "toggle"
 ACTION_ENTITY_SEND_COMMAND = "send_command"
 ACTION_ENTITY_LOCATE = "locate"
 ACTION_ENTITY_SELECT_OPTION = "select_option"

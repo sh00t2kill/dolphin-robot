@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.0.16
+
+- Improved log messages of status changes
+- Removed vacuum actions
+  - Turn on - not supported
+  - Turn off - not supported
+  - Pause - acts as stop, calls stop, no need for duplicate functionality
+  - Toggle - Non turn on / off, no need
+- Clean unused constants
+- Refactor calculated status
+  - Move to dedicated class
+  - Adjust tests
+  - Remove on state, instead introduce idle state, off state remain
+
+| Power Supply State | Robot State                                         | Calculated State |
+| ------------------ | --------------------------------------------------- | ---------------- |
+| error              | \*                                                  | error            |
+| \*                 | fault                                               | error            |
+| holdDelay          | notConnected, programming, init. scanning, finished | hold_delay       |
+| holdWeekly         | notConnected, programming, init. scanning, finished | hold_weekly      |
+| on                 | init                                                | init             |
+| on                 | programming, scanning                               | cleaning         |
+| programming        | notConnected, init, scanning                        | cleaning         |
+| programming        | programming                                         | programming      |
+| programming        | finished                                            | off              |
+| off                | \* (but fault)                                      | off              |
+
+Unmatched matching, will be treated as off.
+
 ## v1.0.15
 
 - Remove startup blocking call

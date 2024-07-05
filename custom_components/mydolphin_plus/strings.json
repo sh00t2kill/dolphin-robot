@@ -130,10 +130,10 @@
         "state": {
           "on": "On",
           "off": "Off",
-          "holddelay": "Idle (Delay)",
-          "holdweekly": "Idle (Weekly)",
+          "hold_delay": "Idle (Delay)",
+          "hold_weekly": "Idle (Weekly)",
           "programming": "Programming",
-          "notconnected": "Disconnected",
+          "not_connected": "Disconnected",
           "cleaning": "Cleaning",
           "init": "Checking Environment"
         }
