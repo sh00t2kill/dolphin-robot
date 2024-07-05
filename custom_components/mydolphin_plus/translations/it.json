@@ -1,39 +1,23 @@
 {
   "config": {
+    "error": {
+      "already_configured": "Integrazione gi\u00e0 configurata con il nome",
+      "corrupted_encryption_key": "La chiave di crittografia \u00e8 stata danneggiata, rimuovi l'integrazione e lo aggiunge",
+      "invalid_account": "Account non valido",
+      "invalid_credentials": "Credenziali non valide",
+      "invalid_server_details": "Dettagli del server non validi",
+      "missing_permanent_api_key": "Chiave API permanente mancante"
+    },
     "step": {
       "user": {
-        "title": "Configurazione MyDolphin Plus",
-        "description": "Configura i dettagli del tuo MyDolphin Plus",
         "data": {
-          "username": "Username",
-          "password": "Password"
-        }
+          "password": "Parola d'ordine",
+          "reset_password": "Reimpostare la password dell'account (soluzione alternativa per OTP)",
+          "username": "Nome utente"
+        },
+        "description": "Imposta i tuoi dettagli MyDolphin Plus",
+        "title": "Imposta mydolphin plus"
       }
-    },
-    "error": {
-      "invalid_admin_credentials": "Credenziali amministratore non valide",
-      "invalid_server_details": "Dettagli server non validi",
-      "already_configured": "Un'integrazione con lo stesso nome \u00e8 gi\u00e0 stata configurata",
-      "missing_permanent_api_key": "Chiave API permanente mancante",
-      "corrupted_encryption_key": "Chiave di criptazione corrotta, rimuovere l'integrazione ed aggiungerla di nuovo"
-    }
-  },
-  "options": {
-    "step": {
-      "mydolphin_plus_additional_settings": {
-        "title": "Opzioni di MyDolphin Plus.",
-        "description": "Impostazione username e password.",
-        "data": {
-          "username": "Username",
-          "password": "Password"
-        }
-      }
-    },
-    "error": {
-      "invalid_admin_credentials": "Credenziali amministratore non valide",
-      "invalid_server_details": "Dettagli server non validi",
-      "already_configured": "Un'integrazione con lo stesso nome \u00e8 gi\u00e0 stata configurata",
-      "corrupted_encryption_key": "Chiave di criptazione corrotta, rimuovere l'integrazione ed aggiungerla di nuovo"
     }
   },
   "entity": {
@@ -42,232 +26,252 @@
         "name": "Broker AWS"
       },
       "weekly_scheduler": {
-        "name": "Programma settimanale"
+        "name": "Scheduler settimanale"
       }
     },
     "light": {
       "led": {
-        "name": "LED"
+        "name": "GUIDATA GUIDATO"
       }
     },
     "number": {
-      "led_intensity": {
-        "name": "Intensit\u00e0 LED"
-      },
       "cycle_time_all": {
-        "name": "Tempo ciclo Normale"
-      },
-      "cycle_time_short": {
-        "name": "Tempo ciclo Rapido"
+        "name": "Tempo di ciclo regolare"
       },
       "cycle_time_floor": {
-        "name": "Tempo ciclo solo pavimento"
-      },
-      "cycle_time_water": {
-        "name": "Tempo ciclo Pelo Acqua"
-      },
-      "cycle_time_ultra": {
-        "name": "Tempo ciclo Ultra pulito"
+        "name": "Solo il tempo di ciclo"
       },
       "cycle_time_pickup": {
-        "name": "Tempo ciclo Raccolta"
-      }
-    },
-    "sensor": {
-      "rssi": {
-        "name": "RSSI"
+        "name": "Pickup del tempo di ciclo"
       },
-      "network_name": {
-        "name": "Nome rete"
+      "cycle_time_short": {
+        "name": "Cycle Time Fast Mode"
       },
-      "robot_type": {
-        "name": "Modello Robot"
+      "cycle_time_ultra": {
+        "name": "Cycle Time Ultra Clean"
       },
-      "cycle_count": {
-        "name": "Numero di cicli"
+      "cycle_time_water": {
+        "name": "Cycle Time Water Line"
       },
-      "cycle_time_left": {
-        "name": "Tempo rimanente ciclo"
-      },
-      "filter_status": {
-        "name": "Stato filtro",
-        "state": {
-          "unknown": "Sconosciuto",
-          "empty": "Vuoto",
-          "partially_full": "Parzialmente pieno",
-          "getting_full": "Verso il pieno",
-          "almost_full": "Quasi pieno",
-          "full": "Pieno",
-          "fault": "Problema",
-          "not_available": "Non disponibile"
-        }
-      },
-      "robot_status": {
-        "name": "Stato del Robot",
-        "state": {
-          "finished": "Completato",
-          "fault": "Problema",
-          "notconnected": "Disconnesso",
-          "programming": "In programmazione",
-          "init": "Inizializzazione",
-          "scanning": "Ricognizione"
-        }
-      },
-      "power_supply_status": {
-        "name": "Stato unit\u00e0 principale",
-        "state": {
-          "on": "On",
-          "off": "Off",
-          "holddelay": "Fermo (in attesa)",
-          "holdweekly": "Fermo (Settimanale)",
-          "programming": "In programmazione",
-          "error": "Errore",
-          "cleaning": "In pulizia"
-        }
-      },
-      "status": {
-        "name": "Stato",
-        "state": {
-          "on": "On",
-          "off": "Off",
-          "holddelay": "Fermo (in attesa)",
-          "holdweekly": "Fermo (Settimanale)",
-          "programming": "In programmazione",
-          "notconnected": "Disconnesso",
-          "cleaning": "In pulizia",
-          "init": "*Checking Environment*"
-        }
-      },
-      "clean_mode": {
-        "name": "Modo pulizia",
-        "state": {
-          "all": "Fondo e pareti",
-          "short": "Veloce",
-          "floor": "Solo fondo",
-          "water": "Pelo acqua",
-          "ultra": "Ultra pulito",
-          "pickup": "*Pickup*"
-        }
-      },
-      "robot_error": {
-        "name": "Errore Robot",
-        "state": {
-          "0": "OK",
-          "1": "Voltaggio alimentazione DC",
-          "2": "Fuori dall'acqua",
-          "3": "Sovraccarico rotore",
-          "4": "Rotore 1 sotto carico",
-          "5": "Sovraccarico rotore",
-          "6": "Rotore 2 sotto carico",
-          "7": "Sovraccarico trazione",
-          "8": "Trazione 1 sotto carico",
-          "9": "Sovraccarico trazione",
-          "10": "Trazione 2 sotto carico",
-          "11": "Sensore fondo/parete",
-          "12": "voltaggio ingresso 23V DC",
-          "13": "Sensore fondo/parete 2",
-          "14": "Robot bloccato",
-          "15": "Surriscaldamento Alimentazione",
-          "16": "Sovraccarico Alimentazione",
-          "17": "Guasto motore Rotore 1",
-          "18": "Guasto motore Rotore 2",
-          "19": "Guasto motore Trazione 1",
-          "20": "Guasto motore Trazione 2",
-          "21": "Sovraccarico Servo motore",
-          "22": "Guasto motore Rotore 1",
-          "23": "Guasto motore Rotore 2",
-          "24": "Guasto motore Trazione 1",
-          "25": "Guasto motore Trazione 2",
-          "255": "OK"
-        },
-        "state_attributes": {
-          "instructions": {
-            "state": {
-              "3": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
-              "5": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
-              "7": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore",
-              "9": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore"
-            }
-          }
-        }
-      },
-      "power_supply_error": {
-        "name": "Errore Alimentazione",
-        "state": {
-          "0": "OK",
-          "1": "Voltaggio ingresso DC",
-          "2": "Fuori dall'acqua",
-          "3": "Sovraccarico rotore",
-          "4": "Rotore 1 sotto carico",
-          "5": "Sovraccarico rotore",
-          "6": "Rotore 2 sotto carico",
-          "7": "Sovraccarico trazione",
-          "8": "Trazione 1 sotto carico",
-          "9": "Sovraccarico trazione",
-          "10": "Trazione 2 sotto carico",
-          "11": "Sensore fondo/parete",
-          "12": "voltaggio ingresso 23V DC",
-          "13": "Sensore fondo/parete 2",
-          "14": "Robot bloccato",
-          "15": "Surriscaldamento Alimentazione",
-          "16": "Sovraccarico Alimentazione",
-          "17": "Guasto motore Rotore 1",
-          "18": "Guasto motore Rotore 2",
-          "19": "Guasto motore Trazione 1",
-          "20": "Guasto motore Trazione 2",
-          "21": "Sovraccarico Servo motore",
-          "22": "Guasto motore Rotore 1",
-          "23": "Guasto motore Rotore 2",
-          "24": "Guasto motore Trazione 1",
-          "25": "Guasto motore Trazione 2",
-          "255": "OK"
-        },
-        "state_attributes": {
-          "instructions": {
-            "state": {
-              "3": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
-              "5": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Pulire i detriti dall'ingresso del rotore.\n3. Smontare il compartimento del rotore se non è possibile raggiungere i detriti.\n4. Riassemblare il robot, ricollegare l'alimentazione e riprovare.\n5. Se non fosse sufficiente, contattate il vostro installatore",
-              "7": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore",
-              "9": "Eseguire le seguenti istruzioni:\n1. Staccare l'alimentazione.\n2. Rimuovere oggetti o altri impedimenti dal sistema di trazione.\n3. Ricollegare l'alimentazione e riprovare.\n4. Se non fosse sufficiente, contattate il vostro installatore"
-            }
-          }
-        }
+      "led_intensity": {
+        "name": "Intensit\u00e0 a LED"
       }
     },
     "select": {
       "led_mode": {
-        "name": "Modo LED",
+        "name": "Modalit\u00e0 LED",
         "state": {
-          "1": "Lampeggio",
+          "1": "Palla",
           "2": "Sempre acceso",
-          "3": "Disco"
+          "3": "Discoteca"
+        }
+      }
+    },
+    "sensor": {
+      "clean_mode": {
+        "name": "Modalit\u00e0 pulita",
+        "state": {
+          "all": "Regolare",
+          "floor": "Solo piano",
+          "pickup": "Raccolta",
+          "short": "Modalit\u00e0 veloce",
+          "ultra": "Ultra pulito",
+          "water": "Linea di galleggiamento"
+        }
+      },
+      "cycle_count": {
+        "name": "Conteggio dei cicli"
+      },
+      "cycle_time_left": {
+        "name": "Tempo di ciclo rimasto"
+      },
+      "filter_status": {
+        "name": "Stato del filtro",
+        "state": {
+          "almost_full": "Pressoch\u00e8 pieno",
+          "empty": "Vuota Vuoto",
+          "fault": "Colpa",
+          "full": "Piena Pieno",
+          "getting_full": "Diventare pieno",
+          "not_available": "Non disponibile",
+          "partially_full": "Parzialmente pieno",
+          "unknown": "Sconosciuta Sconosciuto"
+        }
+      },
+      "network_name": {
+        "name": "Nome della rete"
+      },
+      "power_supply_error": {
+        "name": "Errore di alimentazione",
+        "state": {
+          "0": "OK",
+          "1": "DC in tensione",
+          "10": "Drive 2 sotto carico",
+          "11": "Sensore muro/pavimento",
+          "12": "DC in tensione 23V",
+          "13": "Sensore del pavimento murale 2",
+          "14": "Robot bloccato",
+          "15": "Supertutto dell'alimentazione",
+          "16": "Sovraccarico di alimentazione",
+          "17": "Specatore 1 guasto del driver",
+          "18": "Giorganizzazione della girante 2",
+          "19": "Drive 1 Errore del driver",
+          "2": "Fuori dall'acqua",
+          "20": "Drive 2 Errore del driver",
+          "21": "Servo over cary",
+          "22": "Gioriglione motorio della girante 1",
+          "23": "Gioriglione motorio della girante 2",
+          "24": "Drive 1 errore del motore",
+          "25": "Drive 2 errori del motore",
+          "255": "OK",
+          "3": "Sovraccarico della girante",
+          "4": "Girante 1 sotto carico",
+          "5": "Sovraccarico della girante",
+          "6": "Girante 2 sotto carico",
+          "7": "Guidare il sovraccarico",
+          "8": "Drive 1 sotto carico",
+          "9": "Guidare il sovraccarico"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Pulire i detriti dall'apertura della girante.\n 3. Smontare il compartimento della girante se i detriti sono inaccessibili.\n 4. Riassemblare il robot, collegare l'alimentazione e provare a funzionare di nuovo.\n 5. Se quanto sopra non aiuta, contatta il tuo rivenditore",
+              "5": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Pulire i detriti dall'apertura della girante.\n 3. Smontare il compartimento della girante se i detriti sono inaccessibili.\n 4. Riassemblare il robot, collegare l'alimentazione e provare a funzionare di nuovo.\n 5. Se quanto sopra non aiuta, contatta il tuo rivenditore",
+              "7": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Rimuovere qualsiasi oggetto o blocco dal sistema di guida.\n 3. Collegare l'alimentazione e provare a funzionare di nuovo.\n 4. Se quanto sopra non aiuta, contatta il tuo rivenditore",
+              "9": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Rimuovere qualsiasi oggetto o blocco dal sistema di guida.\n 3. Collegare l'alimentazione e provare a funzionare di nuovo.\n 4. Se quanto sopra non aiuta, contatta il tuo rivenditore"
+            }
+          }
+        }
+      },
+      "power_supply_status": {
+        "name": "Stato di alimentazione",
+        "state": {
+          "cleaning": "Pulizia",
+          "error": "Errore",
+          "holddelay": "Inattivo (ritardo)",
+          "holdweekly": "Idle (settimanale)",
+          "off": "Spento",
+          "on": "SU",
+          "programming": "Programmazione"
+        }
+      },
+      "robot_error": {
+        "name": "Errore robot",
+        "state": {
+          "0": "OK",
+          "1": "DC in tensione",
+          "10": "Drive 2 sotto carico",
+          "11": "Sensore muro/pavimento",
+          "12": "DC in tensione 23V",
+          "13": "Sensore del pavimento murale 2",
+          "14": "Robot bloccato",
+          "15": "Supertutto dell'alimentazione",
+          "16": "Sovraccarico di alimentazione",
+          "17": "Specatore 1 guasto del driver",
+          "18": "Giorganizzazione della girante 2",
+          "19": "Drive 1 Errore del driver",
+          "2": "Fuori dall'acqua",
+          "20": "Drive 2 Errore del driver",
+          "21": "Servo over cary",
+          "22": "Gioriglione motorio della girante 1",
+          "23": "Gioriglione motorio della girante 2",
+          "24": "Drive 1 errore del motore",
+          "25": "Drive 2 errori del motore",
+          "255": "OK",
+          "3": "Sovraccarico della girante",
+          "4": "Girante 1 sotto carico",
+          "5": "Sovraccarico della girante",
+          "6": "Girante 2 sotto carico",
+          "7": "Guidare il sovraccarico",
+          "8": "Drive 1 sotto carico",
+          "9": "Guidare il sovraccarico"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Pulire i detriti dall'apertura della girante.\n 3. Smontare il compartimento della girante se i detriti sono inaccessibili.\n 4. Riassemblare il robot, collegare l'alimentazione e provare a funzionare di nuovo.\n 5. Se quanto sopra non aiuta, contatta il tuo rivenditore",
+              "5": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Pulire i detriti dall'apertura della girante.\n 3. Smontare il compartimento della girante se i detriti sono inaccessibili.\n 4. Riassemblare il robot, collegare l'alimentazione e provare a funzionare di nuovo.\n 5. Se quanto sopra non aiuta, contatta il tuo rivenditore",
+              "7": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Rimuovere qualsiasi oggetto o blocco dal sistema di guida.\n 3. Collegare l'alimentazione e provare a funzionare di nuovo.\n 4. Se quanto sopra non aiuta, contatta il tuo rivenditore",
+              "9": "Segui questi passaggi:\n 1. Scollegare l'alimentazione.\n 2. Rimuovere qualsiasi oggetto o blocco dal sistema di guida.\n 3. Collegare l'alimentazione e provare a funzionare di nuovo.\n 4. Se quanto sopra non aiuta, contatta il tuo rivenditore"
+            }
+          }
+        }
+      },
+      "robot_status": {
+        "name": "Stato robot",
+        "state": {
+          "fault": "Colpa",
+          "finished": "Finita Finito",
+          "init": "Inizializzato",
+          "notconnected": "Disconnessa Disconnesso",
+          "programming": "Programmazione",
+          "scanning": "Scansione"
+        }
+      },
+      "robot_type": {
+        "name": "Tipo di robot"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "status": {
+        "name": "Stato",
+        "state": {
+          "cleaning": "Pulizia",
+          "holddelay": "Inattivo (ritardo)",
+          "holdweekly": "Idle (settimanale)",
+          "init": "Verifica dell'ambiente",
+          "off": "Spento",
+          "on": "SU",
+          "programming": "Programmazione"
         }
       }
     },
     "vacuum": {
       "vacuum": {
+        "state": {
+          "cleaning": "Pulizia",
+          "holddelay": "Inattivo (ritardo)",
+          "holdweekly": "Idle (settimanale)",
+          "init": "Verifica dell'ambiente",
+          "notconnected": "Disconnessa Disconnesso",
+          "off": "Spento",
+          "on": "SU",
+          "programming": "Programmazione"
+        },
         "state_attributes": {
           "fan_speed": {
             "state": {
-              "all": "Fondo e pareti",
-              "short": "Veloce",
-              "floor": "Solo fondo",
-              "water": "Pelo acqua",
+              "all": "Regolare",
+              "floor": "Solo piano",
+              "pickup": "Raccolta",
+              "short": "Modalit\u00e0 veloce",
               "ultra": "Ultra pulito",
-              "pickup": "Recupero"
+              "water": "Linea di galleggiamento"
             }
           }
-        },
-        "state": {
-          "on": "Acceso",
-          "off": "Spento",
-          "holddelay": "In attesa (Ritardato)",
-          "holdweekly": "In attesa (Settimanale)",
-          "programming": "In programmazione",
-          "notconnected": "Disconnesso",
-          "cleaning": "In Pulizia",
-          "init": "Inizializzazione"
         }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "already_configured": "Integrazione gi\u00e0 configurata con il nome",
+      "corrupted_encryption_key": "La chiave di crittografia \u00e8 stata danneggiata, rimuovi l'integrazione e lo aggiunge",
+      "invalid_account": "Account non valido",
+      "invalid_credentials": "Credenziali non valide",
+      "invalid_server_details": "Dettagli del server non validi",
+      "missing_permanent_api_key": "Chiave API permanente mancante"
+    },
+    "step": {
+      "mydolphin_plus_additional_settings": {
+        "data": {
+          "password": "Parola d'ordine",
+          "reset_password": "Reimpostare la password dell'account (soluzione alternativa per OTP)",
+          "username": "Nome utente"
+        },
+        "description": "Imposta nome utente e password.",
+        "title": "Opzioni per MyDolphin Plus."
       }
     }
   }

@@ -12,6 +12,7 @@ CONFIGURATION_FILE = f"{DOMAIN}.config.json"
 INVALID_TOKEN_SECTION = "https://github.com/sh00t2kill/dolphin-robot#invalid-token"
 
 CONF_TITLE = "title"
+CONF_RESET_PASSWORD = "reset_password"
 
 SIGNAL_DEVICE_NEW = f"{DOMAIN}_NEW_DEVICE_SIGNAL"
 SIGNAL_AWS_CLIENT_STATUS = f"{DOMAIN}_AWS_CLIENT_STATUS_SIGNAL"
@@ -122,6 +123,8 @@ WS_LAST_UPDATE = "last-update"
 
 BASE_API = "https://mbapp18.maytronics.com/api"
 LOGIN_URL = f"{BASE_API}/users/Login/"
+EMAIL_VALIDATION_URL = f"{BASE_API}/users/isEmailExists/"
+FORGOT_PASSWORD_URL = f"{BASE_API}/users/ForgotPassword/"
 TOKEN_URL = f"{BASE_API}/IOT/getToken_DecryptSN/"
 ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
 ROBOT_DETAILS_BY_SN_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbyrobotsn/"
@@ -139,6 +142,8 @@ API_RESPONSE_ALERT = "Alert"
 API_RESPONSE_STATUS_FAILURE = "0"
 API_RESPONSE_STATUS_SUCCESS = "1"
 API_RESPONSE_UNIT_SERIAL_NUMBER = "eSERNUM"
+
+API_RESPONSE_IS_EMAIL_EXISTS = "isEmailExists"
 
 API_RESPONSE_DATA_TOKEN = "Token"
 API_RESPONSE_DATA_ACCESS_KEY_ID = "AccessKeyId"

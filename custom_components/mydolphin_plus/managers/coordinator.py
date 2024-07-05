@@ -280,7 +280,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if entry_id != self._config_manager.entry_id:
             return
 
-        if status == ConnectivityStatus.Connected:
+        if status == ConnectivityStatus.CONNECTED:
             await self._set_aws_token_encrypted_key()
 
             await self._api.update()
@@ -290,8 +290,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             await self._aws_client.initialize()
 
         elif status in [
-            ConnectivityStatus.Failed,
-            ConnectivityStatus.InvalidCredentials,
+            ConnectivityStatus.FAILED,
+            ConnectivityStatus.INVALID_CREDENTIALS,
         ]:
             await self._handle_connection_failure()
 
@@ -301,10 +301,10 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if entry_id != self._config_manager.entry_id:
             return
 
-        if status == ConnectivityStatus.Connected:
+        if status == ConnectivityStatus.CONNECTED:
             await self._aws_client.update()
 
-        if status in [ConnectivityStatus.Failed, ConnectivityStatus.NotConnected]:
+        if status in [ConnectivityStatus.FAILED, ConnectivityStatus.NOT_CONNECTED]:
             await self._handle_connection_failure()
 
     async def _handle_connection_failure(self):
@@ -321,9 +321,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         so entities can quickly look up their parameters.
         """
         try:
-            api_connected = self._api.status == ConnectivityStatus.Connected
+            api_connected = self._api.status == ConnectivityStatus.CONNECTED
             aws_client_connected = (
-                self._aws_client.status == ConnectivityStatus.Connected
+                self._aws_client.status == ConnectivityStatus.CONNECTED
             )
 
             is_ready = api_connected and aws_client_connected
@@ -676,7 +676,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return result
 
     def _get_aws_broker_data(self, _entity_description) -> dict | None:
-        is_on = self._aws_client.status == ConnectivityStatus.Connected
+        is_on = self._aws_client.status == ConnectivityStatus.CONNECTED
 
         result = {
             ATTR_IS_ON: is_on,

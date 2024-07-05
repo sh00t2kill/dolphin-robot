@@ -2,6 +2,8 @@
 
 ## v1.0.16
 
+- Add email validation on setup and every startup
+- Add reset account password flow from setup or configure (when integration already connected but OTP is required)
 - Refactor new client initialization process to non-blocking call
 - Improved log messages of status changes
 - Removed vacuum actions

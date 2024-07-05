@@ -1,39 +1,23 @@
 {
   "config": {
+    "error": {
+      "already_configured": "Integration already configured with the name",
+      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it",
+      "invalid_account": "Invalid account",
+      "invalid_credentials": "Invalid credentials",
+      "invalid_server_details": "Invalid server details",
+      "missing_permanent_api_key": "Missing permanent API key"
+    },
     "step": {
       "user": {
-        "title": "Set up MyDolphin Plus",
+        "data": {
+          "password": "Password",
+          "reset_password": "Reset account password (Workaround for OTP)",
+          "username": "Username"
+        },
         "description": "Set up your MyDolphin Plus details",
-        "data": {
-          "username": "Username",
-          "password": "Password"
-        }
+        "title": "Set up MyDolphin Plus"
       }
-    },
-    "error": {
-      "invalid_admin_credentials": "Invalid administrator credentials",
-      "invalid_server_details": "Invalid server details",
-      "already_configured": "Integration already configured with the name",
-      "missing_permanent_api_key": "Missing permanent API key",
-      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it"
-    }
-  },
-  "options": {
-    "step": {
-      "mydolphin_plus_additional_settings": {
-        "title": "Options for MyDolphin Plus.",
-        "description": "Set up username and password.",
-        "data": {
-          "username": "Username",
-          "password": "Password"
-        }
-      }
-    },
-    "error": {
-      "invalid_admin_credentials": "Invalid administrator credentials",
-      "invalid_server_details": "Invalid server details",
-      "already_configured": "integration already configured with the name",
-      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it"
     }
   },
   "entity": {
@@ -51,187 +35,26 @@
       }
     },
     "number": {
-      "led_intensity": {
-        "name": "LED Intensity"
-      },
       "cycle_time_all": {
         "name": "Cycle Time Regular"
-      },
-      "cycle_time_short": {
-        "name": "Cycle Time Fast mode"
       },
       "cycle_time_floor": {
         "name": "Cycle Time Floor only"
       },
-      "cycle_time_water": {
-        "name": "Cycle Time Water line"
+      "cycle_time_pickup": {
+        "name": "Cycle Time Pickup"
+      },
+      "cycle_time_short": {
+        "name": "Cycle Time Fast mode"
       },
       "cycle_time_ultra": {
         "name": "Cycle Time Ultra clean"
       },
-      "cycle_time_pickup": {
-        "name": "Cycle Time Pickup"
-      }
-    },
-    "sensor": {
-      "rssi": {
-        "name": "RSSI"
+      "cycle_time_water": {
+        "name": "Cycle Time Water line"
       },
-      "network_name": {
-        "name": "Network Name"
-      },
-      "robot_type": {
-        "name": "Robot Type"
-      },
-      "cycle_count": {
-        "name": "Cycle Count"
-      },
-      "cycle_time_left": {
-        "name": "Cycle Time Left"
-      },
-      "filter_status": {
-        "name": "Filter Status",
-        "state": {
-          "unknown": "Unknown",
-          "empty": "Empty",
-          "partially_full": "Partially full",
-          "getting_full": "Getting full",
-          "almost_full": "Almost full",
-          "full": "Full",
-          "fault": "Fault",
-          "not_available": "Not available"
-        }
-      },
-      "robot_status": {
-        "name": "Robot Status",
-        "state": {
-          "finished": "Finished",
-          "fault": "Fault",
-          "notconnected": "Disconnected",
-          "programming": "Programming",
-          "init": "Initialized",
-          "scanning": "Scanning"
-        }
-      },
-      "power_supply_status": {
-        "name": "Power Supply Status",
-        "state": {
-          "on": "On",
-          "off": "Off",
-          "holddelay": "Idle (Delay)",
-          "holdweekly": "Idle (Weekly)",
-          "programming": "Programming",
-          "error": "Error",
-          "cleaning": "Cleaning"
-        }
-      },
-      "status": {
-        "name": "Status",
-        "state": {
-          "on": "On",
-          "off": "Off",
-          "holddelay": "Idle (Delay)",
-          "holdweekly": "Idle (Weekly)",
-          "programming": "Programming",
-          "notconnected": "Disconnected",
-          "cleaning": "Cleaning",
-          "init": "Checking Environment"
-        }
-      },
-      "clean_mode": {
-        "name": "Clean Mode",
-        "state": {
-          "all": "Regular",
-          "short": "Fast mode",
-          "floor": "Floor only",
-          "water": "Water line",
-          "ultra": "Ultra clean",
-          "pickup": "Pickup"
-        }
-      },
-      "robot_error": {
-        "name": "Robot Error",
-        "state": {
-          "0": "Ok",
-          "1": "DC in voltage",
-          "2": "Out of water",
-          "3": "Impeller overload",
-          "4": "Impeller 1 under load",
-          "5": "Impeller overload",
-          "6": "Impeller 2 under load",
-          "7": "Drive overload",
-          "8": "Drive 1 under load",
-          "9": "Drive overload",
-          "10": "Drive 2 under load",
-          "11": "Wall/floor sensor",
-          "12": "DC in voltage 23V",
-          "13": "Wall floor sensor 2",
-          "14": "Robot stuck",
-          "15": "Power supply overheat",
-          "16": "Power supply overload",
-          "17": "Impeller 1 Driver failure",
-          "18": "Impeller 2 Driver failure",
-          "19": "Drive 1 Driver failure",
-          "20": "Drive 2 Driver failure",
-          "21": "Servo over  load",
-          "22": "Impeller 1 Motor failure",
-          "23": "Impeller 2 Motor failure",
-          "24": "Drive 1 Motor failure",
-          "25": "Drive 2 Motor failure",
-          "255": "Ok"
-        },
-        "state_attributes": {
-          "instructions": {
-            "state": {
-              "3": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn’t help, contact your dealer",
-              "5": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn’t help, contact your dealer",
-              "7": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer",
-              "9": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer"
-            }
-          }
-        }
-      },
-      "power_supply_error": {
-        "name": "Power Supply Error",
-        "state": {
-          "0": "Ok",
-          "1": "DC in voltage",
-          "2": "Out of water",
-          "3": "Impeller overload",
-          "4": "Impeller 1 under load",
-          "5": "Impeller overload",
-          "6": "Impeller 2 under load",
-          "7": "Drive overload",
-          "8": "Drive 1 under load",
-          "9": "Drive overload",
-          "10": "Drive 2 under load",
-          "11": "Wall/floor sensor",
-          "12": "DC in voltage 23V",
-          "13": "Wall floor sensor 2",
-          "14": "Robot stuck",
-          "15": "Power supply overheat",
-          "16": "Power supply overload",
-          "17": "Impeller 1 Driver failure",
-          "18": "Impeller 2 Driver failure",
-          "19": "Drive 1 Driver failure",
-          "20": "Drive 2 Driver failure",
-          "21": "Servo over  load",
-          "22": "Impeller 1 Motor failure",
-          "23": "Impeller 2 Motor failure",
-          "24": "Drive 1 Motor failure",
-          "25": "Drive 2 Motor failure",
-          "255": "Ok"
-        },
-        "state_attributes": {
-          "instructions": {
-            "state": {
-              "3": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn’t help, contact your dealer",
-              "5": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\\n5. If the above doesn’t help, contact your dealer",
-              "7": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer",
-              "9": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn’t help, please contact your dealer"
-            }
-          }
-        }
+      "led_intensity": {
+        "name": "LED Intensity"
       }
     },
     "select": {
@@ -244,30 +67,211 @@
         }
       }
     },
+    "sensor": {
+      "clean_mode": {
+        "name": "Clean Mode",
+        "state": {
+          "all": "Regular",
+          "floor": "Floor only",
+          "pickup": "Pickup",
+          "short": "Fast mode",
+          "ultra": "Ultra clean",
+          "water": "Water line"
+        }
+      },
+      "cycle_count": {
+        "name": "Cycle Count"
+      },
+      "cycle_time_left": {
+        "name": "Cycle Time Left"
+      },
+      "filter_status": {
+        "name": "Filter Status",
+        "state": {
+          "almost_full": "Almost full",
+          "empty": "Empty",
+          "fault": "Fault",
+          "full": "Full",
+          "getting_full": "Getting full",
+          "not_available": "Not available",
+          "partially_full": "Partially full",
+          "unknown": "Unknown"
+        }
+      },
+      "network_name": {
+        "name": "Network Name"
+      },
+      "power_supply_error": {
+        "name": "Power Supply Error",
+        "state": {
+          "0": "Ok",
+          "1": "DC in voltage",
+          "10": "Drive 2 under load",
+          "11": "Wall/floor sensor",
+          "12": "DC in voltage 23V",
+          "13": "Wall floor sensor 2",
+          "14": "Robot stuck",
+          "15": "Power supply overheat",
+          "16": "Power supply overload",
+          "17": "Impeller 1 Driver failure",
+          "18": "Impeller 2 Driver failure",
+          "19": "Drive 1 Driver failure",
+          "2": "Out of water",
+          "20": "Drive 2 Driver failure",
+          "21": "Servo over load",
+          "22": "Impeller 1 Motor failure",
+          "23": "Impeller 2 Motor failure",
+          "24": "Drive 1 Motor failure",
+          "25": "Drive 2 Motor failure",
+          "255": "Ok",
+          "3": "Impeller overload",
+          "4": "Impeller 1 under load",
+          "5": "Impeller overload",
+          "6": "Impeller 2 under load",
+          "7": "Drive overload",
+          "8": "Drive 1 under load",
+          "9": "Drive overload"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u00e2\u20ac\u2122t help, contact your dealer",
+              "5": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u00e2\u20ac\u2122t help, contact your dealer",
+              "7": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn\u00e2\u20ac\u2122t help, please contact your dealer",
+              "9": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn\u00e2\u20ac\u2122t help, please contact your dealer"
+            }
+          }
+        }
+      },
+      "power_supply_status": {
+        "name": "Power Supply Status",
+        "state": {
+          "cleaning": "Cleaning",
+          "error": "Error",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
+          "off": "Off",
+          "on": "On",
+          "programming": "Programming"
+        }
+      },
+      "robot_error": {
+        "name": "Robot Error",
+        "state": {
+          "0": "Ok",
+          "1": "DC in voltage",
+          "10": "Drive 2 under load",
+          "11": "Wall/floor sensor",
+          "12": "DC in voltage 23V",
+          "13": "Wall floor sensor 2",
+          "14": "Robot stuck",
+          "15": "Power supply overheat",
+          "16": "Power supply overload",
+          "17": "Impeller 1 Driver failure",
+          "18": "Impeller 2 Driver failure",
+          "19": "Drive 1 Driver failure",
+          "2": "Out of water",
+          "20": "Drive 2 Driver failure",
+          "21": "Servo over  load",
+          "22": "Impeller 1 Motor failure",
+          "23": "Impeller 2 Motor failure",
+          "24": "Drive 1 Motor failure",
+          "25": "Drive 2 Motor failure",
+          "255": "Ok",
+          "3": "Impeller overload",
+          "4": "Impeller 1 under load",
+          "5": "Impeller overload",
+          "6": "Impeller 2 under load",
+          "7": "Drive overload",
+          "8": "Drive 1 under load",
+          "9": "Drive overload"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u00e2\u20ac\u2122t help, contact your dealer",
+              "5": "Please follow these steps:\n1. Unplug the power supply.\n2. Clean the debris from the impeller opening.\n3. Dismantle the impeller compartment if the debris is inaccessible.\n4. Re-assemble the robot, plug in the power supply, and try to operate again.\n5. If the above doesn\u00e2\u20ac\u2122t help, contact your dealer",
+              "7": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n3. Plug in the power supply and try to operate again.\n4. If the above doesn\u00e2\u20ac\u2122t help, please contact your dealer",
+              "9": "Please follow these steps:\n1. Unplug the power supply.\n2. Remove any object or blockage from the driving system.\n 3. Plug in the power supply and try to operate again.\n4. If the above doesn\u00e2\u20ac\u2122t help, please contact your dealer"
+            }
+          }
+        }
+      },
+      "robot_status": {
+        "name": "Robot Status",
+        "state": {
+          "fault": "Fault",
+          "finished": "Finished",
+          "init": "Initialized",
+          "notconnected": "Disconnected",
+          "programming": "Programming",
+          "scanning": "Scanning"
+        }
+      },
+      "robot_type": {
+        "name": "Robot Type"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "cleaning": "Cleaning",
+          "holddelay": "Idle (Delay)",
+          "holdweekly": "Idle (Weekly)",
+          "init": "Checking Environment",
+          "off": "Off",
+          "on": "On",
+          "programming": "Programming"
+        }
+      }
+    },
     "vacuum": {
       "vacuum": {
         "state": {
-          "on": "On",
-          "off": "Off",
+          "cleaning": "Cleaning",
           "holddelay": "Idle (Delay)",
           "holdweekly": "Idle (Weekly)",
-          "programming": "Programming",
+          "init": "Checking Environment",
           "notconnected": "Disconnected",
-          "cleaning": "Cleaning",
-          "init": "Checking Environment"
+          "off": "Off",
+          "on": "On",
+          "programming": "Programming"
         },
         "state_attributes": {
           "fan_speed": {
             "state": {
               "all": "Regular",
-              "short": "Fast mode",
               "floor": "Floor only",
-              "water": "Water line",
+              "pickup": "Pickup",
+              "short": "Fast mode",
               "ultra": "Ultra clean",
-              "pickup": "Pickup"
+              "water": "Water line"
             }
           }
         }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "already_configured": "Integration already configured with the name",
+      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it",
+      "invalid_account": "Invalid account",
+      "invalid_credentials": "Invalid credentials",
+      "invalid_server_details": "Invalid server details",
+      "missing_permanent_api_key": "Missing permanent API key"
+    },
+    "step": {
+      "mydolphin_plus_additional_settings": {
+        "data": {
+          "password": "Password",
+          "reset_password": "Reset account password (Workaround for OTP)",
+          "username": "Username"
+        },
+        "description": "Set up username and password.",
+        "title": "Options for MyDolphin Plus."
       }
     }
   }

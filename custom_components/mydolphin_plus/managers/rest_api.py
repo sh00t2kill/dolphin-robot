@@ -27,6 +27,7 @@ from ..common.consts import (
     API_REQUEST_SERIAL_PASSWORD,
     API_RESPONSE_ALERT,
     API_RESPONSE_DATA,
+    API_RESPONSE_IS_EMAIL_EXISTS,
     API_RESPONSE_STATUS,
     API_RESPONSE_STATUS_FAILURE,
     API_RESPONSE_STATUS_SUCCESS,
@@ -35,6 +36,8 @@ from ..common.consts import (
     BLOCK_SIZE,
     DATA_ROBOT_DETAILS,
     DEFAULT_NAME,
+    EMAIL_VALIDATION_URL,
+    FORGOT_PASSWORD_URL,
     LOGIN_HEADERS,
     LOGIN_URL,
     MAXIMUM_ATTEMPTS_GET_AWS_TOKEN,
@@ -137,7 +140,7 @@ class RestAPI:
         if self._session is not None:
             await self._session.close()
 
-            self._set_status(ConnectivityStatus.Disconnected, "terminate requested")
+            self._set_status(ConnectivityStatus.DISCONNECTED, "terminate requested")
 
     async def _initialize_session(self):
         try:
@@ -155,7 +158,7 @@ class RestAPI:
                 f"Failed to initialize session, Error: {str(ex)}, Line: {line_number}"
             )
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     async def validate(self):
         await self._initialize_session()
@@ -216,7 +219,7 @@ class RestAPI:
         return result
 
     async def update(self):
-        if self._status == ConnectivityStatus.Connected:
+        if self._status == ConnectivityStatus.CONNECTED:
             _LOGGER.debug("Connected. Refresh details")
             await self._load_details()
 
@@ -232,18 +235,89 @@ class RestAPI:
     async def _login(self):
         await self._service_login()
 
-        if self._status == ConnectivityStatus.TemporaryConnected:
+        if self._status == ConnectivityStatus.TEMPORARY_CONNECTED:
             await self._generate_token()
 
-        elif self._status == ConnectivityStatus.InvalidCredentials:
+        elif self._status in [
+            ConnectivityStatus.INVALID_CREDENTIALS,
+            ConnectivityStatus.INVALID_ACCOUNT,
+        ]:
             return
 
         else:
-            self._set_status(ConnectivityStatus.Failed, "general failure of login")
+            self._set_status(ConnectivityStatus.FAILED, "general failure of login")
+
+    async def reset_password(self):
+        _LOGGER.debug("Starting reset password process")
+
+        username = self.config_data.username
+
+        request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}"
+
+        payload = await self._async_post(
+            FORGOT_PASSWORD_URL, LOGIN_HEADERS, request_data
+        )
+
+        if payload is None:
+            _LOGGER.error("Empty response of reset password")
+
+        else:
+            data = payload.get(API_RESPONSE_DATA)
+
+            if data is None:
+                _LOGGER.error("Empty response payload of reset password")
+
+            else:
+                _LOGGER.info(f"Reset password response: {data}")
+
+    async def _email_validation(self) -> bool:
+        _LOGGER.debug("Validating account email")
+
+        if self._status != ConnectivityStatus.INVALID_ACCOUNT:
+            username = self.config_data.username
+
+            request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}"
+
+            payload = await self._async_post(
+                EMAIL_VALIDATION_URL, LOGIN_HEADERS, request_data
+            )
+
+            if payload is None:
+                self._set_status(
+                    ConnectivityStatus.INVALID_ACCOUNT,
+                    "empty response of email validation",
+                )
+
+            else:
+                data = payload.get(API_RESPONSE_DATA)
+
+                if data is None:
+                    self._set_status(
+                        ConnectivityStatus.INVALID_ACCOUNT,
+                        "empty response payload of email validation",
+                    )
+
+                else:
+                    status = data.get(API_RESPONSE_IS_EMAIL_EXISTS, False)
+
+                    if not status:
+                        self._set_status(
+                            ConnectivityStatus.INVALID_ACCOUNT,
+                            f"account [{username}] is not valid",
+                        )
+
+        is_valid_account = self._status != ConnectivityStatus.INVALID_ACCOUNT
+
+        return is_valid_account
 
     async def _service_login(self):
         try:
-            self._set_status(ConnectivityStatus.Connecting)
+            is_valid_account = await self._email_validation()
+
+            if not is_valid_account:
+                return
+
+            self._set_status(ConnectivityStatus.CONNECTING)
 
             username = self.config_data.username
             password = self.config_data.password
@@ -253,14 +327,14 @@ class RestAPI:
             payload = await self._async_post(LOGIN_URL, LOGIN_HEADERS, request_data)
 
             if payload is None:
-                self._set_status(ConnectivityStatus.Failed, "empty response of login")
+                self._set_status(ConnectivityStatus.FAILED, "empty response of login")
 
             else:
                 data = payload.get(API_RESPONSE_DATA)
 
                 if data is None:
                     self._set_status(
-                        ConnectivityStatus.InvalidCredentials,
+                        ConnectivityStatus.INVALID_CREDENTIALS,
                         "empty response payload of login",
                     )
 
@@ -281,7 +355,7 @@ class RestAPI:
 
             message = f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     async def _set_actual_motor_unit_serial(self):
         try:
@@ -310,7 +384,7 @@ class RestAPI:
                     API_RESPONSE_UNIT_SERIAL_NUMBER
                 )
 
-                self._set_status(ConnectivityStatus.TemporaryConnected, message)
+                self._set_status(ConnectivityStatus.TEMPORARY_CONNECTED, message)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -318,7 +392,7 @@ class RestAPI:
 
             message = f"Failed to login into {DEFAULT_NAME} service, Error: {str(ex)}, Line: {line_number}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     async def _generate_token(self):
         try:
@@ -347,7 +421,7 @@ class RestAPI:
                     for field in API_TOKEN_FIELDS:
                         self.data[field] = data.get(field)
 
-                    self._set_status(ConnectivityStatus.Connected)
+                    self._set_status(ConnectivityStatus.CONNECTED)
 
                     if get_token_attempts > 0:
                         _LOGGER.debug(
@@ -362,7 +436,7 @@ class RestAPI:
                     if get_token_attempts + 1 >= MAXIMUM_ATTEMPTS_GET_AWS_TOKEN:
                         message = f"Failed to retrieve AWS token after {get_token_attempts} attempts, Error: {alert}"
 
-                        self._set_status(ConnectivityStatus.Failed, message)
+                        self._set_status(ConnectivityStatus.FAILED, message)
 
                 get_token_attempts += 1
 
@@ -372,10 +446,10 @@ class RestAPI:
 
             message = f"Failed to retrieve AWS token from service, Error: {str(ex)}, Line: {line_number}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     async def _load_details(self):
-        if self._status != ConnectivityStatus.Connected:
+        if self._status != ConnectivityStatus.CONNECTED:
             return
 
         try:
@@ -495,10 +569,10 @@ class RestAPI:
         )
 
         if crex.status in [404, 405]:
-            self._set_status(ConnectivityStatus.NotFound, message)
+            self._set_status(ConnectivityStatus.API_NOT_FOUND, message)
 
         else:
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     def _handle_server_timeout(self, endpoint: str, method: str):
         message = (
@@ -507,7 +581,7 @@ class RestAPI:
             f"Method: {method}"
         )
 
-        self._set_status(ConnectivityStatus.Failed, message)
+        self._set_status(ConnectivityStatus.FAILED, message)
 
     def _handle_general_request_failure(
         self, endpoint: str, method: str, ex: Exception
@@ -523,7 +597,7 @@ class RestAPI:
             f"Line: {line_number}"
         )
 
-        self._set_status(ConnectivityStatus.Failed, message)
+        self._set_status(ConnectivityStatus.FAILED, message)
 
     def set_local_async_dispatcher_send(self, callback):
         self._local_async_dispatcher_send = callback

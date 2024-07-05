@@ -78,7 +78,7 @@ class APITest:
 
         while True:
 
-            if self._aws_client.status == ConnectivityStatus.Connected:
+            if self._aws_client.status == ConnectivityStatus.CONNECTED:
                 data = json.dumps(self._aws_client.data)
 
                 _LOGGER.info(data)
@@ -91,14 +91,14 @@ class APITest:
         await self._aws_client.terminate()
 
     async def _on_api_status_changed(self, status: ConnectivityStatus):
-        if status == ConnectivityStatus.Connected:
+        if status == ConnectivityStatus.CONNECTED:
             await self._api.update()
 
             await self._aws_client.update_api_data(self._api.data)
 
             await self._aws_client.initialize()
 
-        elif status == ConnectivityStatus.Failed:
+        elif status == ConnectivityStatus.FAILED:
             await self._aws_client.terminate()
 
             await sleep(API_RECONNECT_INTERVAL.total_seconds())
@@ -106,14 +106,14 @@ class APITest:
             await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
     async def _on_aws_status_changed(self, status: ConnectivityStatus):
-        if status == ConnectivityStatus.Failed:
+        if status == ConnectivityStatus.FAILED:
             await self._api.initialize(None)
 
             await sleep(WS_RECONNECT_INTERVAL.total_seconds())
 
             await self._api.initialize(self._config_manager.aws_token_encrypted_key)
 
-        if status == ConnectivityStatus.Connected:
+        if status == ConnectivityStatus.CONNECTED:
             await self._aws_client.update()
 
 
