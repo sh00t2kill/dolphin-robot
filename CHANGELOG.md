@@ -2,6 +2,7 @@
 
 ## v1.0.16
 
+- Refactor new client initialization process to non-blocking call
 - Improved log messages of status changes
 - Removed vacuum actions
   - Turn on - not supported
