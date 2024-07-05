@@ -199,36 +199,10 @@ class AWSClient:
 
             self._topic_data = TopicData(motor_unit_serial)
 
-            credentials_provider = auth.AwsCredentialsProvider.new_static(
-                aws_key, aws_secret, aws_token
-            )
-
             ca_content = await self._get_certificate()
 
-            client = mqtt_connection_builder.websockets_with_default_aws_signing(
-                endpoint=AWS_IOT_URL,
-                port=AWS_IOT_PORT,
-                region=AWS_REGION,
-                ca_bytes=ca_content,
-                credentials_provider=credentials_provider,
-                client_id=self._awsiot_id,
-                clean_session=False,
-                keep_alive_secs=30,
-                on_connection_success=self._connection_callbacks.get(
-                    ConnectionCallbacks.SUCCESS
-                ),
-                on_connection_failure=self._connection_callbacks.get(
-                    ConnectionCallbacks.FAILURE
-                ),
-                on_connection_closed=self._connection_callbacks.get(
-                    ConnectionCallbacks.CLOSED
-                ),
-                on_connection_interrupted=self._connection_callbacks.get(
-                    ConnectionCallbacks.INTERRUPTED
-                ),
-                on_connection_resumed=self._connection_callbacks.get(
-                    ConnectionCallbacks.RESUMED
-                ),
+            client = await self._hass.async_add_executor_job(
+                self._get_client, aws_key, aws_secret, aws_token, ca_content
             )
 
             def _on_connect_future_completed(future):
@@ -247,6 +221,39 @@ class AWSClient:
             message = f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
 
             self._set_status(ConnectivityStatus.Failed, message)
+
+    def _get_client(self, aws_key, aws_secret, aws_token, ca_content):
+        credentials_provider = auth.AwsCredentialsProvider.new_static(
+            aws_key, aws_secret, aws_token
+        )
+
+        client = mqtt_connection_builder.websockets_with_default_aws_signing(
+            endpoint=AWS_IOT_URL,
+            port=AWS_IOT_PORT,
+            region=AWS_REGION,
+            ca_bytes=ca_content,
+            credentials_provider=credentials_provider,
+            client_id=self._awsiot_id,
+            clean_session=False,
+            keep_alive_secs=30,
+            on_connection_success=self._connection_callbacks.get(
+                ConnectionCallbacks.SUCCESS
+            ),
+            on_connection_failure=self._connection_callbacks.get(
+                ConnectionCallbacks.FAILURE
+            ),
+            on_connection_closed=self._connection_callbacks.get(
+                ConnectionCallbacks.CLOSED
+            ),
+            on_connection_interrupted=self._connection_callbacks.get(
+                ConnectionCallbacks.INTERRUPTED
+            ),
+            on_connection_resumed=self._connection_callbacks.get(
+                ConnectionCallbacks.RESUMED
+            ),
+        )
+
+        return client
 
     def _subscribe(self):
         _LOGGER.debug(f"Subscribing topics: {self._topic_data.subscribe}")
