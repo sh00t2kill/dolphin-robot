@@ -71,8 +71,6 @@ from ..common.consts import (
     JOYSTICK_SPEED,
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
-    PWS_STATE_OFF,
-    PWS_STATE_ON,
     SIGNAL_AWS_CLIENT_STATUS,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
@@ -82,6 +80,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
+from ..common.power_supply_state import PowerSupplyState
 from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
@@ -586,10 +585,10 @@ class AWSClient:
     def pickup(self):
         self.set_cleaning_mode(CleanModes.PICKUP)
 
-    def set_power_state(self, is_on: bool):
+    def power_off(self):
         request_data = {
             DATA_SECTION_SYSTEM_STATE: {
-                DATA_SYSTEM_STATE_PWS_STATE: PWS_STATE_ON if is_on else PWS_STATE_OFF
+                DATA_SYSTEM_STATE_PWS_STATE: PowerSupplyState.OFF.value
             }
         }
 
