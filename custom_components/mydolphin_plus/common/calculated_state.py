@@ -7,8 +7,8 @@ class CalculatedState(StrEnum):
     ERROR = "error"
     CLEANING = "cleaning"
     INIT = "init"
-    HOLD_DELAY = "hold_delay"
-    HOLD_WEEKLY = "hold_weekly"
+    HOLD_DELAY = "holddelay"
+    HOLD_WEEKLY = "holdweekly"
 
     @staticmethod
     def is_on_state(value) -> bool:

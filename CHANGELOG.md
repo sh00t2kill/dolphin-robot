@@ -18,8 +18,8 @@
 | ------------------ | --------------------------------------------------- | ---------------- |
 | error              | \*                                                  | error            |
 | \*                 | fault                                               | error            |
-| holdDelay          | notConnected, programming, init. scanning, finished | hold_delay       |
-| holdWeekly         | notConnected, programming, init. scanning, finished | hold_weekly      |
+| holdDelay          | notConnected, programming, init. scanning, finished | holddelay        |
+| holdWeekly         | notConnected, programming, init. scanning, finished | holdweekly       |
 | on                 | init                                                | init             |
 | on                 | programming, scanning                               | cleaning         |
 | programming        | notConnected, init, scanning                        | cleaning         |
