@@ -253,25 +253,28 @@ class RestAPI:
         if self._session is None:
             await self._initialize_session()
 
-        username = self.config_data.username
+        is_valid_email = await self._email_validation()
 
-        request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}"
+        if is_valid_email:
+            username = self.config_data.username
 
-        payload = await self._async_post(
-            FORGOT_PASSWORD_URL, LOGIN_HEADERS, request_data
-        )
+            request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}"
 
-        if payload is None:
-            _LOGGER.error("Empty response of reset password")
+            payload = await self._async_post(
+                FORGOT_PASSWORD_URL, LOGIN_HEADERS, request_data
+            )
 
-        else:
-            data = payload.get(API_RESPONSE_DATA)
-
-            if data is None:
-                _LOGGER.error("Empty response payload of reset password")
+            if payload is None:
+                _LOGGER.error("Empty response of reset password")
 
             else:
-                _LOGGER.info(f"Reset password response: {data}")
+                data = payload.get(API_RESPONSE_DATA)
+
+                if data is None:
+                    _LOGGER.error("Empty response payload of reset password")
+
+                else:
+                    _LOGGER.info(f"Reset password response: {data}")
 
     async def _email_validation(self) -> bool:
         _LOGGER.debug("Validating account email")
