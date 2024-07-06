@@ -250,6 +250,9 @@ class RestAPI:
     async def reset_password(self):
         _LOGGER.debug("Starting reset password process")
 
+        if self._session is None:
+            await self._initialize_session()
+
         username = self.config_data.username
 
         request_data = f"{API_REQUEST_SERIAL_EMAIL}={username}"
