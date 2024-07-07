@@ -236,6 +236,7 @@ JOYSTICK_DIRECTIONS = [
     JOYSTICK_LEFT,
 ]
 
+CLOCK_HOURS_NONE = "mdi:timer-sand-paused"
 CLOCK_HOURS_ICON = "mdi:clock-time-"
 CLOCK_HOURS_TEXT = [
     "twelve",
