@@ -37,6 +37,7 @@ from ..common.consts import (
     ATTR_START_TIME,
     ATTR_STATUS,
     CLOCK_HOURS_ICON,
+    CLOCK_HOURS_NONE,
     CLOCK_HOURS_TEXT,
     CONF_DIRECTION,
     CONFIGURATION_URL,
@@ -610,21 +611,28 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         cycle_time_minutes = cleaning_mode.get(
             DATA_CYCLE_INFO_CLEANING_MODE_DURATION, 0
         )
-        cycle_time = timedelta(minutes=cycle_time_minutes)
-        cycle_time_hours = int(cycle_time / timedelta(hours=1))
 
-        cycle_start_time_ts = cycle_info.get(
-            DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
-        )
-        cycle_start_time = self._get_date_time_from_timestamp(cycle_start_time_ts)
+        attributes = {}
+
+        if cycle_time_minutes == 0:
+            cycle_time_hours = None
+
+        else:
+            cycle_time = timedelta(minutes=cycle_time_minutes)
+            cycle_time_hours = int(cycle_time / timedelta(hours=1))
+
+            cycle_start_time_ts = cycle_info.get(
+                DATA_CYCLE_INFO_CLEANING_MODE_START_TIME, 0
+            )
+            cycle_start_time = self._get_date_time_from_timestamp(cycle_start_time_ts)
+
+            attributes[ATTR_START_TIME] = cycle_start_time
 
         icon = self._get_hour_icon(cycle_time_hours)
 
         result = {
             ATTR_STATE: cycle_time_minutes,
-            ATTR_ATTRIBUTES: {
-                ATTR_START_TIME: cycle_start_time,
-            },
+            ATTR_ATTRIBUTES: attributes,
             ATTR_ICON: icon,
         }
 
@@ -659,8 +667,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         ):
             seconds_left = expected_cycle_end_time_ts - now_ts
 
-        state = timedelta(seconds=seconds_left).total_seconds()
-        state_hours = int((expected_cycle_end_time - now) / timedelta(hours=1))
+        if seconds_left > 0:
+            state = timedelta(seconds=seconds_left).total_seconds()
+            state_hours = int((expected_cycle_end_time - now) / timedelta(hours=1))
+
+        else:
+            state_hours = None
 
         icon = self._get_hour_icon(state_hours)
 
@@ -855,14 +867,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return result
 
     @staticmethod
-    def _get_hour_icon(current_hour: int) -> str:
-        if current_hour > 11:
-            current_hour = current_hour - 12
+    def _get_hour_icon(current_hour: int | None) -> str:
+        if current_hour is None:
+            icon = CLOCK_HOURS_NONE
 
-        if current_hour >= len(CLOCK_HOURS_TEXT):
-            current_hour = 0
+        else:
+            if current_hour > 11:
+                current_hour = current_hour - 12
 
-        hour_text = CLOCK_HOURS_TEXT[current_hour]
-        icon = "".join([CLOCK_HOURS_ICON, hour_text])
+            if current_hour >= len(CLOCK_HOURS_TEXT):
+                current_hour = 0
+
+            hour_text = CLOCK_HOURS_TEXT[current_hour]
+            icon = "".join([CLOCK_HOURS_ICON, hour_text])
 
         return icon
