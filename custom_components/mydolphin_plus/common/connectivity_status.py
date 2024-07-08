@@ -3,26 +3,27 @@ import logging
 
 
 class ConnectivityStatus(StrEnum):
-    NotConnected = "Not connected"
-    Connecting = "Establishing connection to API"
-    Connected = "Connected to the API"
-    TemporaryConnected = "Connected with temporary API key"
-    Failed = "Failed to access API"
-    InvalidCredentials = "Invalid credentials"
-    MissingAPIKey = "Permanent API Key was not found"
-    Disconnected = "Disconnected by the system"
-    NotFound = "API Not found"
+    NOT_CONNECTED = "Not connected"
+    CONNECTING = "Establishing connection to API"
+    CONNECTED = "Connected to the API"
+    TEMPORARY_CONNECTED = "Connected with temporary API key"
+    FAILED = "Failed to access API"
+    INVALID_CREDENTIALS = "Invalid credentials"
+    MISSING_API_KEY = "Permanent API Key was not found"
+    DISCONNECTED = "Disconnected by the system"
+    API_NOT_FOUND = "API Not found"
+    INVALID_ACCOUNT = "Invalid account"
 
     @staticmethod
     def get_log_level(status: StrEnum) -> int:
         if status in [
-            ConnectivityStatus.Connected,
-            ConnectivityStatus.Connecting,
-            ConnectivityStatus.Disconnected,
-            ConnectivityStatus.TemporaryConnected,
+            ConnectivityStatus.CONNECTED,
+            ConnectivityStatus.CONNECTING,
+            ConnectivityStatus.DISCONNECTED,
+            ConnectivityStatus.TEMPORARY_CONNECTED,
         ]:
             return logging.INFO
-        elif status in [ConnectivityStatus.NotConnected]:
+        elif status in [ConnectivityStatus.NOT_CONNECTED]:
             return logging.WARNING
         else:
             return logging.ERROR
@@ -30,10 +31,11 @@ class ConnectivityStatus(StrEnum):
     @staticmethod
     def get_ha_error(status: str) -> str | None:
         errors = {
-            str(ConnectivityStatus.InvalidCredentials): "invalid_admin_credentials",
-            str(ConnectivityStatus.MissingAPIKey): "missing_permanent_api_key",
-            str(ConnectivityStatus.Failed): "invalid_server_details",
-            str(ConnectivityStatus.NotFound): "invalid_server_details",
+            str(ConnectivityStatus.INVALID_CREDENTIALS): "invalid_credentials",
+            str(ConnectivityStatus.INVALID_ACCOUNT): "invalid_account",
+            str(ConnectivityStatus.MISSING_API_KEY): "missing_permanent_api_key",
+            str(ConnectivityStatus.FAILED): "invalid_server_details",
+            str(ConnectivityStatus.API_NOT_FOUND): "invalid_server_details",
         }
 
         error_id = errors.get(status)
@@ -41,4 +43,4 @@ class ConnectivityStatus(StrEnum):
         return error_id
 
 
-IGNORED_TRANSITIONS = {ConnectivityStatus.Disconnected: [ConnectivityStatus.Failed]}
+IGNORED_TRANSITIONS = {ConnectivityStatus.DISCONNECTED: [ConnectivityStatus.FAILED]}

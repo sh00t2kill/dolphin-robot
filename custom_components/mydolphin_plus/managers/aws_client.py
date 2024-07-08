@@ -71,8 +71,6 @@ from ..common.consts import (
     JOYSTICK_SPEED,
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
-    PWS_STATE_OFF,
-    PWS_STATE_ON,
     SIGNAL_AWS_CLIENT_STATUS,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
@@ -82,6 +80,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
+from ..common.power_supply_state import PowerSupplyState
 from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
@@ -180,12 +179,12 @@ class AWSClient:
 
             self._awsiot_client = None
 
-        self._set_status(ConnectivityStatus.Disconnected, "terminate requested")
+        self._set_status(ConnectivityStatus.DISCONNECTED, "terminate requested")
 
     async def initialize(self):
         try:
             self._set_status(
-                ConnectivityStatus.Connecting, "Initializing MyDolphin AWS IOT WS"
+                ConnectivityStatus.CONNECTING, "Initializing MyDolphin AWS IOT WS"
             )
 
             aws_token = self._api_data.get(API_RESPONSE_DATA_TOKEN)
@@ -200,36 +199,10 @@ class AWSClient:
 
             self._topic_data = TopicData(motor_unit_serial)
 
-            credentials_provider = auth.AwsCredentialsProvider.new_static(
-                aws_key, aws_secret, aws_token
-            )
-
             ca_content = await self._get_certificate()
 
-            client = mqtt_connection_builder.websockets_with_default_aws_signing(
-                endpoint=AWS_IOT_URL,
-                port=AWS_IOT_PORT,
-                region=AWS_REGION,
-                ca_bytes=ca_content,
-                credentials_provider=credentials_provider,
-                client_id=self._awsiot_id,
-                clean_session=False,
-                keep_alive_secs=30,
-                on_connection_success=self._connection_callbacks.get(
-                    ConnectionCallbacks.SUCCESS
-                ),
-                on_connection_failure=self._connection_callbacks.get(
-                    ConnectionCallbacks.FAILURE
-                ),
-                on_connection_closed=self._connection_callbacks.get(
-                    ConnectionCallbacks.CLOSED
-                ),
-                on_connection_interrupted=self._connection_callbacks.get(
-                    ConnectionCallbacks.INTERRUPTED
-                ),
-                on_connection_resumed=self._connection_callbacks.get(
-                    ConnectionCallbacks.RESUMED
-                ),
+            client = await self._hass.async_add_executor_job(
+                self._get_client, aws_key, aws_secret, aws_token, ca_content
             )
 
             def _on_connect_future_completed(future):
@@ -247,7 +220,40 @@ class AWSClient:
 
             message = f"Failed to initialize MyDolphin Plus WS, error: {ex}, line: {line_number}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
+
+    def _get_client(self, aws_key, aws_secret, aws_token, ca_content):
+        credentials_provider = auth.AwsCredentialsProvider.new_static(
+            aws_key, aws_secret, aws_token
+        )
+
+        client = mqtt_connection_builder.websockets_with_default_aws_signing(
+            endpoint=AWS_IOT_URL,
+            port=AWS_IOT_PORT,
+            region=AWS_REGION,
+            ca_bytes=ca_content,
+            credentials_provider=credentials_provider,
+            client_id=self._awsiot_id,
+            clean_session=False,
+            keep_alive_secs=30,
+            on_connection_success=self._connection_callbacks.get(
+                ConnectionCallbacks.SUCCESS
+            ),
+            on_connection_failure=self._connection_callbacks.get(
+                ConnectionCallbacks.FAILURE
+            ),
+            on_connection_closed=self._connection_callbacks.get(
+                ConnectionCallbacks.CLOSED
+            ),
+            on_connection_interrupted=self._connection_callbacks.get(
+                ConnectionCallbacks.INTERRUPTED
+            ),
+            on_connection_resumed=self._connection_callbacks.get(
+                ConnectionCallbacks.RESUMED
+            ),
+        )
+
+        return client
 
     def _subscribe(self):
         _LOGGER.debug(f"Subscribing topics: {self._topic_data.subscribe}")
@@ -293,7 +299,7 @@ class AWSClient:
             self._robot_family = RobotFamily.from_string(robot_family_str)
 
     async def update(self):
-        if self._status == ConnectivityStatus.Connected:
+        if self._status == ConnectivityStatus.CONNECTED:
             _LOGGER.debug("Connected. Refresh details")
             await self._refresh_details()
 
@@ -324,7 +330,7 @@ class AWSClient:
 
             self._subscribe()
 
-            self._set_status(ConnectivityStatus.Connected)
+            self._set_status(ConnectivityStatus.CONNECTED)
 
     def _on_connection_failure(self, connection, callback_data):
         if connection is not None and isinstance(
@@ -332,7 +338,7 @@ class AWSClient:
         ):
             message = f"AWS IoT connection failed, Error: {callback_data.error}"
 
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     def _on_connection_closed(self, connection, callback_data):
         if connection is not None and isinstance(
@@ -340,7 +346,7 @@ class AWSClient:
         ):
             message = "AWS IoT connection was closed"
 
-            self._set_status(ConnectivityStatus.Disconnected, message)
+            self._set_status(ConnectivityStatus.DISCONNECTED, message)
 
     def _on_connection_interrupted(self, connection, error, **_kwargs):
         message = f"AWS IoT connection interrupted, Error: {error}"
@@ -349,7 +355,7 @@ class AWSClient:
             _LOGGER.error(message)
 
         else:
-            self._set_status(ConnectivityStatus.Failed, message)
+            self._set_status(ConnectivityStatus.FAILED, message)
 
     def _on_connection_resumed(
         self, connection, return_code, session_present, **_kwargs
@@ -366,7 +372,7 @@ class AWSClient:
 
             resubscribe_future.add_done_callback(self._on_resubscribe_complete)
 
-        self._set_status(ConnectivityStatus.Connected)
+        self._set_status(ConnectivityStatus.CONNECTED)
 
     @staticmethod
     def _on_resubscribe_complete(resubscribe_future):
@@ -475,7 +481,7 @@ class AWSClient:
 
         payload = json.dumps(data)
 
-        if self._status == ConnectivityStatus.Connected:
+        if self._status == ConnectivityStatus.CONNECTED:
             try:
                 if self._awsiot_client is not None:
                     publish_future, packet_id = self._awsiot_client.publish(
@@ -586,10 +592,10 @@ class AWSClient:
     def pickup(self):
         self.set_cleaning_mode(CleanModes.PICKUP)
 
-    def set_power_state(self, is_on: bool):
+    def power_off(self):
         request_data = {
             DATA_SECTION_SYSTEM_STATE: {
-                DATA_SYSTEM_STATE_PWS_STATE: PWS_STATE_ON if is_on else PWS_STATE_OFF
+                DATA_SYSTEM_STATE_PWS_STATE: PowerSupplyState.OFF.value
             }
         }
 
