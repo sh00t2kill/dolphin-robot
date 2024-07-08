@@ -660,7 +660,10 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             expected_cycle_end_time_ts
         )
 
+        state = 0
         seconds_left = 0
+        state_hours = None
+
         if (
             calculated_state == CalculatedState.CLEANING
             and expected_cycle_end_time_ts > now_ts
@@ -670,9 +673,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if seconds_left > 0:
             state = timedelta(seconds=seconds_left).total_seconds()
             state_hours = int((expected_cycle_end_time - now) / timedelta(hours=1))
-
-        else:
-            state_hours = None
 
         icon = self._get_hour_icon(state_hours)
 
