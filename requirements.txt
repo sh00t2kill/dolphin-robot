@@ -1,15 +1,15 @@
 pre-commit
-homeassistant
-aiohttp
-cryptography
-voluptuous
+homeassistant~=2024.5.3
+aiohttp~=3.9.5
+cryptography~=42.0.5
+voluptuous~=0.13.1
 
 python-slugify
 
 awsiotsdk
-awscrt
+awscrt~=0.20.10
 
-awsiot
+awsiot~=0.1.3
 flatten_json
 
 python-lokalise-api~=1.6
@@ -17,3 +17,5 @@ python-dotenv~=0.20
 googletrans==4.0.0rc1
 translators~= 5.4
 deep-translator~=1.9
+
+aiofiles~=23.2.1

@@ -172,6 +172,7 @@ AWS_IOT_PORT = 443
 LOGIN_HEADERS = {
     "appkey": "346BDE92-53D1-4829-8A2E-B496014B586C",
     "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+    "integration-version": "1.0.17",
 }
 CA_FILE_NAME = "AmazonRootCA.pem"
 
@@ -288,6 +289,9 @@ VACUUM_FEATURES = (
 STORAGE_DATA_KEY = "key"
 STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY = "aws-token-encrypted-key"
+STORAGE_DATA_API_TOKEN = "api-token"
+STORAGE_DATA_SERIAL_NUMBER = "serial-number"
+STORAGE_DATA_MOTOR_UNIT_SERIAL = "motor-unit-serial"
 
 DATA_KEY_STATUS = "Status"
 DATA_KEY_VACUUM = "Vacuum"

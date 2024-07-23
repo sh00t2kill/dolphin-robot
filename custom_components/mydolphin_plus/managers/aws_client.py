@@ -201,9 +201,13 @@ class AWSClient:
 
             ca_content = await self._get_certificate()
 
-            client = await self._hass.async_add_executor_job(
-                self._get_client, aws_key, aws_secret, aws_token, ca_content
-            )
+            if self._is_home_assistant:
+                client = await self._hass.async_add_executor_job(
+                    self._get_client, aws_key, aws_secret, aws_token, ca_content
+                )
+
+            else:
+                client = self._get_client(aws_key, aws_secret, aws_token, ca_content)
 
             def _on_connect_future_completed(future):
                 future_results = future.result()

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.17
+
+- Optimized login request and store tokens to avoid abuse of the login API
+
 ## v1.0.16
 
 - Add email validation on setup and every startup

@@ -22,8 +22,11 @@ from ..common.consts import (
     DEFAULT_NAME,
     DOMAIN,
     INVALID_TOKEN_SECTION,
+    STORAGE_DATA_API_TOKEN,
     STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     STORAGE_DATA_LOCATING,
+    STORAGE_DATA_MOTOR_UNIT_SERIAL,
+    STORAGE_DATA_SERIAL_NUMBER,
 )
 from ..common.entity_descriptions import MyDolphinPlusEntityDescription
 from ..models.config_data import ConfigData
@@ -99,6 +102,37 @@ class ConfigManager:
         key = self._data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
 
         return key
+
+    @property
+    def api_token(self) -> str | None:
+        key = self._data.get(STORAGE_DATA_API_TOKEN)
+
+        return key
+
+    @property
+    def serial_number(self) -> str | None:
+        key = self._data.get(STORAGE_DATA_SERIAL_NUMBER)
+
+        return key
+
+    @property
+    def motor_unit_serial(self) -> str | None:
+        key = self._data.get(STORAGE_DATA_MOTOR_UNIT_SERIAL)
+
+        return key
+
+    @property
+    def should_login(self) -> bool:
+        check_api_data = [
+            self.aws_token_encrypted_key,
+            self.api_token,
+            self.serial_number,
+            self.motor_unit_serial,
+        ]
+
+        should_login = None in check_api_data
+
+        return should_login
 
     @property
     def config_data(self) -> ConfigData:
@@ -193,8 +227,13 @@ class ConfigManager:
 
         return value
 
-    async def update_aws_token_encrypted_key(self, key: str):
-        self._data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = key
+    async def update_tokens(
+        self, api_token: str, aws_token: str, serial_number: str, motor_unit_serial: str
+    ):
+        self._data[STORAGE_DATA_API_TOKEN] = api_token
+        self._data[STORAGE_DATA_SERIAL_NUMBER] = serial_number
+        self._data[STORAGE_DATA_MOTOR_UNIT_SERIAL] = motor_unit_serial
+        self._data[STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY] = aws_token
 
         await self._save()
 
