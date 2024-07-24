@@ -203,7 +203,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 DOMAIN, service_name, service_handler, schema
             )
 
-        await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+        await self._api.initialize()
 
     def _load_signal_handlers(self):
         loop = self.hass.loop
@@ -269,20 +269,22 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return device_info
 
-    async def _set_aws_token_encrypted_key(self):
-        aws_token_encrypted_key = self._api.aws_token_encrypted_key
+    async def _update_tokens(self):
+        api_token = self._api.api_token
+        aws_token = self._api.aws_token
+        serial_number = self._api.serial_number
+        motor_unit_serial = self._api.motor_unit_serial
 
-        if self._config_manager.aws_token_encrypted_key != aws_token_encrypted_key:
-            await self._config_manager.update_aws_token_encrypted_key(
-                aws_token_encrypted_key
-            )
+        await self._config_manager.update_tokens(
+            api_token, aws_token, serial_number, motor_unit_serial
+        )
 
     async def _on_api_status_changed(self, entry_id: str, status: ConnectivityStatus):
         if entry_id != self._config_manager.entry_id:
             return
 
         if status == ConnectivityStatus.CONNECTED:
-            await self._set_aws_token_encrypted_key()
+            await self._update_tokens()
 
             await self._api.update()
 
@@ -313,7 +315,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         await sleep(API_RECONNECT_INTERVAL.total_seconds())
 
-        await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+        await self._api.initialize()
 
     async def _async_update_data(self):
         """Fetch parameters from API endpoint.
