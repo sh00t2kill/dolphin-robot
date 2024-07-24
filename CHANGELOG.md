@@ -4,6 +4,10 @@
 
 - Optimized login request and store tokens to avoid abuse of the login API
 
+  [#221 - Thousands of requests Maytronics login API per user](https://github.com/sh00t2kill/dolphin-robot/issues/2211)
+
+  [HA #117751 - Block older versions of custom integration mydolphin_plus since they cause crashes](https://github.com/home-assistant/core/pull/117751)
+
 ## v1.0.16
 
 - Add email validation on setup and every startup
