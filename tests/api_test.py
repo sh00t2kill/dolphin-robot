@@ -11,9 +11,13 @@ from custom_components.mydolphin_plus.common.connectivity_status import (
     ConnectivityStatus,
 )
 from custom_components.mydolphin_plus.common.consts import (
+    API_DATA_LOGIN_TOKEN,
+    API_DATA_MOTOR_UNIT_SERIAL,
+    API_DATA_SERIAL_NUMBER,
     API_RECONNECT_INTERVAL,
     SIGNAL_API_STATUS,
     SIGNAL_AWS_CLIENT_STATUS,
+    STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
     WS_RECONNECT_INTERVAL,
 )
 from custom_components.mydolphin_plus.managers.aws_client import AWSClient
@@ -57,6 +61,8 @@ class APITest:
         self._api.set_local_async_dispatcher_send(self._async_dispatcher_send)
         self._aws_client.set_local_async_dispatcher_send(self._async_dispatcher_send)
 
+        self._api_data_reloaded = False
+
     def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
         _LOGGER.info(f"Signal: {signal}, Data: {json.dumps(args)}")
 
@@ -74,16 +80,52 @@ class APITest:
 
         _LOGGER.info("Creating REST API instance")
 
-        await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+        await self._restore_tokens()
+
+        await self._api.initialize()
+
+        if not self._api_data_reloaded:
+            self._store_tokens()
 
         while True:
-
             if self._aws_client.status == ConnectivityStatus.CONNECTED:
                 data = json.dumps(self._aws_client.data)
 
                 _LOGGER.info(data)
 
             await sleep(15)
+
+    def _store_tokens(self):
+        _LOGGER.info("Storing tokens")
+        api_data = self._api.data
+
+        data = {
+            STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: api_data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY),
+            API_DATA_SERIAL_NUMBER: api_data.get(API_DATA_SERIAL_NUMBER),
+            API_DATA_MOTOR_UNIT_SERIAL: api_data.get(API_DATA_MOTOR_UNIT_SERIAL),
+            API_DATA_LOGIN_TOKEN: api_data.get(API_DATA_LOGIN_TOKEN),
+        }
+
+        with open("tokens.json", "w") as f:
+            f.write(json.dumps(data, indent=4))
+
+    async def _restore_tokens(self):
+        if not os.path.exists("tokens.json"):
+            return
+
+        _LOGGER.info("Restoring tokens")
+
+        with open("tokens.json") as f:
+            data = json.load(f)
+
+            aws_token = data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
+            serial_number = data.get(API_DATA_SERIAL_NUMBER)
+            motor_unit_serial = data.get(API_DATA_MOTOR_UNIT_SERIAL)
+            api_token = data.get(API_DATA_LOGIN_TOKEN)
+
+            await self._config_manager.update_tokens(api_token, aws_token, serial_number, motor_unit_serial)
+
+        self._api_data_reloaded = True
 
     async def terminate(self):
         await self._api.terminate()
@@ -103,15 +145,13 @@ class APITest:
 
             await sleep(API_RECONNECT_INTERVAL.total_seconds())
 
-            await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+            await self._api.initialize()
 
     async def _on_aws_status_changed(self, status: ConnectivityStatus):
         if status == ConnectivityStatus.FAILED:
-            await self._api.initialize(None)
-
             await sleep(WS_RECONNECT_INTERVAL.total_seconds())
 
-            await self._api.initialize(self._config_manager.aws_token_encrypted_key)
+            await self._api.initialize()
 
         if status == ConnectivityStatus.CONNECTED:
             await self._aws_client.update()
