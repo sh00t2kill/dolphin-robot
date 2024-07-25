@@ -3,16 +3,12 @@ import logging
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_STATE, Platform
+from homeassistant.const import ATTR_STATE, SERVICE_SELECT_OPTION, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
-from .common.consts import (
-    ACTION_ENTITY_SELECT_OPTION,
-    ATTR_ATTRIBUTES,
-    SIGNAL_DEVICE_NEW,
-)
+from .common.consts import ATTR_ATTRIBUTES, SIGNAL_DEVICE_NEW
 from .common.entity_descriptions import MyDolphinPlusSelectEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -56,7 +52,7 @@ class MyDolphinPlusSelectEntity(MyDolphinPlusBaseEntity, SelectEntity, ABC):
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
-        await self.async_execute_device_action(ACTION_ENTITY_SELECT_OPTION, option)
+        await self.async_execute_device_action(SERVICE_SELECT_OPTION, option)
 
     def update_component(self, data):
         """Fetch new state parameters for the sensor."""

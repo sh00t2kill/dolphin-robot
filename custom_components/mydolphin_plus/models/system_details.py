@@ -1,4 +1,5 @@
 from custom_components.mydolphin_plus.common.calculated_state import CalculatedState
+from custom_components.mydolphin_plus.common.clean_modes import CleanModes
 from custom_components.mydolphin_plus.common.consts import (
     ATTR_CALCULATED_STATUS,
     ATTR_IS_BUSY,
@@ -7,6 +8,9 @@ from custom_components.mydolphin_plus.common.consts import (
     ATTR_ROBOT_TYPE,
     ATTR_TIME_ZONE,
     ATTR_TURN_ON_COUNT,
+    ATTR_VACUUM_STATE,
+    DATA_CYCLE_INFO_CLEANING_MODE,
+    DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_SYSTEM_STATE,
     DATA_SYSTEM_STATE_IS_BUSY,
     DATA_SYSTEM_STATE_PWS_STATE,
@@ -19,6 +23,13 @@ from custom_components.mydolphin_plus.common.consts import (
 )
 from custom_components.mydolphin_plus.common.power_supply_state import PowerSupplyState
 from custom_components.mydolphin_plus.common.robot_state import RobotState
+from homeassistant.components.vacuum import (
+    STATE_CLEANING,
+    STATE_DOCKED,
+    STATE_ERROR,
+    STATE_RETURNING,
+)
+from homeassistant.const import ATTR_MODE
 
 
 class SystemDetails:
@@ -40,6 +51,10 @@ class SystemDetails:
     @property
     def calculated_state(self) -> CalculatedState:
         return self._data.get(ATTR_CALCULATED_STATUS, CalculatedState.OFF)
+
+    @property
+    def vacuum_state(self) -> str:
+        return self._data.get(ATTR_VACUUM_STATE, STATE_DOCKED)
 
     @property
     def power_unit_state(self) -> PowerSupplyState:
@@ -65,8 +80,8 @@ class SystemDetails:
     def time_zone(self) -> str | None:
         return self._data.get(ATTR_TIME_ZONE)
 
-    def update(self, data: dict) -> bool:
-        new_data = self._get_updated_data(data)
+    def update(self, aws_data: dict) -> bool:
+        new_data = self._get_updated_data(aws_data)
 
         changed_keys = [key for key in new_data if new_data[key] != self._data.get(key)]
 
@@ -79,8 +94,8 @@ class SystemDetails:
         return was_changed
 
     @staticmethod
-    def _get_updated_data(data: dict):
-        system_state = data.get(DATA_SECTION_SYSTEM_STATE, {})
+    def _get_updated_data(aws_data: dict):
+        system_state = aws_data.get(DATA_SECTION_SYSTEM_STATE, {})
         power_supply_state = system_state.get(
             DATA_SYSTEM_STATE_PWS_STATE, PowerSupplyState.OFF.value
         )
@@ -95,13 +110,20 @@ class SystemDetails:
             DATA_SYSTEM_STATE_TIME_ZONE_NAME, DEFAULT_TIME_ZONE_NAME
         )
 
+        cycle_info = aws_data.get(DATA_SECTION_CYCLE_INFO, {})
+        cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
+        mode = cleaning_mode.get(ATTR_MODE, CleanModes.REGULAR)
+
         calculated_state = CalculatedState.OFF
+        vacuum_state = STATE_DOCKED
 
         if power_supply_state == PowerSupplyState.ERROR:
             calculated_state = CalculatedState.ERROR
+            vacuum_state = STATE_ERROR
 
         elif robot_state == RobotState.FAULT:
             calculated_state = CalculatedState.ERROR
+            vacuum_state = STATE_ERROR
 
         elif power_supply_state == PowerSupplyState.PROGRAMMING:
             if robot_state == RobotState.PROGRAMMING:
@@ -117,6 +139,11 @@ class SystemDetails:
             elif robot_state not in [RobotState.NOT_CONNECTED, RobotState.FINISHED]:
                 calculated_state = CalculatedState.CLEANING
 
+            if mode == CleanModes.PICKUP:
+                vacuum_state = STATE_RETURNING
+            else:
+                vacuum_state = STATE_CLEANING
+
         elif power_supply_state == PowerSupplyState.HOLD_DELAY:
             calculated_state = CalculatedState.HOLD_DELAY
 
@@ -124,6 +151,7 @@ class SystemDetails:
             calculated_state = CalculatedState.HOLD_WEEKLY
 
         result = {
+            ATTR_VACUUM_STATE: vacuum_state,
             ATTR_CALCULATED_STATUS: calculated_state,
             ATTR_POWER_SUPPLY_STATE: power_supply_state,
             ATTR_ROBOT_STATE: robot_state,

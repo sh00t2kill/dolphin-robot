@@ -4,18 +4,12 @@ from typing import Any
 
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import SERVICE_TURN_OFF, SERVICE_TURN_ON, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
-from .common.consts import (
-    ACTION_ENTITY_TURN_OFF,
-    ACTION_ENTITY_TURN_ON,
-    ATTR_ATTRIBUTES,
-    ATTR_IS_ON,
-    SIGNAL_DEVICE_NEW,
-)
+from .common.consts import ATTR_ATTRIBUTES, ATTR_IS_ON, SIGNAL_DEVICE_NEW
 from .common.entity_descriptions import MyDolphinPlusLightEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -57,10 +51,10 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, LightEntity, ABC):
         self._attr_color_mode = ColorMode.ONOFF
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self.async_execute_device_action(ACTION_ENTITY_TURN_ON)
+        await self.async_execute_device_action(SERVICE_TURN_ON)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self.async_execute_device_action(ACTION_ENTITY_TURN_OFF)
+        await self.async_execute_device_action(SERVICE_TURN_OFF)
 
     def update_component(self, data):
         """Fetch new state parameters for the sensor."""

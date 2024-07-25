@@ -6,7 +6,25 @@ from typing import Any, Callable
 
 from voluptuous import MultipleInvalid
 
-from homeassistant.const import ATTR_ICON, ATTR_MODE, ATTR_STATE, CONF_STATE
+from homeassistant.components.number.const import SERVICE_SET_VALUE
+from homeassistant.components.vacuum import (
+    SERVICE_LOCATE,
+    SERVICE_PAUSE,
+    SERVICE_RETURN_TO_BASE,
+    SERVICE_SEND_COMMAND,
+    SERVICE_SET_FAN_SPEED,
+    SERVICE_START,
+)
+from homeassistant.const import (
+    ATTR_ICON,
+    ATTR_MODE,
+    ATTR_STATE,
+    CONF_STATE,
+    SERVICE_SELECT_OPTION,
+    SERVICE_TURN_OFF,
+    SERVICE_TURN_ON,
+    STATE_IDLE,
+)
 from homeassistant.core import Event, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
@@ -17,16 +35,6 @@ from ..common.calculated_state import CalculatedState
 from ..common.clean_modes import CleanModes, get_clean_mode_cycle_time_key
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
-    ACTION_ENTITY_LOCATE,
-    ACTION_ENTITY_RETURN_TO_BASE,
-    ACTION_ENTITY_SELECT_OPTION,
-    ACTION_ENTITY_SEND_COMMAND,
-    ACTION_ENTITY_SET_FAN_SPEED,
-    ACTION_ENTITY_SET_NATIVE_VALUE,
-    ACTION_ENTITY_START,
-    ACTION_ENTITY_STOP,
-    ACTION_ENTITY_TURN_OFF,
-    ACTION_ENTITY_TURN_ON,
     API_RECONNECT_INTERVAL,
     ATTR_ACTIONS,
     ATTR_ATTRIBUTES,
@@ -492,18 +500,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
         mode = cleaning_mode.get(ATTR_MODE, CleanModes.REGULAR)
 
-        state = self._system_details.calculated_state.lower()
+        state = self._system_details.vacuum_state
 
         result = {
             ATTR_STATE: state,
             ATTR_ATTRIBUTES: {ATTR_MODE: mode},
             ATTR_ACTIONS: {
-                ACTION_ENTITY_START: self._vacuum_start,
-                ACTION_ENTITY_STOP: self._vacuum_stop,
-                ACTION_ENTITY_SET_FAN_SPEED: self._set_cleaning_mode,
-                ACTION_ENTITY_LOCATE: self._vacuum_locate,
-                ACTION_ENTITY_SEND_COMMAND: self._send_command,
-                ACTION_ENTITY_RETURN_TO_BASE: self._pickup,
+                SERVICE_START: self._vacuum_start,
+                SERVICE_PAUSE: self._vacuum_pause,
+                SERVICE_SET_FAN_SPEED: self._set_cleaning_mode,
+                SERVICE_LOCATE: self._vacuum_locate,
+                SERVICE_SEND_COMMAND: self._send_command,
+                SERVICE_RETURN_TO_BASE: self._pickup,
             },
         }
 
@@ -516,7 +524,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         result = {
             ATTR_STATE: led_mode,
             ATTR_ICON: ICON_LED_MODES.get(led_mode, LED_MODE_ICON_DEFAULT),
-            ATTR_ACTIONS: {ACTION_ENTITY_SELECT_OPTION: self._set_led_mode},
+            ATTR_ACTIONS: {SERVICE_SELECT_OPTION: self._set_led_mode},
         }
 
         return result
@@ -528,8 +536,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         result = {
             ATTR_IS_ON: led_enable,
             ATTR_ACTIONS: {
-                ACTION_ENTITY_TURN_ON: self._set_led_enabled,
-                ACTION_ENTITY_TURN_OFF: self._set_led_disabled,
+                SERVICE_TURN_ON: self._set_led_enabled,
+                SERVICE_TURN_OFF: self._set_led_disabled,
             },
         }
 
@@ -542,7 +550,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         result = {
             ATTR_STATE: led_intensity,
             ATTR_ACTIONS: {
-                ACTION_ENTITY_SET_NATIVE_VALUE: self._set_led_intensity,
+                SERVICE_SET_VALUE: self._set_led_intensity,
             },
         }
 
@@ -558,7 +566,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         result = {
             ATTR_STATE: state,
             ATTR_ACTIONS: {
-                ACTION_ENTITY_SET_NATIVE_VALUE: self._set_clean_mode_cycle_time_data,
+                SERVICE_SET_VALUE: self._set_clean_mode_cycle_time_data,
             },
         }
 
@@ -767,23 +775,25 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         await self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
 
     async def _pickup(self, _entity_description: EntityDescription):
-        _LOGGER.debug("Pickup robot")
+        _LOGGER.debug("Pickup vacuum")
 
         self._aws_client.pickup()
 
     async def _vacuum_start(self, _entity_description: EntityDescription, _state):
+        _LOGGER.debug("Start vacuum")
+
         data = self._get_vacuum_data(None)
         attributes = data.get(ATTR_ATTRIBUTES)
         mode = attributes.get(ATTR_MODE, CleanModes.REGULAR)
 
         self._aws_client.set_cleaning_mode(mode)
 
-    async def _vacuum_stop(self, _entity_description: EntityDescription, state):
-        is_on_state = CalculatedState.is_on_state(state)
-        _LOGGER.debug(f"Set vacuum power state, State: {state}, Power: {is_on_state}")
+    async def _vacuum_pause(self, _entity_description: EntityDescription, state):
+        is_idle_state = state == STATE_IDLE
+        _LOGGER.debug(f"Pause vacuum, State: {state}, State: {state}")
 
-        if is_on_state:
-            self._aws_client.power_off()
+        if is_idle_state:
+            self._aws_client.pause()
 
     async def _vacuum_locate(self, entity_description: EntityDescription):
         led_light_entity = self._get_led_data(None)
@@ -838,9 +848,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._aws_client.navigate(direction)
 
     def _set_system_status_details(self):
-        data = self.aws_data
-
-        updated = self._system_details.update(data)
+        updated = self._system_details.update(self.aws_data)
 
         if updated:
             self._can_load_components = True
