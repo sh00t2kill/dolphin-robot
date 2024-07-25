@@ -70,7 +70,6 @@ from ..common.consts import (
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
     SIGNAL_AWS_CLIENT_STATUS,
-    STORAGE_DATA_SERIAL_NUMBER,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
     WS_DATA_DIFF,
@@ -382,7 +381,7 @@ class AWSClient:
             has_message = len(message_payload) <= 0
             payload_data = {} if has_message else json.loads(message_payload)
 
-            motor_unit_serial = self._api_data.get(STORAGE_DATA_SERIAL_NUMBER)
+            motor_unit_serial = self._config_manager.motor_unit_serial
             _LOGGER.debug(
                 f"Message received for device {motor_unit_serial}, Topic: {topic}"
             )
@@ -571,8 +570,8 @@ class AWSClient:
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def _read_temperature_and_in_water_details(self):
-        motor_unit_serial = self._api_data.get(STORAGE_DATA_SERIAL_NUMBER)
-        serial_number = self._api_data.get(STORAGE_DATA_SERIAL_NUMBER)
+        motor_unit_serial = self._config_manager.motor_unit_serial
+        serial_number = self._config_manager.serial_number
 
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
