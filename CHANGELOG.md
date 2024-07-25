@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.18
+
+- Change interval of calling API to once an hour (instead of a minute)
+- Change interval of calling publishing websocket message to every 5 minutes (instead of 30 seconds)
+- Add status of connectivity - Expired Token to reset all tokens once HTTP Error 401 is being returned by the API
+- Remove duplicate names of constants and duplicate storage of parameters
+- Validate AWS token is being generated as valid base64 token instead retry mechanism of get token API (another deduction of calls to API from 5 to single)
+- Align test API to the same standard of configuration storage of HA
+
 ## v1.0.17
 
 - Optimized login request and store tokens to avoid abuse of the login API

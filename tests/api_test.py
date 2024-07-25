@@ -1,6 +1,7 @@
 """test/api_test.py."""
 import asyncio
 from asyncio import sleep
+from datetime import datetime
 import json
 import logging
 import os
@@ -11,13 +12,11 @@ from custom_components.mydolphin_plus.common.connectivity_status import (
     ConnectivityStatus,
 )
 from custom_components.mydolphin_plus.common.consts import (
-    API_DATA_LOGIN_TOKEN,
-    API_DATA_MOTOR_UNIT_SERIAL,
-    API_DATA_SERIAL_NUMBER,
     API_RECONNECT_INTERVAL,
     SIGNAL_API_STATUS,
     SIGNAL_AWS_CLIENT_STATUS,
-    STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY,
+    UPDATE_API_INTERVAL,
+    UPDATE_WS_INTERVAL,
     WS_RECONNECT_INTERVAL,
 )
 from custom_components.mydolphin_plus.managers.aws_client import AWSClient
@@ -80,52 +79,30 @@ class APITest:
 
         _LOGGER.info("Creating REST API instance")
 
-        await self._restore_tokens()
-
         await self._api.initialize()
 
-        if not self._api_data_reloaded:
-            self._store_tokens()
+        last_update_api = 0
+        last_update_ws = 0
 
         while True:
             if self._aws_client.status == ConnectivityStatus.CONNECTED:
                 data = json.dumps(self._aws_client.data)
+                now = datetime.now().timestamp()
 
-                _LOGGER.info(data)
+                if now - last_update_api >= UPDATE_API_INTERVAL.total_seconds():
+                    await self._api.update()
+
+                    last_update_api = now
+
+                if now - last_update_ws >= UPDATE_WS_INTERVAL.total_seconds():
+                    await self._aws_client.update()
+
+                    last_update_ws = now
+
+                if last_update_api != now and last_update_ws != now:
+                    _LOGGER.info(data)
 
             await sleep(15)
-
-    def _store_tokens(self):
-        _LOGGER.info("Storing tokens")
-        api_data = self._api.data
-
-        data = {
-            STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY: api_data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY),
-            API_DATA_SERIAL_NUMBER: api_data.get(API_DATA_SERIAL_NUMBER),
-            API_DATA_MOTOR_UNIT_SERIAL: api_data.get(API_DATA_MOTOR_UNIT_SERIAL),
-            API_DATA_LOGIN_TOKEN: api_data.get(API_DATA_LOGIN_TOKEN),
-        }
-
-        with open("tokens.json", "w") as f:
-            f.write(json.dumps(data, indent=4))
-
-    async def _restore_tokens(self):
-        if not os.path.exists("tokens.json"):
-            return
-
-        _LOGGER.info("Restoring tokens")
-
-        with open("tokens.json") as f:
-            data = json.load(f)
-
-            aws_token = data.get(STORAGE_DATA_AWS_TOKEN_ENCRYPTED_KEY)
-            serial_number = data.get(API_DATA_SERIAL_NUMBER)
-            motor_unit_serial = data.get(API_DATA_MOTOR_UNIT_SERIAL)
-            api_token = data.get(API_DATA_LOGIN_TOKEN)
-
-            await self._config_manager.update_tokens(api_token, aws_token, serial_number, motor_unit_serial)
-
-        self._api_data_reloaded = True
 
     async def terminate(self):
         await self._api.terminate()
