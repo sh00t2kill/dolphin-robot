@@ -13,6 +13,7 @@ class ConnectivityStatus(StrEnum):
     DISCONNECTED = "Disconnected by the system"
     API_NOT_FOUND = "API Not found"
     INVALID_ACCOUNT = "Invalid account"
+    EXPIRED_TOKEN = "Expired Token"
 
     @staticmethod
     def get_log_level(status: StrEnum) -> int:
@@ -23,7 +24,10 @@ class ConnectivityStatus(StrEnum):
             ConnectivityStatus.TEMPORARY_CONNECTED,
         ]:
             return logging.INFO
-        elif status in [ConnectivityStatus.NOT_CONNECTED]:
+        elif status in [
+            ConnectivityStatus.NOT_CONNECTED,
+            ConnectivityStatus.EXPIRED_TOKEN,
+        ]:
             return logging.WARNING
         else:
             return logging.ERROR

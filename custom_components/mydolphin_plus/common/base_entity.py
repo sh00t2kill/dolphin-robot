@@ -10,7 +10,7 @@ from homeassistant.util import slugify
 
 from ..managers.config_manager import ConfigManager
 from ..managers.coordinator import MyDolphinPlusCoordinator
-from .consts import DATA_ROBOT_FAMILY, DOMAIN
+from .consts import ATTR_ACTIONS, DATA_ROBOT_FAMILY, DOMAIN
 from .entity_descriptions import MyDolphinPlusEntityDescription, get_entity_descriptions
 from .robot_family import RobotFamily
 
@@ -124,7 +124,11 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
             new_data = self._local_coordinator.get_data(self.entity_description)
 
             if self._data != new_data:
-                _LOGGER.debug(f"Data for {self.unique_id}: {new_data}")
+                data_for_log = {
+                    key: new_data[key] for key in new_data if key != ATTR_ACTIONS
+                }
+
+                _LOGGER.debug(f"Data for {self.unique_id}: {data_for_log}")
 
                 self.update_component(new_data)
 
