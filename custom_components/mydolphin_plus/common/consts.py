@@ -36,6 +36,7 @@ ATTR_RESET_FBI = "reset_fbi"
 ATTR_EXPECTED_END_TIME = "expected_end_time"
 
 ATTR_CALCULATED_STATUS = "Calculated State"
+ATTR_VACUUM_STATE = "Vacuum State"
 ATTR_POWER_SUPPLY_STATE = "Power Supply State"
 ATTR_ROBOT_STATE = "Robot State"
 ATTR_ROBOT_TYPE = "Robot Type"
@@ -130,8 +131,6 @@ TOKEN_URL = f"{BASE_API}/IOT/getToken_DecryptSN/"
 ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
 ROBOT_DETAILS_BY_SN_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbyrobotsn/"
 
-MAXIMUM_ATTEMPTS_GET_AWS_TOKEN = 5
-
 API_REQUEST_HEADER_TOKEN = "token"
 API_REQUEST_SERIAL_EMAIL = "Email"
 API_REQUEST_SERIAL_PASSWORD = "Password"
@@ -142,8 +141,6 @@ API_RESPONSE_STATUS = "Status"
 API_RESPONSE_ALERT = "Alert"
 API_RESPONSE_STATUS_FAILURE = "0"
 API_RESPONSE_STATUS_SUCCESS = "1"
-API_RESPONSE_STATUS_INVALID_REQUEST = "-1"
-API_RESPONSE_STATUS_INVALID_MOTOR_UNIT_SERIAL = "-20"
 API_RESPONSE_UNIT_SERIAL_NUMBER = "eSERNUM"
 
 API_RESPONSE_IS_EMAIL_EXISTS = "isEmailExists"
@@ -171,7 +168,7 @@ AWS_IOT_PORT = 443
 LOGIN_HEADERS = {
     "appkey": "346BDE92-53D1-4829-8A2E-B496014B586C",
     "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
-    "integration-version": "1.0.18",
+    "integration-version": "1.0.19",
 }
 
 CA_FILE_NAME = "AmazonRootCA.pem"
@@ -282,7 +279,7 @@ VACUUM_FEATURES = (
     | VacuumEntityFeature.RETURN_HOME
     | VacuumEntityFeature.SEND_COMMAND
     | VacuumEntityFeature.START
-    | VacuumEntityFeature.STOP
+    | VacuumEntityFeature.PAUSE
     | VacuumEntityFeature.LOCATE
 )
 
@@ -302,7 +299,6 @@ DATA_KEY_FILTER_STATUS = "Filter Status"
 DATA_KEY_CYCLE_TIME = "Cycle Time"
 DATA_KEY_CYCLE_TIME_LEFT = "Cycle Time Left"
 DATA_KEY_AWS_BROKER = "AWS Broker"
-DATA_KEY_SCHEDULE = "Schedule"
 DATA_KEY_RSSI = "RSSI"
 DATA_KEY_NETWORK_NAME = "Network Name"
 DATA_KEY_CLEAN_MODE = "Clean Mode"
@@ -313,17 +309,6 @@ DATA_KEY_BUSY = "Busy"
 DATA_KEY_CYCLE_COUNT = "Cycle Count"
 DATA_KEY_ROBOT_ERROR = "Robot Error"
 DATA_KEY_PWS_ERROR = "Power Supply Error"
-
-ACTION_ENTITY_RETURN_TO_BASE = "return_to_base"
-ACTION_ENTITY_SET_FAN_SPEED = "set_fan_speed"
-ACTION_ENTITY_START = "start"
-ACTION_ENTITY_STOP = "stop"
-ACTION_ENTITY_TURN_ON = "turn_on"
-ACTION_ENTITY_TURN_OFF = "turn_off"
-ACTION_ENTITY_SEND_COMMAND = "send_command"
-ACTION_ENTITY_LOCATE = "locate"
-ACTION_ENTITY_SELECT_OPTION = "select_option"
-ACTION_ENTITY_SET_NATIVE_VALUE = "set_native_value"
 
 TRANSLATION_KEY_ERROR_INSTRUCTIONS = "state_attributes.instructions.state"
 ERROR_CLEAN_CODES = [0, 255]

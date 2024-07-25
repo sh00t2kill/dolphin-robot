@@ -229,16 +229,6 @@
     },
     "vacuum": {
       "vacuum": {
-        "state": {
-          "cleaning": "Pulizia",
-          "holddelay": "Inattivo (ritardo)",
-          "holdweekly": "Idle (settimanale)",
-          "init": "Verifica dell'ambiente",
-          "notconnected": "Disconnessa Disconnesso",
-          "off": "Spento",
-          "on": "SU",
-          "programming": "Programmazione"
-        },
         "state_attributes": {
           "fan_speed": {
             "state": {

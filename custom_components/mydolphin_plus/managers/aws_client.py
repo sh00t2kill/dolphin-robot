@@ -583,7 +583,7 @@ class AWSClient:
     def pickup(self):
         self.set_cleaning_mode(CleanModes.PICKUP)
 
-    def power_off(self):
+    def pause(self):
         request_data = {
             DATA_SECTION_SYSTEM_STATE: {
                 DATA_SYSTEM_STATE_PWS_STATE: PowerSupplyState.OFF.value

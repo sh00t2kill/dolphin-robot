@@ -250,16 +250,6 @@
     },
     "vacuum": {
       "vacuum": {
-        "state": {
-          "on": "On",
-          "off": "Off",
-          "holddelay": "Idle (Delay)",
-          "holdweekly": "Idle (Weekly)",
-          "programming": "Programming",
-          "notconnected": "Disconnected",
-          "cleaning": "Cleaning",
-          "init": "Checking Environment"
-        },
         "state_attributes": {
           "fan_speed": {
             "state": {
