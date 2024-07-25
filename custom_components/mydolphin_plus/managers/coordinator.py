@@ -27,7 +27,6 @@ from ..common.consts import (
     ACTION_ENTITY_STOP,
     ACTION_ENTITY_TURN_OFF,
     ACTION_ENTITY_TURN_ON,
-    API_DATA_SERIAL_NUMBER,
     API_RECONNECT_INTERVAL,
     ATTR_ACTIONS,
     ATTR_ATTRIBUTES,
@@ -100,6 +99,7 @@ from ..common.consts import (
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_ENTITIES_INTERVAL,
+    UPDATE_WS_INTERVAL,
 )
 from ..common.service_schema import (
     SERVICE_EXIT_NAVIGATION,
@@ -123,7 +123,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     _data_mapping: dict[str, Callable[[EntityDescription], dict | None]] | None
     _system_details: SystemDetails
 
-    _last_update: float
+    _last_update_api: float
+    _last_update_ws: float
 
     def __init__(self, hass, config_manager: ConfigManager):
         """Initialize my coordinator."""
@@ -143,7 +144,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._data_mapping = None
         self._system_details = SystemDetails()
 
-        self._last_update = 0
+        self._last_update_api = 0
+        self._last_update_ws = 0
 
         self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
             SERVICE_NAVIGATE: self._service_navigate,
@@ -230,11 +232,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             )
         )
 
-    def get_device_serial_number(self) -> str:
-        serial_number = self.api_data.get(API_DATA_SERIAL_NUMBER)
-
-        return serial_number
-
     def get_device_debug_data(self) -> dict:
         config_data = self._config_manager.get_debug_data()
 
@@ -255,7 +252,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         sw_version = pws_version.get("pwsSwVersion")
         hw_version = pws_version.get("pwsHwVersion")
 
-        serial_number = data.get(API_DATA_SERIAL_NUMBER)
+        serial_number = self.config_manager.serial_number
 
         device_info = DeviceInfo(
             identifiers={(DEFAULT_NAME, serial_number)},
@@ -269,23 +266,11 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return device_info
 
-    async def _update_tokens(self):
-        api_token = self._api.api_token
-        aws_token = self._api.aws_token
-        serial_number = self._api.serial_number
-        motor_unit_serial = self._api.motor_unit_serial
-
-        await self._config_manager.update_tokens(
-            api_token, aws_token, serial_number, motor_unit_serial
-        )
-
     async def _on_api_status_changed(self, entry_id: str, status: ConnectivityStatus):
         if entry_id != self._config_manager.entry_id:
             return
 
         if status == ConnectivityStatus.CONNECTED:
-            await self._update_tokens()
-
             await self._api.update()
 
             await self._aws_client.update_api_data(self.api_data)
@@ -295,6 +280,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         elif status in [
             ConnectivityStatus.FAILED,
             ConnectivityStatus.INVALID_CREDENTIALS,
+            ConnectivityStatus.EXPIRED_TOKEN,
         ]:
             await self._handle_connection_failure()
 
@@ -334,11 +320,15 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             if is_ready:
                 now = datetime.now().timestamp()
 
-                if now - self._last_update >= UPDATE_API_INTERVAL.total_seconds():
+                if now - self._last_update_api >= UPDATE_API_INTERVAL.total_seconds():
                     await self._api.update()
+
+                    self._last_update_api = now
+
+                if now - self._last_update_ws >= UPDATE_WS_INTERVAL.total_seconds():
                     await self._aws_client.update()
 
-                    self._last_update = now
+                    self._last_update_ws = now
 
                 self._set_system_status_details()
 

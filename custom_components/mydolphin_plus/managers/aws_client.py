@@ -21,8 +21,6 @@ from ..common.clean_modes import CleanModes
 from ..common.connection_callbacks import ConnectionCallbacks
 from ..common.connectivity_status import IGNORED_TRANSITIONS, ConnectivityStatus
 from ..common.consts import (
-    API_DATA_MOTOR_UNIT_SERIAL,
-    API_DATA_SERIAL_NUMBER,
     API_RESPONSE_DATA_ACCESS_KEY_ID,
     API_RESPONSE_DATA_SECRET_ACCESS_KEY,
     API_RESPONSE_DATA_TOKEN,
@@ -74,7 +72,6 @@ from ..common.consts import (
     SIGNAL_AWS_CLIENT_STATUS,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
-    UPDATE_API_INTERVAL,
     WS_DATA_DIFF,
     WS_DATA_TIMESTAMP,
     WS_DATA_VERSION,
@@ -195,9 +192,7 @@ class AWSClient:
                 f"AWS IAM Credentials, Key: {aws_key}, Secret: {aws_secret}, Token: {aws_token}"
             )
 
-            motor_unit_serial = self._api_data.get(API_DATA_MOTOR_UNIT_SERIAL)
-
-            self._topic_data = TopicData(motor_unit_serial)
+            self._topic_data = TopicData(self._config_manager.motor_unit_serial)
 
             ca_content = await self._get_certificate()
 
@@ -303,29 +298,21 @@ class AWSClient:
             self._robot_family = RobotFamily.from_string(robot_family_str)
 
     async def update(self):
-        if self._status == ConnectivityStatus.CONNECTED:
-            _LOGGER.debug("Connected. Refresh details")
-            await self._refresh_details()
-
-    async def _refresh_details(self, forced: bool = False):
         try:
-            now = datetime.now().timestamp()
-            last_update = self.data.get(WS_LAST_UPDATE, 0)
+            if self._status == ConnectivityStatus.CONNECTED:
+                _LOGGER.debug("Connected. Refresh details")
 
-            diff_seconds = int(now) - last_update
+                now = datetime.now().timestamp()
 
-            if forced or diff_seconds >= UPDATE_API_INTERVAL.total_seconds():
                 self.data[WS_LAST_UPDATE] = int(now)
 
-                self._publish(self._topic_data.get, None)
+                self._publish(self._topic_data.get)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
             line_number = tb.tb_lineno
 
-            _LOGGER.error(
-                f"Failed to refresh MyDolphin Plus WS data, error: {ex}, line: {line_number}"
-            )
+            _LOGGER.error(f"Failed to update WS data, error: {ex}, line: {line_number}")
 
     def _on_connection_success(self, connection, callback_data):
         if isinstance(callback_data, mqtt.OnConnectionSuccessData):
@@ -394,7 +381,7 @@ class AWSClient:
             has_message = len(message_payload) <= 0
             payload_data = {} if has_message else json.loads(message_payload)
 
-            motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
+            motor_unit_serial = self._config_manager.motor_unit_serial
             _LOGGER.debug(
                 f"Message received for device {motor_unit_serial}, Topic: {topic}"
             )
@@ -479,7 +466,7 @@ class AWSClient:
 
         self._publish(self._topic_data.dynamic, payload)
 
-    def _publish(self, topic: str, data: dict | None):
+    def _publish(self, topic: str, data: dict | None = None):
         if data is None:
             data = {}
 
@@ -583,8 +570,8 @@ class AWSClient:
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
     def _read_temperature_and_in_water_details(self):
-        motor_unit_serial = self._api_data.get(API_DATA_SERIAL_NUMBER)
-        serial_number = self._api_data.get(API_DATA_SERIAL_NUMBER)
+        motor_unit_serial = self._config_manager.motor_unit_serial
+        serial_number = self._config_manager.serial_number
 
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
