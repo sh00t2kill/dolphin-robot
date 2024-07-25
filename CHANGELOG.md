@@ -8,6 +8,7 @@
 - Remove duplicate names of constants and duplicate storage of parameters
 - Validate AWS token is being generated as valid base64 token instead retry mechanism of get token API (another deduction of calls to API from 5 to single)
 - Align test API to the same standard of configuration storage of HA
+- Clean entity creation / update log (no actions within logged data)
 
 ## v1.0.17
 
