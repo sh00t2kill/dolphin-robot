@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.19
+
+- Adjust vacuum state to HA v2025.1 standard and support docked, cleaning, returning (cleaning + pickup mode) and error
+- Replace vacuum STOP service with PAUSE service
+- Refactor service declaration to use HA services instead of local
+
 ## v1.0.18
 
 - Change interval of calling API to once an hour (instead of a minute)

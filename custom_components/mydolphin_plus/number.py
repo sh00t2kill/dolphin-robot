@@ -2,17 +2,14 @@ from abc import ABC
 import logging
 
 from homeassistant.components.number import NumberEntity
+from homeassistant.components.number.const import SERVICE_SET_VALUE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_STATE, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
-from .common.consts import (
-    ACTION_ENTITY_SET_NATIVE_VALUE,
-    ATTR_ATTRIBUTES,
-    SIGNAL_DEVICE_NEW,
-)
+from .common.consts import ATTR_ATTRIBUTES, SIGNAL_DEVICE_NEW
 from .common.entity_descriptions import MyDolphinPlusNumberEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -55,7 +52,7 @@ class MyDolphinPlusNumberEntity(MyDolphinPlusBaseEntity, NumberEntity, ABC):
 
     async def async_set_native_value(self, value: float) -> None:
         """Change the selected option."""
-        await self.async_execute_device_action(ACTION_ENTITY_SET_NATIVE_VALUE, value)
+        await self.async_execute_device_action(SERVICE_SET_VALUE, value)
 
     def update_component(self, data):
         """Fetch new state parameters for the sensor."""
