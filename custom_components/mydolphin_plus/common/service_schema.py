@@ -14,7 +14,7 @@ SERVICE_DAILY_SCHEDULE = "daily_schedule"
 SERVICE_DELAYED_CLEAN = "delayed_clean"
 
 SERVICE_SCHEMA_NAVIGATE = vol.Schema(
-    {vol.Required(CONF_DIRECTION): vol.In([JOYSTICK_DIRECTIONS])}
+    {vol.Required(CONF_DIRECTION): vol.In(JOYSTICK_DIRECTIONS)}
 )
 
 SERVICE_SCHEMA_DAILY_SCHEDULE = vol.Schema(
