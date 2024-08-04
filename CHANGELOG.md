@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.20
+
+- Fix navigation service schema [#223](https://github.com/sh00t2kill/dolphin-robot/issues/223)
+
 ## v1.0.19
 
 - Adjust vacuum state to HA v2025.1 standard and support docked, cleaning, returning (cleaning + pickup mode) and error
