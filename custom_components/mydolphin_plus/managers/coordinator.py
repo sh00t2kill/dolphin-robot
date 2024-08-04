@@ -25,7 +25,7 @@ from homeassistant.const import (
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
 )
-from homeassistant.core import Event, callback
+from homeassistant.core import Event, ServiceCall, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -832,14 +832,16 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             except MultipleInvalid as ex:
                 _LOGGER.error(ex.msg)
 
-    async def _service_exit_navigation(self):
-        _LOGGER.debug("Exit navigation mode")
+    async def _service_exit_navigation(self, service: ServiceCall):
+        _LOGGER.debug(f"Exit navigation mode, Data: {service}")
 
         self._aws_client.exit_navigation()
 
-    async def _service_navigate(self, data: dict[str, Any] | list[Any] | None):
+    async def _service_navigate(self, service: ServiceCall):
+        _LOGGER.debug(f"Navigate robot, Data: {service}")
+
+        data = service.data
         direction = data.get(CONF_DIRECTION)
-        _LOGGER.debug(f"Navigate robot {direction}")
 
         if direction is None:
             _LOGGER.error("Direction is mandatory")

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.21
+
+- Fix navigation service error [#223](https://github.com/sh00t2kill/dolphin-robot/issues/223)
+
 ## v1.0.20
 
 - Fix navigation service schema [#223](https://github.com/sh00t2kill/dolphin-robot/issues/223)
