@@ -41,6 +41,8 @@ ATTR_POWER_SUPPLY_STATE = "Power Supply State"
 ATTR_ROBOT_STATE = "Robot State"
 ATTR_ROBOT_TYPE = "Robot Type"
 ATTR_IS_BUSY = "Busy"
+ATTR_MANUAL_MODE = "Manual Mode"
+ATTR_ACTIVITY = "Activity"
 ATTR_TURN_ON_COUNT = "Turn On Count"
 ATTR_TIME_ZONE = "Time Zone"
 
@@ -57,6 +59,7 @@ DYNAMIC_CONTENT_REMOTE_CONTROL_MODE = "rcMode"
 DYNAMIC_CONTENT_SPEED = "speed"
 DYNAMIC_CONTENT_DIRECTION = "direction"
 
+ATTR_REMOTE_CONTROL_MODE_EXIT = "exit"
 ATTR_REMOTE_CONTROL_MODE_EXIT = "exit"
 
 DATA_ROOT_STATE = "state"
@@ -76,6 +79,7 @@ DATA_SECTION_FILTER_BAG_INDICATION = "filterBagIndication"
 DATA_SECTION_SYSTEM_STATE = "systemState"
 DATA_SECTION_ROBOT_ERROR = "robotError"
 DATA_SECTION_PWS_ERROR = "pwsError"
+DATA_SECTION_ACTIVITY = "activity"
 
 DATA_STATE_REPORTED = "reported"
 DATA_STATE_DESIRED = "desired"
@@ -214,25 +218,8 @@ ICON_LED_MODES = {
     LED_MODE_DISCO: "mdi:lightbulb-multiple-outline",
 }
 
-CONF_DIRECTION = "direction"
 CONF_DAY = "day"
 CONF_TIME = "time"
-
-JOYSTICK_SPEED = 1000
-
-JOYSTICK_STOP = "stop"
-JOYSTICK_FORWARD = "forward"
-JOYSTICK_BACKWARD = "backward"
-JOYSTICK_RIGHT = "right"
-JOYSTICK_LEFT = "left"
-
-JOYSTICK_DIRECTIONS = [
-    JOYSTICK_STOP,
-    JOYSTICK_FORWARD,
-    JOYSTICK_BACKWARD,
-    JOYSTICK_RIGHT,
-    JOYSTICK_LEFT,
-]
 
 CLOCK_HOURS_NONE = "mdi:timer-sand-paused"
 CLOCK_HOURS_ICON = "mdi:clock-time-"
@@ -277,7 +264,6 @@ VACUUM_FEATURES = (
     VacuumEntityFeature.STATE
     | VacuumEntityFeature.FAN_SPEED
     | VacuumEntityFeature.RETURN_HOME
-    | VacuumEntityFeature.SEND_COMMAND
     | VacuumEntityFeature.START
     | VacuumEntityFeature.PAUSE
     | VacuumEntityFeature.LOCATE
@@ -292,6 +278,7 @@ STORAGE_DATA_MOTOR_UNIT_SERIAL = "motor-unit-serial"
 
 DATA_KEY_STATUS = "Status"
 DATA_KEY_VACUUM = "Vacuum"
+DATA_KEY_REMOTE = "Remote"
 DATA_KEY_LED_MODE = "LED Mode"
 DATA_KEY_LED_INTENSITY = "LED Intensity"
 DATA_KEY_LED = "LED"

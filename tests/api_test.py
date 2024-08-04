@@ -19,6 +19,7 @@ from custom_components.mydolphin_plus.common.consts import (
     UPDATE_WS_INTERVAL,
     WS_RECONNECT_INTERVAL,
 )
+from custom_components.mydolphin_plus.common.joystick_direction import JoystickDirection
 from custom_components.mydolphin_plus.managers.aws_client import AWSClient
 from custom_components.mydolphin_plus.managers.config_manager import ConfigManager
 from custom_components.mydolphin_plus.managers.rest_api import RestAPI
@@ -84,6 +85,8 @@ class APITest:
         last_update_api = 0
         last_update_ws = 0
 
+        update = 0
+
         while True:
             if self._aws_client.status == ConnectivityStatus.CONNECTED:
                 data = json.dumps(self._aws_client.data)
@@ -98,6 +101,15 @@ class APITest:
                     await self._aws_client.update()
 
                     last_update_ws = now
+                    update = update + 1
+
+                    if update == 1:
+                        self._aws_client.set_joystick_mode(JoystickDirection.BACKWARD)
+                    elif update == 2:
+                        self._aws_client.set_joystick_mode(JoystickDirection.STOP)
+                    elif update == 3:
+                        self._aws_client.exit_joystick_mode()
+                        update = 0
 
                 if last_update_api != now and last_update_ws != now:
                     _LOGGER.info(data)
