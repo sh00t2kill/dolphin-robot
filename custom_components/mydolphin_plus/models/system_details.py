@@ -1,6 +1,7 @@
 from custom_components.mydolphin_plus.common.calculated_state import CalculatedState
 from custom_components.mydolphin_plus.common.clean_modes import CleanModes
 from custom_components.mydolphin_plus.common.consts import (
+    ATTR_ACTIVITY,
     ATTR_CALCULATED_STATUS,
     ATTR_IS_BUSY,
     ATTR_POWER_SUPPLY_STATE,
@@ -10,6 +11,7 @@ from custom_components.mydolphin_plus.common.consts import (
     ATTR_TURN_ON_COUNT,
     ATTR_VACUUM_STATE,
     DATA_CYCLE_INFO_CLEANING_MODE,
+    DATA_SECTION_ACTIVITY,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_SYSTEM_STATE,
     DATA_SYSTEM_STATE_IS_BUSY,
@@ -21,6 +23,7 @@ from custom_components.mydolphin_plus.common.consts import (
     DATA_SYSTEM_STATE_TURN_ON_COUNT,
     DEFAULT_TIME_ZONE_NAME,
 )
+from custom_components.mydolphin_plus.common.joystick_direction import JoystickDirection
 from custom_components.mydolphin_plus.common.power_supply_state import PowerSupplyState
 from custom_components.mydolphin_plus.common.robot_state import RobotState
 from homeassistant.components.vacuum import (
@@ -35,10 +38,12 @@ from homeassistant.const import ATTR_MODE
 class SystemDetails:
     _is_updated: bool
     _data: dict
+    _supported_activities: list[str]
 
     def __init__(self):
         self._is_updated = False
         self._data = {}
+        self._supported_activities = list(JoystickDirection)
 
     @property
     def is_updated(self) -> bool:
@@ -71,6 +76,18 @@ class SystemDetails:
     @property
     def is_busy(self) -> bool | None:
         return self._data.get(ATTR_IS_BUSY)
+
+    @property
+    def is_manual_mode(self) -> bool | None:
+        return self.activity in self._supported_activities
+
+    @property
+    def activity(self) -> str:
+        return self._data.get(ATTR_ACTIVITY)
+
+    @property
+    def is_active(self) -> bool | None:
+        return self.vacuum_state in [STATE_CLEANING, STATE_RETURNING]
 
     @property
     def turn_on_count(self) -> int:
@@ -150,6 +167,8 @@ class SystemDetails:
         elif power_supply_state == PowerSupplyState.HOLD_WEEKLY:
             calculated_state = CalculatedState.HOLD_WEEKLY
 
+        activity = aws_data.get(DATA_SECTION_ACTIVITY)
+
         result = {
             ATTR_VACUUM_STATE: vacuum_state,
             ATTR_CALCULATED_STATUS: calculated_state,
@@ -159,6 +178,7 @@ class SystemDetails:
             ATTR_IS_BUSY: is_busy,
             ATTR_TURN_ON_COUNT: turn_on_count,
             ATTR_TIME_ZONE: f"{time_zone_name} ({time_zone})",
+            ATTR_ACTIVITY: activity,
         }
 
         return result

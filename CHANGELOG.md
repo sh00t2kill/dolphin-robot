@@ -2,7 +2,9 @@
 
 ## v1.0.21
 
-- Fix navigation service error [#223](https://github.com/sh00t2kill/dolphin-robot/issues/223)
+- Remove navigate service
+- Remove exit navigation service
+- Add Remote entity allowing to control and turn off control using a virtual joystick
 
 ## v1.0.20
 

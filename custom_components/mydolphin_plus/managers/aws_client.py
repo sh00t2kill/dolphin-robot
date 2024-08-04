@@ -43,6 +43,7 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME,
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
+    DATA_SECTION_ACTIVITY,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
@@ -66,7 +67,6 @@ from ..common.consts import (
     DYNAMIC_DESCRIPTION_TEMPERATURE,
     DYNAMIC_TYPE,
     DYNAMIC_TYPE_PWS_REQUEST,
-    JOYSTICK_SPEED,
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
     SIGNAL_AWS_CLIENT_STATUS,
@@ -77,6 +77,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
+from ..common.joystick_direction import JoystickDirection
 from ..common.power_supply_state import PowerSupplyState
 from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
@@ -402,6 +403,18 @@ class AWSClient:
 
                 self.data[DATA_SECTION_DYNAMIC][response_type] = data
 
+                if DYNAMIC_CONTENT_DIRECTION in data:
+                    self.data[DATA_SECTION_ACTIVITY] = data.get(
+                        DYNAMIC_CONTENT_DIRECTION
+                    )
+
+                elif (
+                    DYNAMIC_CONTENT_REMOTE_CONTROL_MODE in data
+                    and data[DYNAMIC_CONTENT_REMOTE_CONTROL_MODE]
+                    == ATTR_REMOTE_CONTROL_MODE_EXIT
+                ):
+                    self.data[DATA_SECTION_ACTIVITY] = None
+
             elif topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
 
@@ -554,17 +567,21 @@ class AWSClient:
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
         self._send_desired_command(data)
 
-    def navigate(self, direction: str):
+    def set_joystick_mode(self, direction: JoystickDirection):
         request_data = {
-            DYNAMIC_CONTENT_SPEED: JOYSTICK_SPEED,
-            DYNAMIC_CONTENT_DIRECTION: direction,
+            DYNAMIC_CONTENT: {
+                DYNAMIC_CONTENT_SPEED: direction.get_speed(),
+                DYNAMIC_CONTENT_DIRECTION: direction,
+            }
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
-    def exit_navigation(self):
+    def exit_joystick_mode(self):
         request_data = {
-            DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
+            DYNAMIC_CONTENT: {
+                DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
+            }
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
