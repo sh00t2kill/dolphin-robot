@@ -55,9 +55,6 @@ class ConfigData:
             ): str,
             vol.Required(CONF_USERNAME, default=user_input.get(CONF_USERNAME)): str,
             vol.Required(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
-            vol.Optional(
-                CONF_RESET_PASSWORD, default=user_input.get(CONF_RESET_PASSWORD, False)
-            ): bool,
         }
 
         schema = vol.Schema(new_user_input)
