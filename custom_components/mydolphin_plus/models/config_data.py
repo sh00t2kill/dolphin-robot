@@ -3,7 +3,7 @@ from voluptuous import Schema
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
-from ..common.consts import CONF_RESET_PASSWORD, CONF_TITLE, DEFAULT_NAME
+from ..common.consts import CONF_TITLE, DEFAULT_NAME
 
 DATA_KEYS = [CONF_USERNAME, CONF_PASSWORD]
 
