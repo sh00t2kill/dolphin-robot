@@ -43,6 +43,7 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME,
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
+    DATA_SECTION_ACTIVITY,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
@@ -66,7 +67,6 @@ from ..common.consts import (
     DYNAMIC_DESCRIPTION_TEMPERATURE,
     DYNAMIC_TYPE,
     DYNAMIC_TYPE_PWS_REQUEST,
-    JOYSTICK_SPEED,
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
     SIGNAL_AWS_CLIENT_STATUS,
@@ -77,6 +77,7 @@ from ..common.consts import (
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
 )
+from ..common.joystick_direction import JoystickDirection
 from ..common.power_supply_state import PowerSupplyState
 from ..common.robot_family import RobotFamily
 from ..models.topic_data import TopicData
@@ -121,6 +122,10 @@ class AWSClient:
                 ConnectionCallbacks.CLOSED: self._on_connection_closed,
                 ConnectionCallbacks.INTERRUPTED: self._on_connection_interrupted,
                 ConnectionCallbacks.RESUMED: self._on_connection_resumed,
+            }
+
+            self._dynamic_message_handlers = {
+                DYNAMIC_TYPE_PWS_REQUEST: self._on_pws_request_message
             }
 
             self._on_publish_completed_callback = lambda f: self._on_publish_completed(
@@ -392,15 +397,7 @@ class AWSClient:
                 )
 
             elif topic == self._topic_data.dynamic:
-                _LOGGER.debug(f"Dynamic payload: {message_payload}")
-
-                response_type = payload_data.get(DYNAMIC_TYPE)
-                data = payload_data.get(DYNAMIC_CONTENT)
-
-                if response_type not in self.data:
-                    self.data[DATA_SECTION_DYNAMIC] = {}
-
-                self.data[DATA_SECTION_DYNAMIC][response_type] = data
+                self._on_dynamic_content_received(payload_data)
 
             elif topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
@@ -454,6 +451,31 @@ class AWSClient:
             _LOGGER.error(
                 f"Callback parsing failed, {message_details}, {error_details}"
             )
+
+    def _on_dynamic_content_received(self, message: dict):
+        _LOGGER.debug(f"Dynamic payload: {message}")
+
+        message_type = message.get(DYNAMIC_TYPE)
+        content = message.get(DYNAMIC_CONTENT)
+        handler = self._dynamic_message_handlers.get(message_type)
+
+        if DATA_SECTION_DYNAMIC not in self.data:
+            self.data[DATA_SECTION_DYNAMIC] = {}
+
+        self.data[DATA_SECTION_DYNAMIC][message_type] = content
+
+        if handler is not None:
+            handler(message)
+
+    def _on_pws_request_message(self, message: dict):
+        direction = message.get(DYNAMIC_CONTENT_DIRECTION)
+        remote_control_mode = message.get(DYNAMIC_CONTENT_REMOTE_CONTROL_MODE)
+
+        if direction is not None:
+            self.data[DATA_SECTION_ACTIVITY] = direction
+
+        if remote_control_mode == ATTR_REMOTE_CONTROL_MODE_EXIT:
+            self.data[DATA_SECTION_ACTIVITY] = None
 
     def _send_desired_command(self, payload: dict | None):
         data = {DATA_ROOT_STATE: {DATA_STATE_DESIRED: payload}}
@@ -554,17 +576,21 @@ class AWSClient:
         _LOGGER.info(f"Set led enabled mode, Desired: {data}")
         self._send_desired_command(data)
 
-    def navigate(self, direction: str):
+    def set_joystick_mode(self, direction: JoystickDirection):
         request_data = {
-            DYNAMIC_CONTENT_SPEED: JOYSTICK_SPEED,
-            DYNAMIC_CONTENT_DIRECTION: direction,
+            DYNAMIC_CONTENT: {
+                DYNAMIC_CONTENT_SPEED: direction.get_speed(),
+                DYNAMIC_CONTENT_DIRECTION: direction,
+            }
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
-    def exit_navigation(self):
+    def exit_joystick_mode(self):
         request_data = {
-            DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
+            DYNAMIC_CONTENT: {
+                DYNAMIC_CONTENT_REMOTE_CONTROL_MODE: ATTR_REMOTE_CONTROL_MODE_EXIT
+            }
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)

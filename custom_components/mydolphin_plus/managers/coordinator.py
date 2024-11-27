@@ -2,16 +2,14 @@ from asyncio import sleep
 from datetime import datetime, timedelta
 import logging
 import sys
-from typing import Any, Callable
-
-from voluptuous import MultipleInvalid
+from typing import Callable
 
 from homeassistant.components.number.const import SERVICE_SET_VALUE
+from homeassistant.components.remote import ATTR_ACTIVITY, SERVICE_SEND_COMMAND
 from homeassistant.components.vacuum import (
     SERVICE_LOCATE,
     SERVICE_PAUSE,
     SERVICE_RETURN_TO_BASE,
-    SERVICE_SEND_COMMAND,
     SERVICE_SET_FAN_SPEED,
     SERVICE_START,
     STATE_DOCKED,
@@ -46,7 +44,6 @@ from ..common.consts import (
     CLOCK_HOURS_ICON,
     CLOCK_HOURS_NONE,
     CLOCK_HOURS_TEXT,
-    CONF_DIRECTION,
     CONFIGURATION_URL,
     DATA_CYCLE_INFO_CLEANING_MODE,
     DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
@@ -68,6 +65,7 @@ from ..common.consts import (
     DATA_KEY_NETWORK_NAME,
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
+    DATA_KEY_REMOTE,
     DATA_KEY_ROBOT_ERROR,
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
@@ -109,11 +107,7 @@ from ..common.consts import (
     UPDATE_ENTITIES_INTERVAL,
     UPDATE_WS_INTERVAL,
 )
-from ..common.service_schema import (
-    SERVICE_EXIT_NAVIGATION,
-    SERVICE_NAVIGATE,
-    SERVICE_VALIDATION,
-)
+from ..common.joystick_direction import JoystickDirection
 from ..models.system_details import SystemDetails
 from .aws_client import AWSClient
 from .config_manager import ConfigManager
@@ -154,11 +148,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         self._last_update_api = 0
         self._last_update_ws = 0
-
-        self._robot_actions: dict[str, [dict[str, Any] | list[Any] | None]] = {
-            SERVICE_NAVIGATE: self._service_navigate,
-            SERVICE_EXIT_NAVIGATION: self._service_exit_navigation,
-        }
 
         self._load_signal_handlers()
 
@@ -204,14 +193,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         _LOGGER.info(f"Start loading {DOMAIN} integration, Entry ID: {entry.entry_id}")
 
         await self.async_config_entry_first_refresh()
-
-        for service_name in self._robot_actions:
-            service_handler = self._robot_actions.get(service_name)
-            schema = SERVICE_VALIDATION.get(service_name)
-
-            self.hass.services.async_register(
-                DOMAIN, service_name, service_handler, schema
-            )
 
         await self._api.initialize()
 
@@ -357,6 +338,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_BUSY): self._get_busy_data,
             slugify(DATA_KEY_CYCLE_COUNT): self._get_cycle_count_data,
             slugify(DATA_KEY_VACUUM): self._get_vacuum_data,
+            slugify(DATA_KEY_REMOTE): self._get_remote_data,
             slugify(DATA_KEY_LED_MODE): self._get_led_mode_data,
             slugify(DATA_KEY_LED): self._get_led_data,
             slugify(DATA_KEY_LED_INTENSITY): self._get_led_intensity_data,
@@ -510,8 +492,22 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 SERVICE_PAUSE: self._vacuum_pause,
                 SERVICE_SET_FAN_SPEED: self._set_cleaning_mode,
                 SERVICE_LOCATE: self._vacuum_locate,
-                SERVICE_SEND_COMMAND: self._send_command,
                 SERVICE_RETURN_TO_BASE: self._pickup,
+            },
+        }
+
+        return result
+
+    def _get_remote_data(self, _entity_description) -> dict | None:
+        state = self._system_details.is_manual_mode
+        activity = self._system_details.activity
+
+        result = {
+            ATTR_STATE: state,
+            ATTR_ATTRIBUTES: {ATTR_ACTIVITY: activity},
+            ATTR_ACTIONS: {
+                SERVICE_SEND_COMMAND: self._set_joystick_mode,
+                SERVICE_TURN_OFF: self._exit_joystick_mode,
             },
         }
 
@@ -812,40 +808,34 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             await self._config_manager.update_is_locating(True)
             await self._set_led_enabled(entity_description)
 
-    async def _send_command(
-        self,
-        _entity_description: EntityDescription,
-        command: str,
-        params: dict[str, Any] | list[Any] | None,
-    ):
-        validator = SERVICE_VALIDATION.get(command)
-        action = self._robot_actions.get(command)
+    async def _exit_joystick_mode(self, _entity_description: EntityDescription):
+        _LOGGER.debug("Exit joystick mode")
 
-        if validator is None or action is None:
-            _LOGGER.error(f"Command {command} is not supported")
+        if self._system_details.is_manual_mode:
+            self._aws_client.exit_joystick_mode()
 
         else:
-            try:
-                validator(params)
+            _LOGGER.error(
+                "Robot cannot exit from joystick mode, "
+                f"Manual Mode: {self._system_details.is_manual_mode}, "
+                f"State: {self._system_details.vacuum_state}"
+            )
 
-                action(params)
-            except MultipleInvalid as ex:
-                _LOGGER.error(ex.msg)
+    async def _set_joystick_mode(
+        self, _entity_description: EntityDescription, activity: str
+    ):
+        _LOGGER.debug("Set joystick mode")
 
-    async def _service_exit_navigation(self):
-        _LOGGER.debug("Exit navigation mode")
+        if self._system_details.is_active or self._system_details.is_manual_mode:
+            direction = JoystickDirection(activity)
 
-        self._aws_client.exit_navigation()
+            self._aws_client.set_joystick_mode(direction)
 
-    async def _service_navigate(self, data: dict[str, Any] | list[Any] | None):
-        direction = data.get(CONF_DIRECTION)
-        _LOGGER.debug(f"Navigate robot {direction}")
-
-        if direction is None:
-            _LOGGER.error("Direction is mandatory")
-            return
-
-        self._aws_client.navigate(direction)
+        else:
+            _LOGGER.error(
+                "Robot cannot be set to joystick mode, "
+                f"State: {self._system_details.vacuum_state}"
+            )
 
     def _set_system_status_details(self):
         updated = self._system_details.update(self.aws_data)

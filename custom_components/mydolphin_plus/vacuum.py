@@ -6,7 +6,6 @@ from homeassistant.components.vacuum import (
     SERVICE_LOCATE,
     SERVICE_PAUSE,
     SERVICE_RETURN_TO_BASE,
-    SERVICE_SEND_COMMAND,
     SERVICE_SET_FAN_SPEED,
     SERVICE_START,
     StateVacuumEntity,
@@ -77,15 +76,6 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC):
 
     async def async_pause(self, **kwargs: Any) -> None:
         await self.async_execute_device_action(SERVICE_PAUSE, self.state)
-
-    async def async_send_command(
-        self,
-        command: str,
-        params: dict[str, Any] | list[Any] | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Send a command to a vacuum cleaner."""
-        await self.async_execute_device_action(SERVICE_SEND_COMMAND, command, params)
 
     async def async_locate(self, **kwargs: Any) -> None:
         """Locate the vacuum cleaner."""

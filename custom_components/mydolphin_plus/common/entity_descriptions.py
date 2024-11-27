@@ -6,6 +6,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.components.light import LightEntityDescription
 from homeassistant.components.number import NumberDeviceClass, NumberEntityDescription
+from homeassistant.components.remote import RemoteEntityDescription, RemoteEntityFeature
 from homeassistant.components.select import SelectEntityDescription
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -44,6 +45,7 @@ from .consts import (
     DATA_KEY_NETWORK_NAME,
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
+    DATA_KEY_REMOTE,
     DATA_KEY_ROBOT_ERROR,
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
@@ -54,6 +56,7 @@ from .consts import (
     ICON_LED_MODES,
     VACUUM_FEATURES,
 )
+from .joystick_direction import JoystickDirection
 from .robot_family import RobotFamily
 
 
@@ -72,6 +75,17 @@ class MyDolphinPlusVacuumEntityDescription(
     platform: Platform | None = Platform.VACUUM
     features: VacuumEntityFeature = VacuumEntityFeature(0)
     fan_speed_list: list[str] = ()
+
+
+@dataclass(frozen=True, kw_only=True)
+class MyDolphinPlusRemoteEntityDescription(
+    RemoteEntityDescription, MyDolphinPlusEntityDescription
+):
+    """A class that describes vacuum entities."""
+
+    platform: Platform | None = Platform.REMOTE
+    features: RemoteEntityFeature = RemoteEntityFeature(0)
+    activity_list: list[str] = ()
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -118,6 +132,13 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         features=VACUUM_FEATURES,
         fan_speed_list=list(CleanModes),
         translation_key=slugify(DATA_KEY_VACUUM),
+    ),
+    MyDolphinPlusRemoteEntityDescription(
+        key=slugify(DATA_KEY_REMOTE),
+        name="",
+        features=RemoteEntityFeature.ACTIVITY,
+        activity_list=list(JoystickDirection),
+        translation_key=slugify(DATA_KEY_REMOTE),
     ),
     MyDolphinPlusLightEntityDescription(
         key=slugify(DATA_KEY_LED),
