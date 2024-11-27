@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.21
+
+- Initialize data using `async_request_refresh` instead of `async_config_entry_first_refresh` to remove warning message
+- Remove reset password parameter in configuration
+
 ## v1.0.20
 
 - Fix navigation service schema [#223](https://github.com/sh00t2kill/dolphin-robot/issues/223)
