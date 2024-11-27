@@ -6,8 +6,9 @@ import json
 import logging
 import os
 import sys
-from typing import Any
+from typing import Any, Awaitable, Callable
 
+from custom_components.mydolphin_plus.common.clean_modes import CleanModes
 from custom_components.mydolphin_plus.common.connectivity_status import (
     ConnectivityStatus,
 )
@@ -63,6 +64,40 @@ class APITest:
 
         self._api_data_reloaded = False
 
+        self._actions = {
+            "U": "Update WS Connection",
+            "S": "Stop navigation",
+            "F": "Forward navigation",
+            "B": "Backward navigation",
+            "L": "Left navigation",
+            "R": "Right navigation",
+            "E": "Exit navigation",
+            "P": "Pickup",
+            "C": "Clean"
+        }
+
+        self._actions_mapper: dict[str, Callable[[], Awaitable[None]]] = {
+            "U": self._update,
+            "S": self._stop_navigation,
+            "F": self._forward_navigation,
+            "B": self._backward_navigation,
+            "L": self._left_navigation,
+            "R": self._right_navigation,
+            "E": self._exit_navigation,
+            "P": self._pickup,
+            "C": self._clean
+        }
+
+        instructions = ["Which action to perform:"]
+
+        for action_key in self._actions:
+            instructions.append(f"{action_key}) {self._actions[action_key]}")
+
+        instructions.append("> ")
+        self._instructions = "\n".join(instructions)
+
+        self._ready_for_input = False
+
     def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
         _LOGGER.info(f"Signal: {signal}, Data: {json.dumps(args)}")
 
@@ -82,39 +117,68 @@ class APITest:
 
         await self._api.initialize()
 
-        last_update_api = 0
-        last_update_ws = 0
-
-        update = 0
+        await sleep(3)
 
         while True:
-            if self._aws_client.status == ConnectivityStatus.CONNECTED:
-                data = json.dumps(self._aws_client.data)
-                now = datetime.now().timestamp()
+            await self._read_input()
 
-                if now - last_update_api >= UPDATE_API_INTERVAL.total_seconds():
-                    await self._api.update()
+    async def _read_input(self):
+        while not self._ready_for_input:
+            await sleep(1)
 
-                    last_update_api = now
+        input_data = input(self._instructions).upper()
 
-                if now - last_update_ws >= UPDATE_WS_INTERVAL.total_seconds():
-                    await self._aws_client.update()
+        if input_data in self._actions_mapper:
+            action = self._actions_mapper[input_data]
+            await action()
 
-                    last_update_ws = now
-                    update = update + 1
+            await sleep(3)
 
-                    if update == 1:
-                        self._aws_client.set_joystick_mode(JoystickDirection.BACKWARD)
-                    elif update == 2:
-                        self._aws_client.set_joystick_mode(JoystickDirection.STOP)
-                    elif update == 3:
-                        self._aws_client.exit_joystick_mode()
-                        update = 0
+    async def _update(self):
+        _LOGGER.info("Update")
 
-                if last_update_api != now and last_update_ws != now:
-                    _LOGGER.info(data)
+        await self._api.update()
+        await self._aws_client.update()
 
-            await sleep(15)
+    async def _stop_navigation(self):
+        _LOGGER.info(JoystickDirection.STOP)
+
+        self._aws_client.set_joystick_mode(JoystickDirection.STOP)
+
+    async def _forward_navigation(self):
+        _LOGGER.info(JoystickDirection.FORWARD)
+
+        self._aws_client.set_joystick_mode(JoystickDirection.FORWARD)
+
+    async def _backward_navigation(self):
+        _LOGGER.info(JoystickDirection.BACKWARD)
+
+        self._aws_client.set_joystick_mode(JoystickDirection.BACKWARD)
+
+    async def _left_navigation(self):
+        _LOGGER.info(JoystickDirection.LEFT)
+
+        self._aws_client.set_joystick_mode(JoystickDirection.LEFT)
+
+    async def _right_navigation(self):
+        _LOGGER.info(JoystickDirection.RIGHT)
+
+        self._aws_client.set_joystick_mode(JoystickDirection.RIGHT)
+
+    async def _exit_navigation(self):
+        _LOGGER.info("Exit navigation")
+
+        self._aws_client.exit_joystick_mode()
+
+    async def _pickup(self):
+        _LOGGER.info("Pickup")
+
+        self._aws_client.pickup()
+
+    async def _clean(self):
+        _LOGGER.info("Clean")
+
+        self._aws_client.set_cleaning_mode(CleanModes.REGULAR)
 
     async def terminate(self):
         await self._api.terminate()
@@ -144,6 +208,8 @@ class APITest:
 
         if status == ConnectivityStatus.CONNECTED:
             await self._aws_client.update()
+
+            self._ready_for_input = True
 
 
 if __name__ == "__main__":

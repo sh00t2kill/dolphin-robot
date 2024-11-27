@@ -124,6 +124,10 @@ class AWSClient:
                 ConnectionCallbacks.RESUMED: self._on_connection_resumed,
             }
 
+            self._dynamic_message_handlers = {
+                DYNAMIC_TYPE_PWS_REQUEST: self._on_pws_request_message
+            }
+
             self._on_publish_completed_callback = lambda f: self._on_publish_completed(
                 f
             )
@@ -393,27 +397,7 @@ class AWSClient:
                 )
 
             elif topic == self._topic_data.dynamic:
-                _LOGGER.debug(f"Dynamic payload: {message_payload}")
-
-                response_type = payload_data.get(DYNAMIC_TYPE)
-                data = payload_data.get(DYNAMIC_CONTENT)
-
-                if response_type not in self.data:
-                    self.data[DATA_SECTION_DYNAMIC] = {}
-
-                self.data[DATA_SECTION_DYNAMIC][response_type] = data
-
-                if DYNAMIC_CONTENT_DIRECTION in data:
-                    self.data[DATA_SECTION_ACTIVITY] = data.get(
-                        DYNAMIC_CONTENT_DIRECTION
-                    )
-
-                elif (
-                    DYNAMIC_CONTENT_REMOTE_CONTROL_MODE in data
-                    and data[DYNAMIC_CONTENT_REMOTE_CONTROL_MODE]
-                    == ATTR_REMOTE_CONTROL_MODE_EXIT
-                ):
-                    self.data[DATA_SECTION_ACTIVITY] = None
+                self._on_dynamic_content_received(payload_data)
 
             elif topic.endswith(TOPIC_CALLBACK_ACCEPTED):
                 _LOGGER.debug(f"Payload: {message_payload}")
@@ -467,6 +451,31 @@ class AWSClient:
             _LOGGER.error(
                 f"Callback parsing failed, {message_details}, {error_details}"
             )
+
+    def _on_dynamic_content_received(self, message: dict):
+        _LOGGER.debug(f"Dynamic payload: {message}")
+
+        message_type = message.get(DYNAMIC_TYPE)
+        content = message.get(DYNAMIC_CONTENT)
+        handler = self._dynamic_message_handlers.get(message_type)
+
+        if DATA_SECTION_DYNAMIC not in self.data:
+            self.data[DATA_SECTION_DYNAMIC] = {}
+
+        self.data[DATA_SECTION_DYNAMIC][message_type] = content
+
+        if handler is not None:
+            handler(message)
+
+    def _on_pws_request_message(self, message: dict):
+        direction = message.get(DYNAMIC_CONTENT_DIRECTION)
+        remote_control_mode = message.get(DYNAMIC_CONTENT_REMOTE_CONTROL_MODE)
+
+        if direction is not None:
+            self.data[DATA_SECTION_ACTIVITY] = direction
+
+        if remote_control_mode == ATTR_REMOTE_CONTROL_MODE_EXIT:
+            self.data[DATA_SECTION_ACTIVITY] = None
 
     def _send_desired_command(self, payload: dict | None):
         data = {DATA_ROOT_STATE: {DATA_STATE_DESIRED: payload}}

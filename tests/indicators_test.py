@@ -94,7 +94,7 @@ for power_supply_state in list(PowerSupplyState):
         result = (
             f"| {power_supply_state} "
             f"| {robot_state}  "
-            f"| {system_details.calculated_state} |"
+            f"| {system_details.vacuum_state} |"
         )
 
         print(result)
