@@ -289,3 +289,6 @@ features:
       - locate
       - return_home
 ```
+
+
+NOTE: New users will have an account created using OTP. As yet, we have not been able to reverse engineer the OTP login process. Please see this issue for further information, and a manual workaround to create an account: https://github.com/sh00t2kill/dolphin-robot/issues/199#issuecomment-2481627312 
