@@ -203,7 +203,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         _LOGGER.info(f"Start loading {DOMAIN} integration, Entry ID: {entry.entry_id}")
 
-        await self.async_config_entry_first_refresh()
+        await self.async_request_refresh()
 
         for service_name in self._robot_actions:
             service_handler = self._robot_actions.get(service_name)
