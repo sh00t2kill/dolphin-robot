@@ -6,7 +6,7 @@ Integration with MyDolphin Plus to monitor and control your robot
 
 [Changelog](https://github.com/sh00t2kill/dolphin-robot/blob/master/CHANGELOG.md)
 
-## Importante note RE setup
+## Important note RE setup
 
 Given the OTP implementation on the app, there is currently no way to support this in HA. There is, however, a manual way to create a new user account with a password. This is done via curl
 
