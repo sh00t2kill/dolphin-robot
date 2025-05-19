@@ -6,6 +6,22 @@ Integration with MyDolphin Plus to monitor and control your robot
 
 [Changelog](https://github.com/sh00t2kill/dolphin-robot/blob/master/CHANGELOG.md)
 
+## Importante note RE setup
+
+Given the OTP implementation on the app, there is currently no way to support this in HA. There is, however, a manual way to create a new user account with a password. This is done via curl
+
+```
+curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
+     -H "appkey: 346BDE92-53D1-4829-8A2E-B496014B586C" \
+     -H "Content-Type: application/x-www-form-urlencoded; charset=utf-8" \
+     --data-urlencode "email=<EMAIL>" \
+     --data-urlencode "password=<PASSWORD>" \
+     --data-urlencode "firstName=<FIRST NAME" \
+     --data-urlencode "lastName=<LAST NAME>"
+```
+
+Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it wil be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
+
 ## How to
 
 #### Requirements
