@@ -10,6 +10,7 @@ from homeassistant.components.vacuum import (
     SERVICE_SET_FAN_SPEED,
     SERVICE_START,
     StateVacuumEntity,
+    VacuumActivity
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODE, ATTR_STATE, Platform
@@ -59,11 +60,32 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC):
         self._attr_supported_features = entity_description.features
         self._attr_fan_speed_list = entity_description.fan_speed_list
         self._attr_battery_level = 100
+        self._vacuum_state = None
 
     @property
     def battery_icon(self) -> str:
         """Return the battery icon for the vacuum cleaner."""
         return icon_for_battery_level(battery_level=self.battery_level, charging=True)
+
+    @property
+    def activity(self) -> VacuumActivity | None:
+        """Return the current activity of the vacuum."""
+        state = self._vacuum_state
+
+        if state == "cleaning":
+            return VacuumActivity.CLEANING
+        elif state == "docked":
+            return VacuumActivity.DOCKED
+        elif state == "returning":
+            return VacuumActivity.RETURNING
+        elif state == "idle":
+            return VacuumActivity.IDLE
+        elif state == "paused":
+            return VacuumActivity.PAUSED
+        elif state == "error":
+            return VacuumActivity.ERROR
+        else:
+            return None
 
     async def async_return_to_base(self, **kwargs: Any) -> None:
         """Set the vacuum cleaner to return to the dock."""
@@ -99,7 +121,8 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC):
 
             fan_speed = attributes.get(ATTR_MODE)
 
-            self._attr_state = state
+            #self._attr_state = state
+            self._vacuum_state = state
             self._attr_extra_state_attributes = attributes
             self._attr_fan_speed = fan_speed
 
