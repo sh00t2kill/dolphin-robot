@@ -14,7 +14,7 @@ from homeassistant.components.vacuum import (
     SERVICE_SEND_COMMAND,
     SERVICE_SET_FAN_SPEED,
     SERVICE_START,
-    VacuumActivity
+    VacuumActivity,
 )
 
 from homeassistant.const import (
