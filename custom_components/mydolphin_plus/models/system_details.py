@@ -23,9 +23,7 @@ from custom_components.mydolphin_plus.common.consts import (
 )
 from custom_components.mydolphin_plus.common.power_supply_state import PowerSupplyState
 from custom_components.mydolphin_plus.common.robot_state import RobotState
-from homeassistant.components.vacuum import (
-    VacuumActivity
-)
+from homeassistant.components.vacuum import VacuumActivity
 from homeassistant.const import ATTR_MODE
 
 
