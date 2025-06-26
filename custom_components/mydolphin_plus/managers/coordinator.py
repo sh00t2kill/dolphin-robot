@@ -16,7 +16,6 @@ from homeassistant.components.vacuum import (
     SERVICE_START,
     VacuumActivity,
 )
-
 from homeassistant.const import (
     ATTR_ICON,
     ATTR_MODE,
