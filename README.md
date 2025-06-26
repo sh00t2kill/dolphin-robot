@@ -20,7 +20,7 @@ curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
      --data-urlencode "lastName=<LAST NAME>"
 ```
 
-Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it wil be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
+Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it will be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
 
 ## How to
 
