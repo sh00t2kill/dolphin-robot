@@ -20,7 +20,7 @@ curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
      --data-urlencode "lastName=<LAST NAME>"
 ```
 
-Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it wil be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
+Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it will be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
 
 ## How to
 
@@ -306,5 +306,4 @@ features:
       - return_home
 ```
 
-
-NOTE: New users will have an account created using OTP. As yet, we have not been able to reverse engineer the OTP login process. Please see this issue for further information, and a manual workaround to create an account: https://github.com/sh00t2kill/dolphin-robot/issues/199#issuecomment-2481627312 
+NOTE: New users will have an account created using OTP. As yet, we have not been able to reverse engineer the OTP login process. Please see this issue for further information, and a manual workaround to create an account: https://github.com/sh00t2kill/dolphin-robot/issues/199#issuecomment-2481627312

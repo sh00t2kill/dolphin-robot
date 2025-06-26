@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.22
+
+- Fix Deprecation Errors
+
 ## v1.0.21
 
 - Initialize data using `async_request_refresh` instead of `async_config_entry_first_refresh` to remove warning message
