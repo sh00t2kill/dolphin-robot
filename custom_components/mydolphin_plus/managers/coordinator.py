@@ -14,8 +14,9 @@ from homeassistant.components.vacuum import (
     SERVICE_SEND_COMMAND,
     SERVICE_SET_FAN_SPEED,
     SERVICE_START,
-    STATE_DOCKED,
+    VacuumActivity,
 )
+
 from homeassistant.const import (
     ATTR_ICON,
     ATTR_MODE,
@@ -789,7 +790,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._aws_client.set_cleaning_mode(mode)
 
     async def _vacuum_pause(self, _entity_description: EntityDescription, state):
-        is_idle_state = state == STATE_DOCKED
+        is_idle_state = state == VacuumActivity.DOCKED
         _LOGGER.debug(f"Pause vacuum, State: {state}, State: {state}")
 
         if is_idle_state:
