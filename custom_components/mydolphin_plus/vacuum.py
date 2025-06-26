@@ -121,7 +121,6 @@ class MyDolphinPlusLightEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC):
 
             fan_speed = attributes.get(ATTR_MODE)
 
-            #self._attr_state = state
             self._vacuum_state = state
             self._attr_extra_state_attributes = attributes
             self._attr_fan_speed = fan_speed
