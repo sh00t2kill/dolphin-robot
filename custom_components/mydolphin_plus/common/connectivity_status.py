@@ -14,7 +14,6 @@ class ConnectivityStatus(StrEnum):
     API_NOT_FOUND = "API Not found"
     INVALID_ACCOUNT = "Invalid account"
     EXPIRED_TOKEN = "Expired Token"
-    RATE_LIMITED = "Rate limited by API"
 
     @staticmethod
     def get_log_level(status: StrEnum) -> int:
@@ -28,7 +27,6 @@ class ConnectivityStatus(StrEnum):
         elif status in [
             ConnectivityStatus.NOT_CONNECTED,
             ConnectivityStatus.EXPIRED_TOKEN,
-            ConnectivityStatus.RATE_LIMITED,
         ]:
             return logging.WARNING
         else:
