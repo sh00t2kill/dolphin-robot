@@ -128,6 +128,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     _last_update_api: float
     _last_update_ws: float
+    _reconnect_blocked_until: datetime | None
 
     def __init__(self, hass, config_manager: ConfigManager):
         """Initialize my coordinator."""
@@ -149,6 +150,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         self._last_update_api = 0
         self._last_update_ws = 0
+        self._reconnect_blocked_until = None
 
         self._load_signal_handlers()
 
@@ -267,9 +269,11 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
             await self._aws_client.initialize()
 
+        elif status == ConnectivityStatus.RATE_LIMITED:
+            await self._handle_connection_failure(rate_limited=True)
+
         elif status in [
             ConnectivityStatus.FAILED,
-            ConnectivityStatus.INVALID_CREDENTIALS,
             ConnectivityStatus.EXPIRED_TOKEN,
         ]:
             await self._handle_connection_failure()
@@ -284,12 +288,23 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             await self._aws_client.update()
 
         if status in [ConnectivityStatus.FAILED, ConnectivityStatus.NOT_CONNECTED]:
-            await self._handle_connection_failure()
+            if (
+                self._reconnect_blocked_until is None
+                or datetime.now() >= self._reconnect_blocked_until
+            ):
+                await self._handle_connection_failure()
 
-    async def _handle_connection_failure(self):
+    async def _handle_connection_failure(self, rate_limited: bool = False):
         await self._aws_client.terminate()
 
-        await sleep(API_RECONNECT_INTERVAL.total_seconds())
+        interval = timedelta(minutes=5) if rate_limited else API_RECONNECT_INTERVAL
+
+        if rate_limited:
+            self._reconnect_blocked_until = datetime.now() + interval
+
+        await sleep(interval.total_seconds())
+
+        self._reconnect_blocked_until = None
 
         await self._api.initialize()
 

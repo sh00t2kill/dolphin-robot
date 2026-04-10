@@ -610,7 +610,10 @@ class RestAPI:
 
             self._set_status(ConnectivityStatus.EXPIRED_TOKEN, message)
 
-        if crex.status in [404, 405]:
+        elif crex.status == 429:
+            self._set_status(ConnectivityStatus.RATE_LIMITED, message)
+
+        elif crex.status in [404, 405]:
             self._set_status(ConnectivityStatus.API_NOT_FOUND, message)
 
         else:
