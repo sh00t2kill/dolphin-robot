@@ -126,6 +126,10 @@ UPDATE_ENTITIES_INTERVAL = timedelta(seconds=5)
 API_RECONNECT_INTERVAL = timedelta(minutes=1)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
+DEVICE_WAKE_TIMEOUT = timedelta(seconds=15)
+DEVICE_WAKE_RETRIES = 3
+DEVICE_WAKE_RETRY_DELAY = timedelta(seconds=10)
+
 WS_LAST_UPDATE = "last-update"
 
 BASE_API = "https://mbapp18.maytronics.com/api"

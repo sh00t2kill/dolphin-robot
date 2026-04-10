@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from asyncio import sleep
 from base64 import b64encode
 import hashlib
@@ -8,7 +9,7 @@ import secrets
 import sys
 from typing import Any
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from aiohttp.hdrs import METH_GET, METH_POST
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -34,6 +35,9 @@ from ..common.consts import (
     BLOCK_SIZE,
     DATA_ROBOT_DETAILS,
     DEFAULT_NAME,
+    DEVICE_WAKE_RETRY_DELAY,
+    DEVICE_WAKE_RETRIES,
+    DEVICE_WAKE_TIMEOUT,
     EMAIL_VALIDATION_URL,
     FORGOT_PASSWORD_URL,
     LOGIN_HEADERS,
@@ -143,55 +147,85 @@ class RestAPI:
 
     async def _async_post(self, url, headers: dict, request_data: str | dict | None):
         result = None
+        timeout = ClientTimeout(total=DEVICE_WAKE_TIMEOUT.total_seconds())
 
-        try:
-            async with self._session.post(
-                url, headers=headers, data=request_data, ssl=False
-            ) as response:
-                _LOGGER.debug(f"Status of {url}: {response.status}")
+        for attempt in range(1, DEVICE_WAKE_RETRIES + 1):
+            try:
+                async with self._session.post(
+                    url, headers=headers, data=request_data, ssl=False, timeout=timeout
+                ) as response:
+                    _LOGGER.debug(f"Status of {url}: {response.status}")
 
-                response.raise_for_status()
+                    response.raise_for_status()
 
-                result = await response.json()
+                    result = await response.json()
 
-                _LOGGER.debug(
-                    f"POST request [{url}] completed successfully, Result: {result}"
-                )
+                    _LOGGER.debug(
+                        f"POST request [{url}] completed successfully, Result: {result}"
+                    )
 
-        except ClientResponseError as crex:
-            await self._handle_client_error(url, METH_POST, crex)
+                    return result
 
-        except TimeoutError:
-            self._handle_server_timeout(url, METH_POST)
+            except ClientResponseError as crex:
+                await self._handle_client_error(url, METH_POST, crex)
+                return result
 
-        except Exception as ex:
-            self._handle_general_request_failure(url, METH_POST, ex)
+            except (TimeoutError, asyncio.TimeoutError):
+                if attempt < DEVICE_WAKE_RETRIES:
+                    _LOGGER.warning(
+                        f"POST to {url} timed out (attempt {attempt}/{DEVICE_WAKE_RETRIES}), "
+                        f"device may be waking up. "
+                        f"Retrying in {DEVICE_WAKE_RETRY_DELAY.total_seconds():.0f}s..."
+                    )
+                    await sleep(DEVICE_WAKE_RETRY_DELAY.total_seconds())
+                else:
+                    self._handle_server_timeout(url, METH_POST)
+
+            except Exception as ex:
+                self._handle_general_request_failure(url, METH_POST, ex)
+                return result
 
         return result
 
     async def _async_get(self, url, headers: dict):
         result = None
+        timeout = ClientTimeout(total=DEVICE_WAKE_TIMEOUT.total_seconds())
 
-        try:
-            async with self._session.get(url, headers=headers, ssl=False) as response:
-                _LOGGER.debug(f"Status of {url}: {response.status}")
+        for attempt in range(1, DEVICE_WAKE_RETRIES + 1):
+            try:
+                async with self._session.get(
+                    url, headers=headers, ssl=False, timeout=timeout
+                ) as response:
+                    _LOGGER.debug(f"Status of {url}: {response.status}")
 
-                response.raise_for_status()
+                    response.raise_for_status()
 
-                result = await response.json()
+                    result = await response.json()
 
-                _LOGGER.debug(
-                    f"GET request [{url}] completed successfully, Result: {result}"
-                )
+                    _LOGGER.debug(
+                        f"GET request [{url}] completed successfully, Result: {result}"
+                    )
 
-        except ClientResponseError as crex:
-            await self._handle_client_error(url, METH_GET, crex)
+                    return result
 
-        except TimeoutError:
-            self._handle_server_timeout(url, METH_GET)
+            except ClientResponseError as crex:
+                await self._handle_client_error(url, METH_GET, crex)
+                return result
 
-        except Exception as ex:
-            self._handle_general_request_failure(url, METH_GET, ex)
+            except (TimeoutError, asyncio.TimeoutError):
+                if attempt < DEVICE_WAKE_RETRIES:
+                    _LOGGER.warning(
+                        f"GET to {url} timed out (attempt {attempt}/{DEVICE_WAKE_RETRIES}), "
+                        f"device may be waking up. "
+                        f"Retrying in {DEVICE_WAKE_RETRY_DELAY.total_seconds():.0f}s..."
+                    )
+                    await sleep(DEVICE_WAKE_RETRY_DELAY.total_seconds())
+                else:
+                    self._handle_server_timeout(url, METH_GET)
+
+            except Exception as ex:
+                self._handle_general_request_failure(url, METH_GET, ex)
+                return result
 
         return result
 
