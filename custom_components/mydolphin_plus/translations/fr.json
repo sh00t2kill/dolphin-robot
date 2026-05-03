@@ -1,137 +1,268 @@
 {
-  "title": "MyDolphin Plus",
-  "description": "Intégration pour contrôler les robots de piscine Maytronics Dolphin via l'API MyDolphin Plus.",
   "config": {
+    "error": {
+      "already_configured": "Intégration déjà configurée avec ce nom",
+      "corrupted_encryption_key": "La clé de chiffrement est corrompue, veuillez supprimer l'intégration puis la réinstaller",
+      "invalid_account": "Compte invalide",
+      "invalid_credentials": "Identifiants invalides",
+      "invalid_server_details": "Paramètres serveur invalides",
+      "missing_permanent_api_key": "Clé d'API permanente manquante"
+    },
     "step": {
       "user": {
-        "title": "Connexion à MyDolphin Plus",
-        "description": "Connectez-vous à votre compte MyDolphin Plus pour autoriser l'accès à votre robot.",
         "data": {
-          "username": "Adresse e-mail",
-          "password": "Mot de passe"
-        }
+          "password": "Mot de passe",
+          "reset_password": "Réinitialiser le mot de passe du compte (contournement OTP)",
+          "username": "Nom d'utilisateur"
+        },
+        "description": "Configurez vos identifiants MyDolphin Plus",
+        "title": "Configurer MyDolphin Plus"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "aws_broker": {
+        "name": "Broker AWS"
       },
-      "otp": {
-        "title": "Code de vérification",
-        "description": "Un code de vérification a été envoyé à votre adresse e-mail. Veuillez l'entrer ci-dessous.",
-        "data": {
-          "otp": "Code OTP"
-        }
+      "weekly_scheduler": {
+        "name": "Programmateur hebdomadaire"
+      }
+    },
+    "light": {
+      "led": {
+        "name": "LED"
+      }
+    },
+    "number": {
+      "cycle_time_all": {
+        "name": "Durée du cycle Régulier"
       },
-      "select": {
-        "title": "Sélectionnez votre robot",
-        "description": "Sélectionnez le robot que vous souhaitez intégrer à Home Assistant.",
-        "data": {
-          "robot": "Robot"
+      "cycle_time_floor": {
+        "name": "Durée du cycle Sol uniquement"
+      },
+      "cycle_time_pickup": {
+        "name": "Durée du cycle Récupération"
+      },
+      "cycle_time_short": {
+        "name": "Durée du cycle Mode rapide"
+      },
+      "cycle_time_ultra": {
+        "name": "Durée du cycle Ultra propre"
+      },
+      "cycle_time_water": {
+        "name": "Durée du cycle Ligne d'eau"
+      },
+      "led_intensity": {
+        "name": "Intensité LED"
+      }
+    },
+    "select": {
+      "led_mode": {
+        "name": "Mode LED",
+        "state": {
+          "1": "Clignotant",
+          "2": "Toujours allumé",
+          "3": "Disco"
         }
       }
     },
+    "sensor": {
+      "clean_mode": {
+        "name": "Mode de nettoyage",
+        "state": {
+          "all": "Régulier",
+          "floor": "Sol uniquement",
+          "pickup": "Récupération",
+          "short": "Mode rapide",
+          "ultra": "Ultra propre",
+          "water": "Ligne d'eau"
+        }
+      },
+      "cycle_count": {
+        "name": "Nombre de cycles"
+      },
+      "cycle_time_left": {
+        "name": "Temps restant du cycle"
+      },
+      "filter_status": {
+        "name": "État du filtre",
+        "state": {
+          "almost_full": "Presque plein",
+          "empty": "Vide",
+          "fault": "Défaut",
+          "full": "Plein",
+          "getting_full": "Se remplit",
+          "not_available": "Non disponible",
+          "partially_full": "Partiellement plein",
+          "unknown": "Inconnu"
+        }
+      },
+      "network_name": {
+        "name": "Nom du réseau"
+      },
+      "power_supply_error": {
+        "name": "Erreur d'alimentation",
+        "state": {
+          "0": "OK",
+          "1": "Tension d'entrée DC",
+          "10": "Sous-charge moteur 2",
+          "11": "Capteur mur/sol",
+          "12": "Tension d'entrée DC 23V",
+          "13": "Capteur mur/sol 2",
+          "14": "Robot bloqué",
+          "15": "Surchauffe de l'alimentation",
+          "16": "Surcharge de l'alimentation",
+          "17": "Défaillance pilote turbine 1",
+          "18": "Défaillance pilote turbine 2",
+          "19": "Défaillance pilote moteur 1",
+          "2": "Hors de l'eau",
+          "20": "Défaillance pilote moteur 2",
+          "21": "Surcharge servo",
+          "22": "Défaillance moteur turbine 1",
+          "23": "Défaillance moteur turbine 2",
+          "24": "Défaillance moteur 1",
+          "25": "Défaillance moteur 2",
+          "255": "OK",
+          "3": "Surcharge turbine",
+          "4": "Sous-charge turbine 1",
+          "5": "Surcharge turbine",
+          "6": "Sous-charge turbine 2",
+          "7": "Surcharge moteur",
+          "8": "Sous-charge moteur 1",
+          "9": "Surcharge moteur"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez les débris de l'ouverture de la turbine.\n3. Démontez le compartiment de la turbine si les débris sont inaccessibles.\n4. Remontez le robot, rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n5. Si cela ne suffit pas, contactez votre revendeur.",
+              "5": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez les débris de l'ouverture de la turbine.\n3. Démontez le compartiment de la turbine si les débris sont inaccessibles.\n4. Remontez le robot, rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n5. Si cela ne suffit pas, contactez votre revendeur.",
+              "7": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez tout objet ou obstruction du système d'entraînement.\n3. Rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n4. Si cela ne suffit pas, contactez votre revendeur.",
+              "9": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez tout objet ou obstruction du système d'entraînement.\n3. Rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n4. Si cela ne suffit pas, contactez votre revendeur."
+            }
+          }
+        }
+      },
+      "power_supply_status": {
+        "name": "État de l'alimentation",
+        "state": {
+          "cleaning": "Nettoyage",
+          "error": "Erreur",
+          "holddelay": "En attente (différé)",
+          "holdweekly": "En attente (programmation)",
+          "off": "Éteint",
+          "on": "Allumé",
+          "programming": "Programmation"
+        }
+      },
+      "robot_error": {
+        "name": "Erreur du robot",
+        "state": {
+          "0": "OK",
+          "1": "Tension d'entrée DC",
+          "10": "Sous-charge moteur 2",
+          "11": "Capteur mur/sol",
+          "12": "Tension d'entrée DC 23V",
+          "13": "Capteur mur/sol 2",
+          "14": "Robot bloqué",
+          "15": "Surchauffe de l'alimentation",
+          "16": "Surcharge de l'alimentation",
+          "17": "Défaillance pilote turbine 1",
+          "18": "Défaillance pilote turbine 2",
+          "19": "Défaillance pilote moteur 1",
+          "2": "Hors de l'eau",
+          "20": "Défaillance pilote moteur 2",
+          "21": "Surcharge servo",
+          "22": "Défaillance moteur turbine 1",
+          "23": "Défaillance moteur turbine 2",
+          "24": "Défaillance moteur 1",
+          "25": "Défaillance moteur 2",
+          "255": "OK",
+          "3": "Surcharge turbine",
+          "4": "Sous-charge turbine 1",
+          "5": "Surcharge turbine",
+          "6": "Sous-charge turbine 2",
+          "7": "Surcharge moteur",
+          "8": "Sous-charge moteur 1",
+          "9": "Surcharge moteur"
+        },
+        "state_attributes": {
+          "instructions": {
+            "state": {
+              "3": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez les débris de l'ouverture de la turbine.\n3. Démontez le compartiment de la turbine si les débris sont inaccessibles.\n4. Remontez le robot, rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n5. Si cela ne suffit pas, contactez votre revendeur.",
+              "5": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez les débris de l'ouverture de la turbine.\n3. Démontez le compartiment de la turbine si les débris sont inaccessibles.\n4. Remontez le robot, rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n5. Si cela ne suffit pas, contactez votre revendeur.",
+              "7": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez tout objet ou obstruction du système d'entraînement.\n3. Rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n4. Si cela ne suffit pas, contactez votre revendeur.",
+              "9": "Veuillez suivre ces étapes :\n1. Débranchez l'alimentation.\n2. Retirez tout objet ou obstruction du système d'entraînement.\n3. Rebranchez l'alimentation et essayez de le faire fonctionner à nouveau.\n4. Si cela ne suffit pas, contactez votre revendeur."
+            }
+          }
+        }
+      },
+      "robot_status": {
+        "name": "État du robot",
+        "state": {
+          "fault": "Défaut",
+          "finished": "Terminé",
+          "init": "Initialisé",
+          "notconnected": "Déconnecté",
+          "programming": "Programmation",
+          "scanning": "Analyse"
+        }
+      },
+      "robot_type": {
+        "name": "Type de robot"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "status": {
+        "name": "Statut",
+        "state": {
+          "cleaning": "Nettoyage en cours",
+          "holddelay": "En attente (différé)",
+          "holdweekly": "En attente (programmation)",
+          "init": "Vérification de l'environnement",
+          "off": "Éteint",
+          "on": "Allumé",
+          "programming": "Programmation"
+        }
+      }
+    },
+    "vacuum": {
+      "vacuum": {
+        "state_attributes": {
+          "fan_speed": {
+            "state": {
+              "all": "Régulier",
+              "floor": "Sol uniquement",
+              "pickup": "Récupération",
+              "short": "Mode rapide",
+              "ultra": "Ultra propre",
+              "water": "Ligne d'eau"
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
     "error": {
-      "invalid_auth": "Authentification invalide. Vérifiez votre adresse e-mail et votre mot de passe.",
-      "invalid_otp": "Code OTP invalide. Veuillez réessayer.",
-      "no_robots": "Aucun robot trouvé sur votre compte MyDolphin Plus.",
-      "connection_error": "Erreur de connexion à l'API MyDolphin Plus. Vérifiez votre connexion Internet.",
-      "unknown_error": "Une erreur inconnue est survenue. Veuillez réessayer plus tard."
+      "already_configured": "Intégration déjà configurée avec ce nom",
+      "corrupted_encryption_key": "La clé de chiffrement est corrompue, veuillez supprimer l'intégration puis la réinstaller",
+      "invalid_account": "Compte invalide",
+      "invalid_credentials": "Identifiants invalides",
+      "invalid_server_details": "Paramètres serveur invalides",
+      "missing_permanent_api_key": "Clé d'API permanente manquante"
     },
-    "abort": {
-      "reauth": "Réauthentification requise",
-      "reconnect": "Reconnexion requise"
-    }
-  },
-  "services": {
-    "start": {
-      "name": "Démarrer le nettoyage",
-      "description": "Démarre un cycle de nettoyage sur le robot sélectionné."
-    },
-    "pause": {
-      "name": "Mettre en pause",
-      "description": "Met en pause le cycle de nettoyage en cours."
-    },
-    "stop": {
-      "name": "Arrêter",
-      "description": "Arrête le cycle de nettoyage en cours."
-    },
-    "return_to_base": {
-      "name": "Retour à la base",
-      "description": "Renvoie le robot à sa base."
-    },
-    "set_mode": {
-      "name": "Définir le mode de nettoyage",
-      "description": "Définir le mode de nettoyage du robot.",
-      "data": {
-        "mode": "Mode de nettoyage (ex: all, short, floor, water, ultra)"
-      }
-    },
-    "set_led": {
-      "name": "Activer/Désactiver la LED",
-      "description": "Allume ou éteint la LED du robot.",
-      "data": {
-        "state": "État (on/off)"
-      }
-    },
-    "set_led_intensity": {
-      "name": "Définir l'intensité de la LED",
-      "description": "Définir l'intensité de la LED du robot (0-100).",
-      "data": {
-        "intensity": "Intensité (0-100)"
-      }
-    },
-    "send_command": {
-      "name": "Envoyer une commande",
-      "description": "Envoyer une commande personnalisée au robot.",
-      "data": {
-        "command": "Commande (ex: start, pause, stop, return_to_base)"
+    "step": {
+      "mydolphin_plus_additional_settings": {
+        "data": {
+          "password": "Mot de passe",
+          "reset_password": "Réinitialiser le mot de passe du compte (contournement OTP)",
+          "username": "Nom d'utilisateur"
+        },
+        "description": "Configurez le nom d'utilisateur et le mot de passe.",
+        "title": "Options de MyDolphin Plus"
       }
     }
-  },
-  "states": {
-    "cleaning": "Nettoyage",
-    "paused": "En pause",
-    "idle": "Inactif",
-    "returning": "Retour à la base",
-    "docked": "À la base",
-    "error": "Erreur",
-    "unknown": "Inconnu"
-  },
-  "attributes": {
-    "battery_level": "Niveau de batterie",
-    "status": "État",
-    "clean_mode": "Mode de nettoyage",
-    "filter_status": "État du filtre",
-    "cycle_time": "Temps du cycle",
-    "cycle_time_left": "Temps restant",
-    "cycle_count": "Nombre de cycles",
-    "last_clean": "Dernier nettoyage",
-    "next_clean": "Prochain nettoyage",
-    "led_status": "État de la LED",
-    "firmware": "Version du firmware"
-  },
-  "modes": {
-    "all": "Complet",
-    "short": "Rapide",
-    "floor": "Fond",
-    "water": "Ligne d'eau",
-    "ultra": "Ultra",
-    "pickup": "Retour à la base"
-  },
-  "filter_statuses": {
-    "empty": "Vide",
-    "full": "Plein",
-    "ok": "OK"
-  },
-  "led_statuses": {
-    "on": "Allumé",
-    "off": "Éteint"
-  },
-  "errors": {
-    "impeller_blocked": "Roues bloquées",
-    "motor_blocked": "Moteur bloqué",
-    "low_voltage": "Tension faible",
-    "over_voltage": "Surtension",
-    "low_water_flow": "Débit d'eau faible",
-    "high_water_flow": "Débit d'eau élevé",
-    "sensor_error": "Erreur de capteur",
-    "communication_error": "Erreur de communication",
-    "unknown_error": "Erreur inconnue"
   }
 }
