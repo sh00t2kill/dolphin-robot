@@ -464,6 +464,8 @@ class RestAPI:
             # Check rate limiting
             now = datetime.now().timestamp()
             last_fetch = self._config_manager.last_token_fetch
+            if last_fetch is None:
+                last_fetch = 0
             time_since_last = now - last_fetch
 
             if time_since_last < MIN_TOKEN_FETCH_INTERVAL.total_seconds():
