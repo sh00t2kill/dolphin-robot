@@ -13,10 +13,11 @@
     "step": {
       "user": {
         "data": {
+          "app_id": "App",
           "title": "Title",
           "username": "Email"
         },
-        "description": "Enter your MyDolphin Plus account email. A login code will be sent to your inbox.",
+        "description": "Select the mobile app you use and enter your account email. A login code will be sent to your inbox.",
         "title": "Set up MyDolphin Plus"
       },
       "otp": {
@@ -267,10 +268,11 @@
     "step": {
       "init": {
         "data": {
+          "app_id": "App",
           "title": "Title",
           "username": "Email"
         },
-        "description": "Enter your MyDolphin Plus email to receive a fresh login code.",
+        "description": "Select the mobile app you use and enter your email to receive a fresh login code.",
         "title": "Re-authenticate MyDolphin Plus"
       },
       "otp": {

@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 class DomainFlowHandler(config_entries.ConfigFlow):
     """Handle a domain config flow."""
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self):
         super().__init__()

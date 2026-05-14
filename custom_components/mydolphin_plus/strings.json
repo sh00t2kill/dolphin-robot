@@ -3,8 +3,9 @@
     "step": {
       "user": {
         "title": "Set up MyDolphin Plus",
-        "description": "Enter your MyDolphin Plus account email. A login code will be sent to your inbox.",
+        "description": "Select the mobile app you use and enter your account email. A login code will be sent to your inbox.",
         "data": {
+          "app_id": "App",
           "title": "Title",
           "username": "Email"
         }
@@ -36,8 +37,9 @@
     "step": {
       "init": {
         "title": "Re-authenticate MyDolphin Plus",
-        "description": "Enter your MyDolphin Plus email to receive a fresh login code.",
+        "description": "Select the mobile app you use and enter your email to receive a fresh login code.",
         "data": {
+          "app_id": "App",
           "title": "Title",
           "username": "Email"
         }

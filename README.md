@@ -10,9 +10,10 @@ Integration with MyDolphin Plus to monitor and control your robot
 
 Authentication uses the same email-OTP flow as the official MyDolphin Plus mobile app:
 
-1. Enter your account email when adding the integration.
-2. Maytronics emails a one-time login code.
-3. Enter the code in Home Assistant — the integration exchanges it for a refresh token and connects to the robot.
+1. Select the mobile app you use with your robot.
+2. Enter your account email when adding the integration.
+3. Maytronics emails a one-time login code.
+4. Enter the code in Home Assistant — the integration exchanges it for a refresh token and connects to the robot.
 
 The refresh token is reused on every Home Assistant restart and silently renewed (~hourly), so you should only need to re-enter an OTP if the refresh token expires (Cognito default ~30 days) or you remove and re-add the integration.
 
@@ -23,8 +24,8 @@ The refresh token is reused on every Home Assistant restart and silently renewed
 #### Requirements
 
 - MyDolphin Plus robot with Always Connected support
-- MyDolphin Plus App
-- MyDolphin Plus account
+- MyDolphin Plus or Maytronics One app
+- MyDolphin Plus or Maytronics One account
 
 #### Installations via HACS
 
@@ -37,8 +38,9 @@ The refresh token is reused on every Home Assistant restart and silently renewed
 
 | Field      | Type    | Required | Description                                                                           |
 | ---------- | ------- | -------- | ------------------------------------------------------------------------------------- |
+| App        | Select  | yes      | Mobile app used with the robot. Existing entries default to MyDolphin Plus            |
 | Title      | Textbox | yes      | Display name for the integration entry                                                |
-| Email      | Textbox | yes      | Email of your MyDolphin Plus account — Maytronics emails a login code to this address |
+| Email      | Textbox | yes      | Email of your Maytronics app account — Maytronics emails a login code to this address |
 | Login code | Textbox | yes      | The one-time code from the email, entered on the second step of the config flow       |
 
 ###### Configuration validations

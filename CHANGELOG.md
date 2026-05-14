@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.26b4
+
+- Add setup selection for the Maytronics mobile app used by the account
+- Add Maytronics One app key support for authentication and token API calls
+- Default existing config entries to MyDolphin Plus when no app selection is stored
+- Document the app selection setup step
+
 ## v1.0.26b3
 
 - Fix pause control so active robots send the power-off command instead of only acting while docked

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import timedelta
 
 from homeassistant.components.vacuum import VacuumEntityFeature
@@ -13,6 +15,7 @@ INVALID_TOKEN_SECTION = "https://github.com/sh00t2kill/dolphin-robot#invalid-tok
 
 CONF_TITLE = "title"
 CONF_OTP = "otp"
+CONF_APP_ID = "app_id"
 
 INITIAL_TOKENS_KEY = "__initial_tokens__"
 
@@ -160,14 +163,51 @@ APPS_BASE = "https://apps.maytronics.com"
 AUTHENTICATE_USER_URL = f"{APPS_BASE}/mobapi/user/authenticate-user/"
 AWS_STS_TOKEN_URL = f"{APPS_BASE}/mt-sso/aws/getToken/"
 
-APP_KEY = "346BDE92-53D1-4829-8A2E-B496014B586C"
+APP_ID_MYDOLPHIN_PLUS = "mydolphin_plus"
+APP_ID_MAYTRONICS_ONE = "maytronics_one"
+DEFAULT_APP_ID = APP_ID_MYDOLPHIN_PLUS
+
+APP_NAME_MYDOLPHIN_PLUS = "MyDolphin Plus"
+APP_NAME_MAYTRONICS_ONE = "Maytronics One"
+
+APP_KEYS = {
+    APP_ID_MYDOLPHIN_PLUS: {
+        "name": APP_NAME_MYDOLPHIN_PLUS,
+        "key": "346BDE92-53D1-4829-8A2E-B496014B586C",
+    },
+    APP_ID_MAYTRONICS_ONE: {
+        "name": APP_NAME_MAYTRONICS_ONE,
+        "key": "39AF9BF2-E906-4205-9368-EB3E16663ACE",
+    },
+}
+
+APP_SELECT_OPTIONS = [
+    {"value": app_id, "label": app["name"]} for app_id, app in APP_KEYS.items()
+]
+
+APP_KEY = APP_KEYS[DEFAULT_APP_ID]["key"]
 APP_VERSION = "ios_3.1.7_2"
 
-BEARER_HEADERS_BASE = {
-    "AppKey": APP_KEY,
-    "app_version": APP_VERSION,
-    "Accept": "*/*",
-}
+
+def resolve_app_id(app_id: str | None) -> str:
+    if app_id in APP_KEYS:
+        return app_id
+    return DEFAULT_APP_ID
+
+
+def get_app_key(app_id: str | None) -> str:
+    return APP_KEYS[resolve_app_id(app_id)]["key"]
+
+
+def get_bearer_headers_base(app_id: str | None = None) -> dict:
+    return {
+        "AppKey": get_app_key(app_id),
+        "app_version": APP_VERSION,
+        "Accept": "*/*",
+    }
+
+
+BEARER_HEADERS_BASE = get_bearer_headers_base()
 
 # Refresh the IdToken if it expires within this many seconds
 ID_TOKEN_REFRESH_WINDOW_SECONDS = 300

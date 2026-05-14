@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,12 +12,15 @@ from custom_components.mydolphin_plus.common.connectivity_status import (
 )
 from custom_components.mydolphin_plus.common.consts import (
     API_TOKEN_FIELDS,
+    APP_ID_MAYTRONICS_ONE,
+    APP_ID_MYDOLPHIN_PLUS,
     AWS_CREDENTIALS_EXPIRY,
     STORAGE_DATA_ID_TOKEN,
     STORAGE_DATA_ID_TOKEN_EXPIRES_AT,
     STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH,
     STORAGE_DATA_LAST_TOKEN_FETCH,
     STORAGE_DATA_REFRESH_TOKEN,
+    get_app_key,
 )
 from custom_components.mydolphin_plus.managers.config_manager import ConfigManager
 import custom_components.mydolphin_plus.managers.rest_api as rest_api_module
@@ -26,6 +30,7 @@ from custom_components.mydolphin_plus.managers.rest_api import (
     fetch_aws_credentials,
     fetch_user_profile,
 )
+from custom_components.mydolphin_plus.models.config_data import ConfigData
 
 
 class DummyIntegrationInfo:
@@ -95,10 +100,11 @@ class DummyConfigManager:
         self.entry_id = "entry-id"
         self.updated_aws_fetch = None
         self.updated_aws_expiry = None
+        self.app_id = APP_ID_MYDOLPHIN_PLUS
 
     @property
     def config_data(self):
-        return None
+        return SimpleNamespace(app_id=self.app_id)
 
     async def update_tokens(self, *_args, **_kwargs):
         return None
@@ -121,10 +127,20 @@ class DummyConfigManager:
         self.aws_credentials_expiry = expiry
 
 
+def test_config_data_defaults_missing_app_to_mydolphin_plus():
+    """Missing selected app should default to MyDolphin Plus."""
+    config_data = ConfigData()
+    config_data.update({"username": "user@example.com"})
+
+    assert config_data.app_id == APP_ID_MYDOLPHIN_PLUS
+
+
 @pytest.mark.asyncio
 async def test_cognito_initiate_auth_sets_user_agent():
     """Cognito initiate auth includes User-Agent headers."""
-    session = FakeSession(post_payload={"ChallengeName": "CUSTOM_CHALLENGE", "Session": "x"})
+    session = FakeSession(
+        post_payload={"ChallengeName": "CUSTOM_CHALLENGE", "Session": "x"}
+    )
     info = DummyIntegrationInfo()
 
     await cognito_initiate_auth(session, "user@example.com", integration_info=info)
@@ -142,6 +158,17 @@ async def test_fetch_user_profile_sets_user_agent():
 
     assert session.last_headers["User-Agent"] == "HA-MyDolphin-Plus/test"
     assert session.last_headers["Authorization"] == "Bearer id-token"
+    assert session.last_headers["AppKey"] == get_app_key(APP_ID_MYDOLPHIN_PLUS)
+
+
+@pytest.mark.asyncio
+async def test_fetch_user_profile_uses_selected_app_key():
+    """authenticate-user request uses the selected app key."""
+    session = FakeSession(post_payload={"Data": {"Sernum": "123"}})
+
+    await fetch_user_profile(session, "id-token", app_id=APP_ID_MAYTRONICS_ONE)
+
+    assert session.last_headers["AppKey"] == get_app_key(APP_ID_MAYTRONICS_ONE)
 
 
 @pytest.mark.asyncio
@@ -154,6 +181,27 @@ async def test_fetch_aws_credentials_sets_user_agent():
 
     assert session.last_headers["User-Agent"] == "HA-MyDolphin-Plus/test"
     assert session.last_headers["Authorization"] == "Bearer id-token"
+    assert session.last_headers["AppKey"] == get_app_key(APP_ID_MYDOLPHIN_PLUS)
+
+
+@pytest.mark.asyncio
+async def test_rest_api_bearer_get_uses_configured_app_key():
+    """Runtime API requests use ConfigManager's selected app id."""
+    cfg = DummyConfigManager()
+    cfg.app_id = APP_ID_MAYTRONICS_ONE
+    api = RestAPI(None, cfg)
+    captured = {}
+
+    async def fake_async_send(_method, _url, headers, data=None):
+        captured["headers"] = headers
+        captured["data"] = data
+        return {}
+
+    api._async_send = fake_async_send
+
+    await api._bearer_get("https://example.test")
+
+    assert captured["headers"]["AppKey"] == get_app_key(APP_ID_MAYTRONICS_ONE)
 
 
 @pytest.mark.asyncio
@@ -216,16 +264,21 @@ async def test_refresh_aws_credentials_uses_aws_fetch_timestamp(monkeypatch):
 
     called = {"fetch": False}
 
-    async def fake_fetch_aws_credentials(_session, _id_token, integration_info=None):
+    async def fake_fetch_aws_credentials(
+        _session, _id_token, integration_info=None, app_id=None
+    ):
         called["fetch"] = True
         assert integration_info is not None
+        assert app_id == APP_ID_MYDOLPHIN_PLUS
         return {
             "Token": "t",
             "AccessKeyId": "ak",
             "SecretAccessKey": "sk",
         }
 
-    monkeypatch.setattr(rest_api_module, "fetch_aws_credentials", fake_fetch_aws_credentials)
+    monkeypatch.setattr(
+        rest_api_module, "fetch_aws_credentials", fake_fetch_aws_credentials
+    )
 
     await api._refresh_aws_credentials()
 

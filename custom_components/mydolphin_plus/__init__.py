@@ -12,6 +12,8 @@ from homeassistant.const import CONF_USERNAME, EVENT_HOMEASSISTANT_START
 from homeassistant.core import HomeAssistant
 
 from .common.consts import (
+    CONF_APP_ID,
+    DEFAULT_APP_ID,
     DEFAULT_NAME,
     DOMAIN,
     INITIAL_TOKENS_KEY,
@@ -21,6 +23,7 @@ from .common.consts import (
     STORAGE_DATA_MOTOR_UNIT_SERIAL,
     STORAGE_DATA_REFRESH_TOKEN,
     STORAGE_DATA_SERIAL_NUMBER,
+    resolve_app_id,
 )
 from .managers.config_manager import ConfigManager
 from .managers.coordinator import MyDolphinPlusCoordinator
@@ -30,6 +33,18 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(_hass, _config):
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate older config entries to include selected app metadata."""
+    data = dict(entry.data)
+    app_id = resolve_app_id(data.get(CONF_APP_ID))
+
+    if data.get(CONF_APP_ID) != app_id or entry.version < 2:
+        data[CONF_APP_ID] = app_id
+        hass.config_entries.async_update_entry(entry, data=data, version=2)
+
     return True
 
 
@@ -59,7 +74,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             hass.config_entries.async_update_entry(
                 entry,
-                data={CONF_USERNAME: entry_config.get(CONF_USERNAME)},
+                data={
+                    CONF_APP_ID: resolve_app_id(
+                        entry_config.get(CONF_APP_ID, DEFAULT_APP_ID)
+                    ),
+                    CONF_USERNAME: entry_config.get(CONF_USERNAME),
+                },
             )
 
         is_initialized = config_manager.is_initialized

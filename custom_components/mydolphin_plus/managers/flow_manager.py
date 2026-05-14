@@ -12,6 +12,7 @@ from homeassistant.data_entry_flow import FlowHandler
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from ..common.consts import (
+    CONF_APP_ID,
     CONF_OTP,
     CONF_TITLE,
     DEFAULT_NAME,
@@ -21,6 +22,7 @@ from ..common.consts import (
     STORAGE_DATA_MOTOR_UNIT_SERIAL,
     STORAGE_DATA_REFRESH_TOKEN,
     STORAGE_DATA_SERIAL_NUMBER,
+    resolve_app_id,
 )
 from ..common.integration_info import IntegrationInfo
 from ..models.config_data import ConfigData
@@ -66,6 +68,7 @@ class IntegrationFlowManager:
         if user_input is None:
             defaults = (
                 {
+                    CONF_APP_ID: resolve_app_id(self._entry.data.get(CONF_APP_ID)),
                     CONF_TITLE: self._entry.title,
                     CONF_USERNAME: self._entry.data.get(CONF_USERNAME),
                 }
@@ -76,6 +79,7 @@ class IntegrationFlowManager:
 
         email = (user_input.get(CONF_USERNAME) or "").strip().lower()
         title = user_input.get(CONF_TITLE, DEFAULT_NAME)
+        app_id = resolve_app_id(user_input.get(CONF_APP_ID))
 
         if not email:
             return self._show_user_form(user_input, errors={"base": "invalid_account"})
@@ -97,6 +101,7 @@ class IntegrationFlowManager:
             _FLOW_STATE_ATTR,
             {
                 "title": title,
+                "app_id": app_id,
                 "email": email,
                 "cognito_session": init["Session"],
             },
@@ -116,6 +121,7 @@ class IntegrationFlowManager:
         if not code:
             return self._show_otp_form(errors={"base": "invalid_otp"})
 
+        app_id = resolve_app_id(state.get("app_id"))
         session = async_get_clientsession(self._hass)
         await self._integration_info.initialize(self._hass)
         try:
@@ -130,6 +136,7 @@ class IntegrationFlowManager:
                 session,
                 auth["IdToken"],
                 integration_info=self._integration_info,
+                app_id=app_id,
             )
         except LoginError as ex:
             _LOGGER.warning(f"OTP exchange failed: {ex}")
@@ -153,6 +160,7 @@ class IntegrationFlowManager:
             return self._flow_handler.async_update_reload_and_abort(
                 self._flow_handler._get_reauth_entry(),
                 data_updates={
+                    CONF_APP_ID: app_id,
                     CONF_USERNAME: state["email"],
                     INITIAL_TOKENS_KEY: initial_tokens,
                 },
@@ -163,6 +171,7 @@ class IntegrationFlowManager:
                 self._entry,
                 title=state["title"],
                 data={
+                    CONF_APP_ID: app_id,
                     CONF_USERNAME: state["email"],
                     INITIAL_TOKENS_KEY: initial_tokens,
                 },
@@ -173,6 +182,7 @@ class IntegrationFlowManager:
         return self._flow_handler.async_create_entry(
             title=state["title"],
             data={
+                CONF_APP_ID: app_id,
                 CONF_USERNAME: state["email"],
                 INITIAL_TOKENS_KEY: initial_tokens,
             },

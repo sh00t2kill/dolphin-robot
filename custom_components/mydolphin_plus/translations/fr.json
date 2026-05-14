@@ -3,8 +3,9 @@
     "step": {
       "user": {
         "title": "Configurer MyDolphin Plus",
-        "description": "Saisissez l'adresse e-mail de votre compte MyDolphin Plus. Un code de connexion sera envoyé dans votre boîte de réception.",
+        "description": "Sélectionnez l'application mobile que vous utilisez et saisissez l'adresse e-mail de votre compte. Un code de connexion sera envoyé dans votre boîte de réception.",
         "data": {
+          "app_id": "Application",
           "title": "Titre",
           "username": "E-mail"
         }
@@ -36,8 +37,9 @@
     "step": {
       "init": {
         "title": "Réauthentifier MyDolphin Plus",
-        "description": "Saisissez votre adresse e-mail MyDolphin Plus pour recevoir un nouveau code de connexion.",
+        "description": "Sélectionnez l'application mobile que vous utilisez et saisissez votre adresse e-mail pour recevoir un nouveau code de connexion.",
         "data": {
+          "app_id": "Application",
           "title": "Titre",
           "username": "E-mail"
         }

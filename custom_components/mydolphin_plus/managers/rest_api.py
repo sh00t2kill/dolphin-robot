@@ -23,7 +23,6 @@ from ..common.consts import (
     AUTHENTICATE_USER_URL,
     AWS_CREDENTIALS_TTL,
     AWS_STS_TOKEN_URL,
-    BEARER_HEADERS_BASE,
     COGNITO_AUTH_FLOW_CUSTOM,
     COGNITO_AUTH_FLOW_REFRESH,
     COGNITO_CHALLENGE_NAME,
@@ -38,6 +37,7 @@ from ..common.consts import (
     RECONNECT_BACKOFF_MAX,
     SIGNAL_API_STATUS,
     SIGNAL_DEVICE_NEW,
+    get_bearer_headers_base,
 )
 from ..common.integration_info import IntegrationInfo
 from ..models.config_data import ConfigData
@@ -63,6 +63,20 @@ def _build_headers(
     if integration_info is not None:
         integration_info.set_user_agent(headers)
     return headers
+
+
+def _build_bearer_headers(
+    app_id: str | None = None,
+    id_token: str | None = None,
+    extra: dict | None = None,
+    integration_info: IntegrationInfo | None = None,
+) -> dict:
+    return _build_headers(
+        base=get_bearer_headers_base(app_id),
+        id_token=id_token,
+        extra=extra,
+        integration_info=integration_info,
+    )
 
 
 async def _cognito_call(
@@ -170,9 +184,10 @@ async def fetch_user_profile(
     session: ClientSession,
     id_token: str,
     integration_info: IntegrationInfo | None = None,
+    app_id: str | None = None,
 ) -> dict:
-    headers = _build_headers(
-        base=BEARER_HEADERS_BASE,
+    headers = _build_bearer_headers(
+        app_id=app_id,
         id_token=id_token,
         extra={"Content-Type": "application/x-www-form-urlencoded"},
         integration_info=integration_info,
@@ -200,9 +215,10 @@ async def fetch_aws_credentials(
     session: ClientSession,
     id_token: str,
     integration_info: IntegrationInfo | None = None,
+    app_id: str | None = None,
 ) -> dict:
-    headers = _build_headers(
-        base=BEARER_HEADERS_BASE,
+    headers = _build_bearer_headers(
+        app_id=app_id,
         id_token=id_token,
         integration_info=integration_info,
     )
@@ -379,8 +395,8 @@ class RestAPI:
     async def _bearer_post(
         self, url: str, body: str | dict | None = None
     ) -> dict | None:
-        headers = _build_headers(
-            base=BEARER_HEADERS_BASE,
+        headers = _build_bearer_headers(
+            app_id=self._config_manager.config_data.app_id,
             id_token=self._config_manager.id_token,
             extra={"Content-Type": "application/x-www-form-urlencoded"},
             integration_info=self._integration_info,
@@ -388,8 +404,8 @@ class RestAPI:
         return await self._async_send(METH_POST, url, headers, data=body or "")
 
     async def _bearer_get(self, url: str) -> dict | None:
-        headers = _build_headers(
-            base=BEARER_HEADERS_BASE,
+        headers = _build_bearer_headers(
+            app_id=self._config_manager.config_data.app_id,
             id_token=self._config_manager.id_token,
             integration_info=self._integration_info,
         )
@@ -504,6 +520,7 @@ class RestAPI:
                 self._session,
                 self._config_manager.id_token,
                 integration_info=self._integration_info,
+                app_id=self._config_manager.config_data.app_id,
             )
         except LoginError as ex:
             self._set_status(ConnectivityStatus.FAILED, f"getToken: {ex}")

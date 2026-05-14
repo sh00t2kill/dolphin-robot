@@ -10,6 +10,9 @@ from custom_components.mydolphin_plus.common.connectivity_status import (
     ConnectivityStatus,
 )
 from custom_components.mydolphin_plus.common.consts import (
+    APP_ID_MAYTRONICS_ONE,
+    APP_ID_MYDOLPHIN_PLUS,
+    CONF_APP_ID,
     CONF_OTP,
     INITIAL_TOKENS_KEY,
     STORAGE_DATA_ID_TOKEN,
@@ -60,12 +63,18 @@ async def test_flow_manager_reauth_otp_updates_existing_entry(monkeypatch):
         return None
 
     async def fake_respond_otp(*_args, **_kwargs):
-        return {"IdToken": "id-token", "RefreshToken": "refresh-token", "ExpiresIn": 3600}
+        return {
+            "IdToken": "id-token",
+            "RefreshToken": "refresh-token",
+            "ExpiresIn": 3600,
+        }
 
     async def fake_profile(*_args, **_kwargs):
         return {"Sernum": "serial", "eSERNUM": "motor"}
 
-    monkeypatch.setattr(flow_manager_module, "async_get_clientsession", lambda _hass: object())
+    monkeypatch.setattr(
+        flow_manager_module, "async_get_clientsession", lambda _hass: object()
+    )
     monkeypatch.setattr(
         flow_manager_module.IntegrationInfo,
         "initialize",
@@ -87,8 +96,62 @@ async def test_flow_manager_reauth_otp_updates_existing_entry(monkeypatch):
     assert flow_handler.reauth_updates is not None
     updates = flow_handler.reauth_updates["data_updates"]
     assert updates is not None
+    assert updates[CONF_APP_ID] == APP_ID_MYDOLPHIN_PLUS
     assert updates[INITIAL_TOKENS_KEY][STORAGE_DATA_ID_TOKEN] == "id-token"
     assert updates[INITIAL_TOKENS_KEY][STORAGE_DATA_REFRESH_TOKEN] == "refresh-token"
+
+
+@pytest.mark.asyncio
+async def test_flow_manager_reauth_preserves_selected_app(monkeypatch):
+    """Reauth should save the selected app id from flow state."""
+    flow_handler = DummyFlowHandler()
+    setattr(
+        flow_handler,
+        _FLOW_STATE_ATTR,
+        {
+            "title": "My Dolphin",
+            "app_id": APP_ID_MAYTRONICS_ONE,
+            "email": "user@example.com",
+            "cognito_session": "sess",
+        },
+    )
+
+    async def fake_initialize(*_args, **_kwargs):
+        return None
+
+    async def fake_respond_otp(*_args, **_kwargs):
+        return {
+            "IdToken": "id-token",
+            "RefreshToken": "refresh-token",
+            "ExpiresIn": 3600,
+        }
+
+    async def fake_profile(*_args, **_kwargs):
+        return {"Sernum": "serial", "eSERNUM": "motor"}
+
+    monkeypatch.setattr(
+        flow_manager_module, "async_get_clientsession", lambda _hass: object()
+    )
+    monkeypatch.setattr(
+        flow_manager_module.IntegrationInfo,
+        "initialize",
+        fake_initialize,
+    )
+    monkeypatch.setattr(flow_manager_module, "cognito_respond_otp", fake_respond_otp)
+    monkeypatch.setattr(flow_manager_module, "fetch_user_profile", fake_profile)
+
+    manager = IntegrationFlowManager(
+        hass=SimpleNamespace(),
+        flow_handler=flow_handler,
+        entry=flow_handler._get_reauth_entry(),
+        source=SOURCE_REAUTH,
+    )
+
+    result = await manager.async_step_otp({CONF_OTP: "123456"})
+
+    assert result["type"] == "abort"
+    updates = flow_handler.reauth_updates["data_updates"]
+    assert updates[CONF_APP_ID] == APP_ID_MAYTRONICS_ONE
 
 
 @pytest.mark.asyncio
