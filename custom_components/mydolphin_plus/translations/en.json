@@ -1,22 +1,34 @@
 {
   "config": {
+    "abort": {
+      "reauth_successful": "Reauthentication was successful"
+    },
     "error": {
       "already_configured": "Integration already configured with the name",
-      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it",
       "invalid_account": "Invalid account",
-      "invalid_credentials": "Invalid credentials",
+      "invalid_otp": "Invalid or expired login code",
       "invalid_server_details": "Invalid server details",
-      "missing_permanent_api_key": "Missing permanent API key"
+      "otp_send_failed": "Failed to send login code, check the email and try again"
     },
     "step": {
       "user": {
         "data": {
-          "password": "Password",
-          "reset_password": "Reset account password (Workaround for OTP)",
-          "username": "Username"
+          "title": "Title",
+          "username": "Email"
         },
-        "description": "Set up your MyDolphin Plus details",
+        "description": "Enter your MyDolphin Plus account email. A login code will be sent to your inbox.",
         "title": "Set up MyDolphin Plus"
+      },
+      "otp": {
+        "data": {
+          "otp": "Login code"
+        },
+        "description": "Enter the login code sent to your email.",
+        "title": "Confirm OTP"
+      },
+      "reauth_confirm": {
+        "description": "Your MyDolphin Plus session expired. Continue to sign in again with a fresh login code.",
+        "title": "Reauthenticate MyDolphin Plus"
       }
     }
   },
@@ -247,21 +259,26 @@
   "options": {
     "error": {
       "already_configured": "Integration already configured with the name",
-      "corrupted_encryption_key": "Encryption key got corrupted, please remove the integration and re-add it",
       "invalid_account": "Invalid account",
-      "invalid_credentials": "Invalid credentials",
+      "invalid_otp": "Invalid or expired login code",
       "invalid_server_details": "Invalid server details",
-      "missing_permanent_api_key": "Missing permanent API key"
+      "otp_send_failed": "Failed to send login code, check the email and try again"
     },
     "step": {
-      "mydolphin_plus_additional_settings": {
+      "init": {
         "data": {
-          "password": "Password",
-          "reset_password": "Reset account password (Workaround for OTP)",
-          "username": "Username"
+          "title": "Title",
+          "username": "Email"
         },
-        "description": "Set up username and password.",
-        "title": "Options for MyDolphin Plus."
+        "description": "Enter your MyDolphin Plus email to receive a fresh login code.",
+        "title": "Re-authenticate MyDolphin Plus"
+      },
+      "otp": {
+        "data": {
+          "otp": "Login code"
+        },
+        "description": "Enter the login code sent to your email.",
+        "title": "Confirm OTP"
       }
     }
   }

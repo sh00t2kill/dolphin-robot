@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from homeassistant.components.vacuum import VacuumEntityFeature
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
+from homeassistant.const import CONF_USERNAME, Platform
 
 MANUFACTURER = "Maytronics"
 DEFAULT_NAME = "MyDolphin Plus"
@@ -12,7 +12,9 @@ CONFIGURATION_FILE = f"{DOMAIN}.config.json"
 INVALID_TOKEN_SECTION = "https://github.com/sh00t2kill/dolphin-robot#invalid-token"
 
 CONF_TITLE = "title"
-CONF_RESET_PASSWORD = "reset_password"
+CONF_OTP = "otp"
+
+INITIAL_TOKENS_KEY = "__initial_tokens__"
 
 SIGNAL_DEVICE_NEW = f"{DOMAIN}_NEW_DEVICE_SIGNAL"
 SIGNAL_AWS_CLIENT_STATUS = f"{DOMAIN}_AWS_CLIENT_STATUS_SIGNAL"
@@ -121,24 +123,56 @@ DEFAULT_TIME_ZONE_NAME = "UTC"
 DEFAULT_TIME_PART = 255
 
 UPDATE_API_INTERVAL = timedelta(hours=1)
-UPDATE_WS_INTERVAL = timedelta(minutes=5)
-UPDATE_ENTITIES_INTERVAL = timedelta(seconds=5)
+UPDATE_WS_INTERVAL = timedelta(seconds=30)
 API_RECONNECT_INTERVAL = timedelta(minutes=1)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
+# Reconnection backoff settings
+RECONNECT_BACKOFF_BASE = timedelta(minutes=1)  # Initial retry interval
+RECONNECT_BACKOFF_MAX = timedelta(minutes=15)  # Maximum backoff time
+RECONNECT_MAX_ATTEMPTS_BEFORE_MAX = (
+    4  # Attempts before reaching max (1, 2, 4, 8, 15 min pattern)
+)
+
+# AWS credential caching
+AWS_CREDENTIALS_TTL = timedelta(
+    hours=1, minutes=50
+)  # AWS IoT credentials valid for 2h, use 1h50m for safety
+AWS_CREDENTIALS_EXPIRY = "aws_credentials_expiry"
+
+# Rate limiting for token fetches
+MIN_TOKEN_FETCH_INTERVAL = timedelta(minutes=5)  # Minimum time between token API calls
+STORAGE_DATA_LAST_TOKEN_FETCH = "last-token-fetch"
+STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH = "last-aws-credentials-fetch"
+
 WS_LAST_UPDATE = "last-update"
 
-BASE_API = "https://mbapp18.maytronics.com/api"
-LOGIN_URL = f"{BASE_API}/users/Login/"
-EMAIL_VALIDATION_URL = f"{BASE_API}/users/isEmailExists/"
-FORGOT_PASSWORD_URL = f"{BASE_API}/users/ForgotPassword/"
-TOKEN_URL = f"{BASE_API}/IOT/getToken_DecryptSN/"
-ROBOT_DETAILS_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbymusn/"
-ROBOT_DETAILS_BY_SN_URL = f"{BASE_API}/serialnumbers/getrobotdetailsbyrobotsn/"
+COGNITO_CLIENT_ID = "4ed12eq01o6n0tl5f0sqmkq2na"
+COGNITO_ENDPOINT = "https://cognito-idp.us-west-2.amazonaws.com/"
+COGNITO_TARGET_PREFIX = "AWSCognitoIdentityProviderService."
+COGNITO_HEADER_TARGET = "X-Amz-Target"
+COGNITO_CONTENT_TYPE = "application/x-amz-json-1.1"
+COGNITO_AUTH_FLOW_CUSTOM = "CUSTOM_AUTH"
+COGNITO_AUTH_FLOW_REFRESH = "REFRESH_TOKEN_AUTH"
+COGNITO_CHALLENGE_NAME = "CUSTOM_CHALLENGE"
 
-API_REQUEST_HEADER_TOKEN = "token"
+APPS_BASE = "https://apps.maytronics.com"
+AUTHENTICATE_USER_URL = f"{APPS_BASE}/mobapi/user/authenticate-user/"
+AWS_STS_TOKEN_URL = f"{APPS_BASE}/mt-sso/aws/getToken/"
+
+APP_KEY = "346BDE92-53D1-4829-8A2E-B496014B586C"
+APP_VERSION = "ios_3.1.7_2"
+
+BEARER_HEADERS_BASE = {
+    "AppKey": APP_KEY,
+    "app_version": APP_VERSION,
+    "Accept": "*/*",
+}
+
+# Refresh the IdToken if it expires within this many seconds
+ID_TOKEN_REFRESH_WINDOW_SECONDS = 300
+
 API_REQUEST_SERIAL_EMAIL = "Email"
-API_REQUEST_SERIAL_PASSWORD = "Password"
 API_REQUEST_SERIAL_NUMBER = "Sernum"
 
 API_RESPONSE_DATA = "Data"
@@ -160,8 +194,6 @@ API_TOKEN_FIELDS = [
     API_RESPONSE_DATA_SECRET_ACCESS_KEY,
 ]
 
-BLOCK_SIZE = 16
-
 MQTT_MESSAGE_ENCODING = "utf-8"
 
 AWS_REGION = "eu-west-1"
@@ -169,12 +201,6 @@ AWS_BASE_HOST = f"{AWS_REGION}.amazonaws.com"
 
 AWS_IOT_URL = f"a12rqfdx55bdbv-ats.iot.{AWS_BASE_HOST}"
 AWS_IOT_PORT = 443
-
-LOGIN_HEADERS = {
-    "appkey": "346BDE92-53D1-4829-8A2E-B496014B586C",
-    "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
-    "integration-version": "1.0.19",
-}
 
 CA_FILE_NAME = "AmazonRootCA.pem"
 
@@ -272,8 +298,9 @@ VACUUM_FEATURES = (
 
 STORAGE_DATA_KEY = "key"
 STORAGE_DATA_LOCATING = "locating"
-STORAGE_DATA_AWS_TOKEN = "aws-token"
-STORAGE_DATA_API_TOKEN = "api-token"
+STORAGE_DATA_ID_TOKEN = "id-token"
+STORAGE_DATA_REFRESH_TOKEN = "refresh-token"
+STORAGE_DATA_ID_TOKEN_EXPIRES_AT = "id-token-expires-at"
 STORAGE_DATA_SERIAL_NUMBER = "serial-number"
 STORAGE_DATA_MOTOR_UNIT_SERIAL = "motor-unit-serial"
 
@@ -305,10 +332,14 @@ ERROR_CLEAN_CODES = [0, 255]
 EVENT_ERROR = f"{DOMAIN}_error"
 
 TOKEN_PARAMS = [
-    STORAGE_DATA_AWS_TOKEN,
-    STORAGE_DATA_API_TOKEN,
+    STORAGE_DATA_ID_TOKEN,
+    STORAGE_DATA_REFRESH_TOKEN,
+    STORAGE_DATA_ID_TOKEN_EXPIRES_AT,
+    STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH,
     STORAGE_DATA_SERIAL_NUMBER,
     STORAGE_DATA_MOTOR_UNIT_SERIAL,
+    STORAGE_DATA_LAST_TOKEN_FETCH,
+    AWS_CREDENTIALS_EXPIRY,
 ]
 
 TO_REDACT = [
@@ -317,7 +348,6 @@ TO_REDACT = [
     API_RESPONSE_DATA_SECRET_ACCESS_KEY,
     DYNAMIC_CONTENT_SERIAL_NUMBER,
     CONF_USERNAME,
-    CONF_PASSWORD,
 ]
 
 TO_REDACT.extend(TOKEN_PARAMS)

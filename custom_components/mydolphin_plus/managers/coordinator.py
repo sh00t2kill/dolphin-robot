@@ -24,6 +24,7 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
 )
 from homeassistant.core import Event, callback
+from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -33,7 +34,6 @@ from ..common.calculated_state import CalculatedState
 from ..common.clean_modes import CleanModes, get_clean_mode_cycle_time_key
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
-    API_RECONNECT_INTERVAL,
     ATTR_ACTIONS,
     ATTR_ATTRIBUTES,
     ATTR_EXPECTED_END_TIME,
@@ -102,10 +102,10 @@ from ..common.consts import (
     LED_MODE_ICON_DEFAULT,
     MANUFACTURER,
     PLATFORMS,
+    RECONNECT_BACKOFF_MAX,
     SIGNAL_API_STATUS,
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
-    UPDATE_ENTITIES_INTERVAL,
     UPDATE_WS_INTERVAL,
 )
 from ..common.joystick_direction import JoystickDirection
@@ -135,12 +135,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=config_manager.name,
-            update_interval=UPDATE_ENTITIES_INTERVAL,
+            update_interval=UPDATE_WS_INTERVAL,
             update_method=self._async_update_data,
         )
 
         self._api = RestAPI(hass, config_manager)
-        self._aws_client = AWSClient(hass, config_manager)
+        self._aws_client = AWSClient(hass, config_manager, self._on_mqtt_data_update)
 
         self._config_manager = config_manager
 
@@ -149,6 +149,21 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         self._last_update_api = 0
         self._last_update_ws = 0
+        self._reconnection_attempts = 0
+        self._reauth_in_progress = False
+
+        # MQTT debouncing
+        self._mqtt_debouncer = Debouncer(
+            hass,
+            _LOGGER,
+            cooldown=1.0,
+            immediate=False,
+            function=self._debounced_mqtt_refresh,
+        )
+
+        # Safety net for maximum MQTT delay
+        self._last_mqtt_refresh = 0
+        self._max_mqtt_delay = 5.0
 
         self._load_signal_handlers()
 
@@ -198,17 +213,15 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         await self._api.initialize()
 
     def _load_signal_handlers(self):
-        loop = self.hass.loop
-
         @callback
         def on_api_status_changed(entry_id: str, status: ConnectivityStatus):
-            loop.create_task(self._on_api_status_changed(entry_id, status)).__await__()
+            self.hass.async_create_task(self._on_api_status_changed(entry_id, status))
 
         @callback
         def on_aws_client_status_changed(entry_id: str, status: ConnectivityStatus):
-            loop.create_task(
+            self.hass.async_create_task(
                 self._on_aws_client_status_changed(entry_id, status)
-            ).__await__()
+            )
 
         self.config_entry.async_on_unload(
             async_dispatcher_connect(
@@ -261,6 +274,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             return
 
         if status == ConnectivityStatus.CONNECTED:
+            self._reconnection_attempts = 0  # Reset backoff counter on success
+            self._reauth_in_progress = False
+
             await self._api.update()
 
             await self._aws_client.update_api_data(self.api_data)
@@ -272,7 +288,24 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ConnectivityStatus.INVALID_CREDENTIALS,
             ConnectivityStatus.EXPIRED_TOKEN,
         ]:
+            if status == ConnectivityStatus.EXPIRED_TOKEN:
+                await self._start_reauth_if_needed()
             await self._handle_connection_failure()
+
+    async def _start_reauth_if_needed(self):
+        if self._reauth_in_progress:
+            return
+
+        entry = self.config_manager.entry
+        if entry is None:
+            return
+
+        try:
+            await entry.async_start_reauth(self.hass)
+            self._reauth_in_progress = True
+            _LOGGER.warning("Started Home Assistant reauthentication flow")
+        except Exception as ex:
+            _LOGGER.error(f"Failed to start Home Assistant reauthentication flow: {ex}")
 
     async def _on_aws_client_status_changed(
         self, entry_id: str, status: ConnectivityStatus
@@ -281,16 +314,57 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             return
 
         if status == ConnectivityStatus.CONNECTED:
+            self._reconnection_attempts = 0  # Reset backoff counter on success
             await self._aws_client.update()
 
         if status in [ConnectivityStatus.FAILED, ConnectivityStatus.NOT_CONNECTED]:
             await self._handle_connection_failure()
 
+    def _on_mqtt_data_update(self):
+        """Callback when MQTT data is updated - with max delay safety net."""
+        if self.hass is None:
+            return
+
+        now = datetime.now().timestamp()
+        time_since_last = now - self._last_mqtt_refresh
+
+        # Safety net: force refresh if waited too long
+        if time_since_last >= self._max_mqtt_delay:
+            self._last_mqtt_refresh = now
+            # Use call_soon_threadsafe to schedule from a different thread
+            self.hass.loop.call_soon_threadsafe(
+                lambda: self.hass.async_create_task(self.async_request_refresh())
+            )
+
+        else:
+            # Normal debounced call
+            self.hass.loop.call_soon_threadsafe(
+                lambda: self.hass.async_create_task(self._mqtt_debouncer.async_call())
+            )
+
+    async def _debounced_mqtt_refresh(self):
+        """Execute coordinator refresh - called by debouncer after cooldown."""
+        self._last_mqtt_refresh = datetime.now().timestamp()
+        await self.async_request_refresh()
+        _LOGGER.debug("Executed debounced MQTT refresh")
+
     async def _handle_connection_failure(self):
         await self._aws_client.terminate()
 
-        await sleep(API_RECONNECT_INTERVAL.total_seconds())
+        # Calculate exponential backoff: 1min, 2min, 4min, 8min, 15min (max)
+        backoff_minutes = min(
+            2**self._reconnection_attempts, RECONNECT_BACKOFF_MAX.total_seconds() / 60
+        )
+        backoff_interval = timedelta(minutes=backoff_minutes)
 
+        self._reconnection_attempts += 1
+
+        _LOGGER.warning(
+            f"Connection failure - reconnection attempt #{self._reconnection_attempts}, "
+            f"waiting {backoff_minutes} minute(s) before retry"
+        )
+
+        await sleep(backoff_interval.total_seconds())
         await self._api.initialize()
 
     async def _async_update_data(self):
@@ -796,9 +870,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     async def _vacuum_pause(self, _entity_description: EntityDescription, state):
         is_idle_state = state == VacuumActivity.DOCKED
-        _LOGGER.debug(f"Pause vacuum, State: {state}, State: {state}")
+        _LOGGER.debug(f"Pause vacuum, State: {state}")
 
-        if is_idle_state:
+        if not is_idle_state:
             self._aws_client.pause()
 
     async def _vacuum_locate(self, entity_description: EntityDescription):

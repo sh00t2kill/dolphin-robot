@@ -74,10 +74,10 @@ class MyDolphinPlusVacuumEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC)
         await self.async_execute_device_action(SERVICE_SET_FAN_SPEED, fan_speed)
 
     async def async_start(self) -> None:
-        await self.async_execute_device_action(SERVICE_START, self.state)
+        await self.async_execute_device_action(SERVICE_START, self.activity)
 
     async def async_pause(self, **kwargs: Any) -> None:
-        await self.async_execute_device_action(SERVICE_PAUSE, self.state)
+        await self.async_execute_device_action(SERVICE_PAUSE, self.activity)
 
     async def async_locate(self, **kwargs: Any) -> None:
         """Locate the vacuum cleaner."""

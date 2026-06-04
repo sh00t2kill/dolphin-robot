@@ -6,21 +6,17 @@ Integration with MyDolphin Plus to monitor and control your robot
 
 [Changelog](https://github.com/sh00t2kill/dolphin-robot/blob/master/CHANGELOG.md)
 
-## Important note RE setup
+## Authentication
 
-Given the OTP implementation on the app, there is currently no way to support this in HA. There is, however, a manual way to create a new user account with a password. This is done via curl
+Authentication uses the same email-OTP flow as the official MyDolphin Plus mobile app:
 
-```
-curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
-     -H "appkey: 346BDE92-53D1-4829-8A2E-B496014B586C" \
-     -H "Content-Type: application/x-www-form-urlencoded; charset=utf-8" \
-     --data-urlencode 'email=<EMAIL>' \
-     --data-urlencode 'password=<PASSWORD>' \
-     --data-urlencode 'firstName=<FIRST NAME' \
-     --data-urlencode 'lastName=<LAST NAME>'
-```
+1. Enter your account email when adding the integration.
+2. Maytronics emails a one-time login code.
+3. Enter the code in Home Assistant — the integration exchanges it for a refresh token and connects to the robot.
 
-Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it will be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
+The refresh token is reused on every Home Assistant restart and silently renewed (~hourly), so you should only need to re-enter an OTP if the refresh token expires (Cognito default ~30 days) or you remove and re-add the integration.
+
+> **Upgrading from a pre-OTP version (≤ 1.0.25b5):** the legacy email/password login endpoint has been retired by Maytronics. After updating, Home Assistant should prompt you to **Reconfigure / Reauthenticate** the existing entry so you can complete OTP login without reinstalling.
 
 ## How to
 
@@ -39,30 +35,27 @@ Create this account, changing your user details. Once you have done this, login 
 
 ###### Basic configuration (Configuration -> Integrations -> Add MyDolphin Plus)
 
-| Fields name | Type    | Required | Default | Description                                   |
-| ----------- | ------- | -------- | ------- | --------------------------------------------- |
-| Username    | Textbox | -        |         | Username of dashboard user for MyDolphin Plus |
-| Password    | Textbox | -        |         | Password of dashboard user for MyDolphin Plus |
+| Field      | Type    | Required | Description                                                                           |
+| ---------- | ------- | -------- | ------------------------------------------------------------------------------------- |
+| Title      | Textbox | yes      | Display name for the integration entry                                                |
+| Email      | Textbox | yes      | Email of your MyDolphin Plus account — Maytronics emails a login code to this address |
+| Login code | Textbox | yes      | The one-time code from the email, entered on the second step of the config flow       |
 
 ###### Configuration validations
 
-Upon submitting the form of creating an integration or updating options,
+Upon submitting the form, the integration verifies the credentials by:
 
-Component will try to log in into the MyDolphin Plus to verify new settings, following errors can appear:
+1. Triggering Cognito `CUSTOM_AUTH` (sends the OTP email).
+2. Exchanging the submitted OTP for an `IdToken` + `RefreshToken`.
+3. Calling `apps.maytronics.com/mobapi/user/authenticate-user/` to confirm the account has a paired robot.
 
-- Integration already configured with the same title
-- Invalid server details - Cannot reach the server
+The following errors can appear:
 
-###### Encryption key got corrupted
-
-If a persistent notification popped up with the following message:
-
-```
-Encryption key got corrupted, please remove the integration and re-add it
-```
-
-It means that encryption key was modified from outside the code,
-Please remove the integration and re-add it to make it work again.
+- **Invalid account** — the email is empty or rejected by Cognito (no such user)
+- **Failed to send login code, check the email and try again** — Cognito refused to send an OTP (rate limit or unknown user)
+- **Invalid or expired login code** — the OTP is wrong, expired, or was used already
+- **Invalid server details** — could not reach Cognito or `apps.maytronics.com`
+- **Integration already configured with the name** — an entry with that title already exists
 
 #### Run as CLI
 
@@ -76,9 +69,10 @@ Please remove the integration and re-add it to make it work again.
 
 | Environment Variable | Type    | Default | Description                                                                                                               |
 | -------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Username             | String  | -       | Username used for MyDolphin Plus                                                                                          |
-| Password             | String  | -       | Password used for MyDolphin Plus                                                                                          |
+| Username             | String  | -       | Email of your MyDolphin Plus account (used to trigger Cognito OTP)                                                        |
 | DEBUG                | Boolean | False   | Setting to True will present DEBUG log level message while testing the code, False will set the minimum log level to INFO |
+
+> CLI use requires interactively entering an OTP from the email Maytronics sends — the legacy username/password login is no longer accepted.
 
 ## HA Components
 
@@ -223,57 +217,13 @@ Please attach also diagnostic details of the integration, available in:
 <br />See this link for further information:
 <br />https://www.home-assistant.io/docs/configuration/troubleshooting/
 
-### Invalid Token
+### Refresh token expired
 
-In case you have referenced to that section, something went wrong with the encryption key,
-Encryption key should be located in `.storage/mydolphin_plus.config.json` file under `data.key` property,
-below are the steps to solve that issue.
+If the integration logs `EXPIRED_TOKEN` and stops loading, the stored Cognito `RefreshToken` is no longer valid (it has expired or been invalidated server-side). Home Assistant should raise a reauthentication prompt for the existing entry so you can complete the OTP flow again.
 
-#### File not exists or File exists, data.key is not
+If reauthentication does not appear or cannot be completed, remove and re-add the integration as a fallback.
 
-Please report as issue
-
-#### File exists, data.key is available
-
-Example:
-
-```json
-{
-  "version": 1,
-  "minor_version": 1,
-  "key": "mydolphin_plus.config.json",
-  "data": {
-    "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY=",
-    "b8fa11c50331d2647b8aa7e37935efeb": {
-      "locating": false,
-      "aws-token-encrypted-key": "AWS_TOKEN"
-    }
-  }
-}
-```
-
-OR
-
-```json
-{
-  "version": 1,
-  "minor_version": 1,
-  "key": "mydolphin_plus.config.json",
-  "data": {
-    "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY="
-  }
-}
-```
-
-1. Remove the integration
-2. Delete the file
-3. Restart HA
-4. Try to re-add the integration
-5. If still happens - report as issue
-
-#### File exists, key is available under one of the entry configurations
-
-Example:
+The token state lives in `.storage/mydolphin_plus.config.json`, keyed by the entry id:
 
 ```json
 {
@@ -282,18 +232,17 @@ Example:
   "key": "mydolphin_plus.config.json",
   "data": {
     "b8fa11c50331d2647b8aa7e37935efeb": {
-      "key": "ox-qQsAiHb67Kz3ypxY19uU2_YwVcSjvdbaBVHZJQFY=",
-      "locating": false,
-      "aws-token-encrypted-key": "AWS_TOKEN"
+      "id-token": "...",
+      "refresh-token": "...",
+      "id-token-expires-at": 1746799200.0,
+      "serial-number": "...",
+      "motor-unit-serial": "..."
     }
   }
 }
 ```
 
-1. Move the `key` to the root of the JSON
-2. Restart HA
-3. Try to re-add the integration
-4. If still happens - follow instructions of section #1 (_i._)
+You generally do not need to edit this file by hand — re-running the config flow rewrites it.
 
 ## Lovelace cards.
 
@@ -315,35 +264,28 @@ features:
       - return_home
 ```
 
-### OTP (One-Time Password) Authentication Issues
+### OTP login troubleshooting
 
-NOTE: New users will have an account created using OTP. As yet, we have not been able to reverse engineer the OTP login process. Please see this issue for further information, and a manual workaround to create an account: https://github.com/sh00t2kill/dolphin-robot/issues/199#issuecomment-2481627312
+If you cannot complete the OTP flow:
 
-#### Manual Account Creation Workaround
+- **No email arrives** — check spam, then retry. If repeated retries fail, Cognito may be rate-limiting; wait a few minutes.
+- **"Invalid or expired login code"** — codes are short-lived. Restart the config flow to receive a fresh one.
+- **"Failed to send login code"** — usually means Cognito does not recognise the email. Confirm you can sign in to the official MyDolphin Plus app with the same address; if not, register the account in the app first.
+- **Repeated failures with a known-good email** — collect debug logs (see [Troubleshooting](#troubleshooting)) and open an issue.
 
-If you're experiencing OTP authentication issues, you can create a new account directly using the Maytronics API:
+## Contributors
 
-```bash
-curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
-     -H "appkey: 346BDE92-53D1-4829-8A2E-B496014B586C" \
-     -H "Content-Type: application/x-www-form-urlencoded; charset=utf-8" \
-     --data-urlencode "email=your-email@example.com" \
-     --data-urlencode "password=your-new-password" \
-     --data-urlencode "firstName=Your" \
-     --data-urlencode "lastName=Name"
-```
+Thanks to everyone who has contributed to this project:
 
-**Steps:**
+- [Elad Bar](https://github.com/elad-bar)
+- Dan Wheaton
+- [sh00t2kill](https://github.com/sh00t2kill)
+- [tigers75](https://github.com/tigers75)
+- [Loïc](https://github.com/zoic21)
+- Gil Peeters
+- [devilismyfriend](https://github.com/devilismyfriend)
+- [yumlevi](https://github.com/yumlevi)
+- [grillp](https://github.com/grillp)
+- [lordlala](https://github.com/lordlala)
 
-1. Replace the placeholders with your actual information:
-
-   - `your-email@example.com` - Your email address
-   - `your-new-password` - A new password for your account
-   - `Your` - Your first name
-   - `Name` - Your last name
-
-2. Run the curl command in your terminal
-
-3. Use the new credentials in the Home Assistant integration configuration
-
-**Note:** This creates a fresh account that bypasses the OTP requirement. If you use the same email as your existing account, you may not need to re-pair your robot.
+See [Contributing](CONTRIBUTING.md) for contribution guidelines.

@@ -15,6 +15,18 @@ class ConnectivityStatus(StrEnum):
     INVALID_ACCOUNT = "Invalid account"
     EXPIRED_TOKEN = "Expired Token"
 
+    def is_disconnected(self) -> bool:
+        disconnected = self in [
+            ConnectivityStatus.DISCONNECTED,
+            ConnectivityStatus.FAILED,
+            ConnectivityStatus.INVALID_CREDENTIALS,
+            ConnectivityStatus.EXPIRED_TOKEN,
+            ConnectivityStatus.API_NOT_FOUND,
+            ConnectivityStatus.NOT_CONNECTED,
+        ]
+
+        return disconnected
+
     @staticmethod
     def get_log_level(status: StrEnum) -> int:
         if status in [

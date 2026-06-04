@@ -55,7 +55,7 @@ class APITest:
         self._config_manager = ConfigManager(None)
 
         self._api = RestAPI(None, self._config_manager)
-        self._aws_client = AWSClient(None, self._config_manager)
+        self._aws_client = AWSClient(None, self._config_manager, self._on_mqtt_data_update)
 
         self._api.set_local_async_dispatcher_send(self._async_dispatcher_send)
         self._aws_client.set_local_async_dispatcher_send(self._async_dispatcher_send)
@@ -95,6 +95,10 @@ class APITest:
         self._instructions = "\n".join(instructions)
 
         self._ready_for_input = False
+
+    def _on_mqtt_data_update(self):
+        """Callback when MQTT data is updated."""
+        _LOGGER.debug("MQTT data updated")
 
     def _async_dispatcher_send(self, signal: str, *args: Any) -> None:
         _LOGGER.info(f"Signal: {signal}, Data: {json.dumps(args)}")

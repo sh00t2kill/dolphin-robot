@@ -1,7 +1,7 @@
 """Generate AWS token test file."""
 from __future__ import annotations
 
-from base64 import b64decode, b64encode
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 import hashlib
 import os
 import secrets
@@ -33,7 +33,7 @@ class AWSTokenGenerator:
             f"Mode: {self._mode.name}, initialization_vector: {self._mode.initialization_vector}"
         )
 
-        self._aes_key = self._get_key(email)
+        self._aes_key = self._get_key(key)
         print("")
 
     @staticmethod
@@ -99,7 +99,7 @@ class AWSTokenGenerator:
         result_b64 = self._iv + ct
         print(f"result_b64: {result_b64}, Length: {len(result_b64)}")
 
-        result = b64encode(result_b64).decode()
+        result = urlsafe_b64encode(result_b64).decode()
         print(f"result: {result}, Length: {len(result)}")
 
         print("")
@@ -110,7 +110,7 @@ class AWSTokenGenerator:
         """Do decryption of input string, Returns non encrypted data."""
         print(f"DECRYPT: {encrypted_data}")
 
-        encrypted_value = b64decode(encrypted_data.encode())[BLOCK_SIZE:]
+        encrypted_value = urlsafe_b64decode(encrypted_data.encode())[BLOCK_SIZE:]
         print(f"encrypted_value: {encrypted_value}")
 
         cipher = self._get_cipher()

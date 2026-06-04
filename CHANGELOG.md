@@ -1,5 +1,95 @@
 # Changelog
 
+## v1.0.26
+
+- Use vacuum `activity` instead of `state` for start and pause actions (Home Assistant 2026.x forward compatibility)
+- Align HACS metadata with the integration manifest: Cloud Push `iot_class` and minimum Home Assistant 2026.1.0
+- Correct `vacuum_state` return type to `VacuumActivity` in system details
+- Schedule connectivity status handlers with `hass.async_create_task` instead of `loop.create_task().__await__()`
+- Remove unused legacy schedule service schema module
+
+## v1.0.26b3
+
+- Fix pause control so active robots send the power-off command instead of only acting while docked
+- Update config entry unload and removal handling for newer Home Assistant lifecycle behavior
+- Remove deprecated config flow connection class usage and rely on manifest `iot_class`
+- Use Home Assistant's managed options flow config entry access
+- Add French translation support
+- Fix AWS credential refresh when the last fetch timestamp is missing
+
+## v1.0.26b2
+
+- Preserve stored Cognito tokens across Home Assistant restarts when cached AWS IoT credentials expire
+- Clear only stale AWS credential cache metadata so the integration can refresh credentials without forcing reauthentication
+
+## v1.0.26b1
+
+- Merge pull request [#270](https://github.com/sh00t2kill/dolphin-robot/pull/270) from `yumlevi/cognito-otp-login`
+- Replace login flow with Cognito OTP login flow
+- Add Home Assistant native reauthentication flow for expired or invalid credentials
+- Trigger linked reauth prompt when refresh token is missing/expired, including for users upgrading from versions earlier than OTP support
+
+## v1.0.25
+
+- Fix AWS token generation errors for users upgrading from older versions
+  - Resolves "Value cannot be null. Parameter name: s" error
+  - Resolves "The input is not a valid Base-64 string" error
+  - Automatically fetch missing motor unit serial for upgraded installations
+- Ensure token fetching works properly for all upgraded installations
+- Add validation to prevent encryption of null/empty motor unit serial values
+- Add validation to prevent API calls with invalid or missing AWS tokens
+- Prevent clearing the motor serial number when reset_login_details
+- Fix payload handling in AWS token generation when 401 errors occur
+- Refactor AWSClient to include callback for real-time MQTT data updates
+- Add credential validation in ConfigManager
+- Enhance connectivity status handling and improve API response validation
+- Add MQTT update debouncing documentation
+- Add workflows and entities documentation
+
+## v1.0.25b5
+
+- Fix payload handling in AWS token generation when 401 errors occur
+- Refactor AWSClient to include callback for real-time MQTT data updates
+- Add credential validation in ConfigManager
+- Enhance connectivity status handling and improve API response validation
+- Add MQTT update debouncing documentation
+- Add workflows and entities documentation
+
+## v1.0.25b4
+
+- Prevent clearing the motor serial number when reset_login_details
+
+## v1.0.25b3
+
+- Add validation to prevent API calls with invalid or missing AWS tokens
+
+## v1.0.25b2
+
+- Ensure token fetching works properly for all upgraded installations
+
+## v1.0.25b1
+
+- Fix AWS token generation errors for users upgrading from older versions
+  - Resolves "Value cannot be null. Parameter name: s" error
+  - Resolves "The input is not a valid Base-64 string" error
+  - Automatically fetch missing motor unit serial for upgraded installations
+- Add validation to prevent encryption of null/empty motor unit serial values
+
+## v1.0.24
+
+- Implement exponential backoff for reconnection attempts to prevent aggressive retries
+  - Initial retry after 1 minute, increasing to 2, 4, 8, and maximum 15 minutes
+  - Reduces server load during extended connection issues
+- Add AWS IoT credential caching with 2-hour validity
+  - Credentials are cached and reused for 1h50m after successful fetch
+  - Eliminates redundant token API calls when credentials are still valid
+- Implement rate limiting for token endpoint calls
+  - Minimum 5-minute interval between token API requests
+  - Protects against API rate limiting during recurring disconnection issues
+- Reduce token API calls from ~20-30 per hour during outages to ~1 per hour maximum
+- Fix excessive API calls to Maytronics token endpoint during recurring disconnections
+- Fix integration-version header value
+
 ## v1.0.23
 
 - Remove navigate service (`mydolphin_plus.navigate`)

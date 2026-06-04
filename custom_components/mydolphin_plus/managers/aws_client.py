@@ -7,7 +7,7 @@ import logging
 import os
 import sys
 from time import sleep
-from typing import Any
+from typing import Any, Callable
 
 import aiofiles
 from awscrt import auth, mqtt
@@ -93,7 +93,12 @@ class AWSClient:
     _topic_data: TopicData | None
     _status: ConnectivityStatus | None
 
-    def __init__(self, hass: HomeAssistant | None, config_manager: ConfigManager):
+    def __init__(
+        self,
+        hass: HomeAssistant | None,
+        config_manager: ConfigManager,
+        on_data_update_callback: Callable[[], None],
+    ):
         try:
             awsiot_id = (
                 DOMAIN if config_manager.entry_id is None else config_manager.entry_id
@@ -115,6 +120,7 @@ class AWSClient:
             self._status = None
 
             self._local_async_dispatcher_send = None
+            self._on_data_update_callback = on_data_update_callback
 
             self._connection_callbacks = {
                 ConnectionCallbacks.SUCCESS: self._on_connection_success,
@@ -427,6 +433,9 @@ class AWSClient:
                         else:
                             self.data[category] = category_data
 
+                # Trigger callback for real-time updates
+                self._on_data_update_callback()
+
                 if topic == self._topic_data.get_accepted:
                     if self._robot_family == RobotFamily.M700:
                         self._read_temperature_and_in_water_details()
@@ -466,6 +475,9 @@ class AWSClient:
 
         if handler is not None:
             handler(message)
+
+        # Trigger callback for real-time updates
+        self._on_data_update_callback()
 
     def _on_pws_request_message(self, message: dict):
         direction = message.get(DYNAMIC_CONTENT_DIRECTION)

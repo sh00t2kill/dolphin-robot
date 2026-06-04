@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import logging
 import os
@@ -6,7 +7,7 @@ import sys
 from cryptography.fernet import InvalidToken
 
 from homeassistant.config_entries import STORAGE_VERSION, ConfigEntry
-from homeassistant.const import CONF_NAME, CONF_PASSWORD, CONF_USERNAME, Platform
+from homeassistant.const import CONF_NAME, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import translation
 from homeassistant.helpers.entity import DeviceInfo
@@ -19,14 +20,18 @@ from ..common.clean_modes import (
     get_clean_mode_cycle_time_key,
 )
 from ..common.consts import (
+    AWS_CREDENTIALS_EXPIRY,
     CONFIGURATION_FILE,
     DEFAULT_NAME,
     DOMAIN,
     INVALID_TOKEN_SECTION,
-    STORAGE_DATA_API_TOKEN,
-    STORAGE_DATA_AWS_TOKEN,
+    STORAGE_DATA_ID_TOKEN,
+    STORAGE_DATA_ID_TOKEN_EXPIRES_AT,
+    STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH,
+    STORAGE_DATA_LAST_TOKEN_FETCH,
     STORAGE_DATA_LOCATING,
     STORAGE_DATA_MOTOR_UNIT_SERIAL,
+    STORAGE_DATA_REFRESH_TOKEN,
     STORAGE_DATA_SERIAL_NUMBER,
     TOKEN_PARAMS,
 )
@@ -101,16 +106,16 @@ class ConfigManager:
         return is_locating
 
     @property
-    def api_token(self) -> str | None:
-        api_token = self._data.get(STORAGE_DATA_API_TOKEN)
-
-        return api_token
+    def id_token(self) -> str | None:
+        return self._data.get(STORAGE_DATA_ID_TOKEN)
 
     @property
-    def aws_token(self) -> str | None:
-        aws_token = self._data.get(STORAGE_DATA_AWS_TOKEN)
+    def refresh_token(self) -> str | None:
+        return self._data.get(STORAGE_DATA_REFRESH_TOKEN)
 
-        return aws_token
+    @property
+    def id_token_expires_at(self) -> float | None:
+        return self._data.get(STORAGE_DATA_ID_TOKEN_EXPIRES_AT)
 
     @property
     def serial_number(self) -> str | None:
@@ -123,6 +128,21 @@ class ConfigManager:
         motor_unit_serial = self._data.get(STORAGE_DATA_MOTOR_UNIT_SERIAL)
 
         return motor_unit_serial
+
+    @property
+    def last_token_fetch(self) -> float:
+        timestamp = self._data.get(STORAGE_DATA_LAST_TOKEN_FETCH, 0) or 0
+        return timestamp
+
+    @property
+    def last_aws_credentials_fetch(self) -> float:
+        timestamp = self._data.get(STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH, 0) or 0
+        return timestamp
+
+    @property
+    def aws_credentials_expiry(self) -> float:
+        expiry = self._data.get(AWS_CREDENTIALS_EXPIRY, 0) or 0
+        return expiry
 
     @property
     def _token_details(self):
@@ -232,19 +252,47 @@ class ConfigManager:
         return value
 
     async def reset_login_details(self):
+        # Reset login-related tokens, but preserve motor_unit_serial
+        # so we can re-attach to the same robot after re-authentication
         for token_param in TOKEN_PARAMS:
-            self._data[token_param] = None
+            if token_param != STORAGE_DATA_MOTOR_UNIT_SERIAL:
+                self._data[token_param] = None
 
         await self._save()
 
-    async def update_login_details(self, api_token: str, serial_number: str):
-        self._data[STORAGE_DATA_API_TOKEN] = api_token
+    async def _validate_cached_credentials(self):
+        """Clear stale AWS cache metadata without clearing Cognito login tokens."""
+        last_fetch = self._data.get(STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH, 0) or 0
+        expiry = self._data.get(AWS_CREDENTIALS_EXPIRY, 0) or 0
+
+        if last_fetch == 0 or expiry > datetime.now().timestamp():
+            return
+
+        _LOGGER.debug(
+            "Stored AWS credential metadata expired. Clearing cache metadata."
+        )
+        self._data[STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH] = 0
+        self._data[AWS_CREDENTIALS_EXPIRY] = 0
+        await self._save()
+
+    async def update_tokens(
+        self,
+        id_token: str,
+        refresh_token: str | None,
+        expires_at: float,
+    ):
+        self._data[STORAGE_DATA_ID_TOKEN] = id_token
+        if refresh_token is not None:
+            # REFRESH_TOKEN_AUTH does not return a new RefreshToken; only overwrite
+            # when one is supplied (e.g. by InitiateAuth/RespondToAuthChallenge).
+            self._data[STORAGE_DATA_REFRESH_TOKEN] = refresh_token
+        self._data[STORAGE_DATA_ID_TOKEN_EXPIRES_AT] = expires_at
+        self._data[STORAGE_DATA_LAST_TOKEN_FETCH] = datetime.now().timestamp()
+
+        await self._save()
+
+    async def update_serial_number(self, serial_number: str):
         self._data[STORAGE_DATA_SERIAL_NUMBER] = serial_number
-
-        await self._save()
-
-    async def update_aws_token(self, aws_token: str | None):
-        self._data[STORAGE_DATA_AWS_TOKEN] = aws_token
 
         await self._save()
 
@@ -263,6 +311,21 @@ class ConfigManager:
         self._data[STORAGE_DATA_LOCATING] = state
 
         await self._save()
+
+    async def update_last_token_fetch(self, timestamp: float):
+        if timestamp is not None:
+            self._data[STORAGE_DATA_LAST_TOKEN_FETCH] = timestamp
+            await self._save()
+
+    async def update_last_aws_credentials_fetch(self, timestamp: float):
+        if timestamp is not None:
+            self._data[STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH] = timestamp
+            await self._save()
+
+    async def update_aws_credentials_expiry(self, expiry: float):
+        if expiry is not None:
+            self._data[AWS_CREDENTIALS_EXPIRY] = expiry
+            await self._save()
 
     def get_debug_data(self) -> dict:
         data = self._config_data.to_dict()
@@ -299,9 +362,17 @@ class ConfigManager:
             _LOGGER.info("updated")
             await self._save()
 
+        # Validate cached AWS credential metadata without invalidating login tokens.
+        await self._validate_cached_credentials()
+
     @staticmethod
     def _get_defaults() -> dict:
-        data = {STORAGE_DATA_LOCATING: False}
+        data = {
+            STORAGE_DATA_LOCATING: False,
+            STORAGE_DATA_LAST_TOKEN_FETCH: 0,
+            STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH: 0,
+            AWS_CREDENTIALS_EXPIRY: 0,
+        }
 
         for clean_mode in list(CleanModes):
             key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
@@ -353,10 +424,9 @@ class ConfigManager:
             for key in self._data:
                 stored_value = entry_data.get(key)
 
-                if key in [CONF_PASSWORD, CONF_USERNAME]:
-                    entry_data.pop(CONF_USERNAME)
-
+                if key == CONF_USERNAME:
                     if stored_value is not None:
+                        entry_data.pop(CONF_USERNAME)
                         should_save = True
 
                 else:

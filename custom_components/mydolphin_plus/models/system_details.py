@@ -53,7 +53,7 @@ class SystemDetails:
         return self._data.get(ATTR_CALCULATED_STATUS, CalculatedState.OFF)
 
     @property
-    def vacuum_state(self) -> str:
+    def vacuum_state(self) -> VacuumActivity:
         return self._data.get(ATTR_VACUUM_STATE, VacuumActivity.DOCKED)
 
     @property
