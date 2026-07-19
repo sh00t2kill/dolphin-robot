@@ -20,7 +20,7 @@ curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
      --data-urlencode 'lastName=<LAST NAME>'
 ```
 
-Create this account, changing your user details. Once you have done this, login to the mobile app using this account, and it will be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
+Create this account, changing your user details. [Note: You cannot use `+` in your email address](https://github.com/sh00t2kill/dolphin-robot/issues/199#issuecomment-3337977348). Once you have done this, login to the mobile app using this account, and it will be "uplifted" to OTP. Add your robot. You can then add this integration using this username and password.
 
 ## How to
 
@@ -337,7 +337,7 @@ curl -X POST "https://mbapp18.maytronics.com/api/users/register/" \
 
 1. Replace the placeholders with your actual information:
 
-   - `your-email@example.com` - Your email address
+   - `your-email@example.com` - Your email address. [Note: You cannot use `+` in your email address](https://github.com/sh00t2kill/dolphin-robot/issues/199#issuecomment-3337977348).
    - `your-new-password` - A new password for your account
    - `Your` - Your first name
    - `Name` - Your last name
