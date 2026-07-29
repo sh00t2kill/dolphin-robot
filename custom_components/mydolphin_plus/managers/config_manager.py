@@ -260,6 +260,13 @@ class ConfigManager:
 
         await self._save()
 
+    async def invalidate_id_token(self):
+        """Discard only the short-lived IdToken, retaining the refresh token."""
+        self._data[STORAGE_DATA_ID_TOKEN] = None
+        self._data[STORAGE_DATA_ID_TOKEN_EXPIRES_AT] = 0
+
+        await self._save()
+
     async def _validate_cached_credentials(self):
         """Clear stale AWS cache metadata without clearing Cognito login tokens."""
         last_fetch = self._data.get(STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH, 0) or 0

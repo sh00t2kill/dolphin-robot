@@ -35,13 +35,12 @@ from ..common.consts import (
     DATA_ROBOT_DETAILS,
     ID_TOKEN_REFRESH_WINDOW_SECONDS,
     MIN_TOKEN_FETCH_INTERVAL,
-    RECONNECT_BACKOFF_MAX,
     SIGNAL_API_STATUS,
     SIGNAL_DEVICE_NEW,
 )
 from ..common.integration_info import IntegrationInfo
 from ..models.config_data import ConfigData
-from ..models.exceptions import LoginError
+from ..models.exceptions import CognitoAuthError, CognitoRequestError, LoginError
 from .config_manager import ConfigManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -87,13 +86,25 @@ async def _cognito_call(
                 _LOGGER.debug(
                     f"Cognito {target} failed, Status: {response.status}, Body: {text}"
                 )
-                raise LoginError(f"Cognito {target} returned {response.status}")
+                try:
+                    error_type = json.loads(text).get("__type", "")
+                except json.JSONDecodeError:
+                    error_type = ""
+
+                if error_type.rsplit("#", 1)[-1] == "NotAuthorizedException":
+                    raise CognitoAuthError(
+                        f"Cognito {target} rejected authentication"
+                    )
+
+                raise CognitoRequestError(
+                    f"Cognito {target} returned {response.status}"
+                )
             return json.loads(text)
     except LoginError:
         raise
     except Exception as ex:
         _LOGGER.debug(f"Cognito {target} request failed, Error: {ex}")
-        raise LoginError(f"Cognito {target} request failed: {ex}") from ex
+        raise CognitoRequestError(f"Cognito {target} request failed: {ex}") from ex
 
 
 async def cognito_initiate_auth(
@@ -359,11 +370,17 @@ class RestAPI:
                 refresh_token,
                 integration_info=self._integration_info,
             )
-        except LoginError as ex:
+        except CognitoAuthError as ex:
             await self._config_manager.reset_login_details()
             self._set_status(
                 ConnectivityStatus.EXPIRED_TOKEN,
                 f"refresh failed ({ex}) — reauthentication required",
+            )
+            return False
+        except LoginError as ex:
+            self._set_status(
+                ConnectivityStatus.FAILED,
+                f"refresh failed ({ex}) — retaining credentials for retry",
             )
             return False
 
@@ -401,6 +418,7 @@ class RestAPI:
         url: str,
         headers: dict,
         data: str | dict | None = None,
+        retry_on_unauthorized: bool = True,
     ) -> dict | None:
         try:
             _LOGGER.debug(f"Sending {method} {url}")
@@ -415,7 +433,21 @@ class RestAPI:
                     response.raise_for_status()
                     return await response.json()
         except ClientResponseError as crex:
-            await self._handle_client_error(url, method, crex)
+            refreshed = await self._handle_client_error(
+                url, method, crex, refresh_on_unauthorized=retry_on_unauthorized
+            )
+            if refreshed and retry_on_unauthorized:
+                retry_headers = headers.copy()
+                retry_headers["Authorization"] = (
+                    f"Bearer {self._config_manager.id_token}"
+                )
+                return await self._async_send(
+                    method,
+                    url,
+                    retry_headers,
+                    data,
+                    retry_on_unauthorized=False,
+                )
         except TimeoutError:
             self._handle_server_timeout(url, method)
         except Exception as ex:
@@ -586,8 +618,12 @@ class RestAPI:
             _LOGGER.log(log_level, log_message)
 
     async def _handle_client_error(
-        self, endpoint: str, method: str, crex: ClientResponseError
-    ):
+        self,
+        endpoint: str,
+        method: str,
+        crex: ClientResponseError,
+        refresh_on_unauthorized: bool = True,
+    ) -> bool:
         message = (
             "Failed to send HTTP request, "
             f"Endpoint: {endpoint}, "
@@ -595,39 +631,25 @@ class RestAPI:
             f"HTTP Status: {crex.message} ({crex.status})"
         )
         status = ConnectivityStatus.FAILED
-        forced_log_level: int | None = None
-
         if crex.status == 401:
-            # The IdToken is rejected. If the cached token is older than the
-            # backoff window, blow it away and force re-auth so we don't hammer
-            # the API with bad credentials. Otherwise, log quietly and let
-            # _ensure_id_token_valid try a refresh on the next iteration.
-            flow = "No id token present"
+            # Refresh and retry once with a new IdToken. A second 401 is left to
+            # the coordinator's reconnect backoff to avoid retrying in a loop.
+            if not refresh_on_unauthorized:
+                self._set_status(status, f"{message}, retry after refresh failed")
+                return False
 
-            has_id_token = self._config_manager.id_token is not None
-            last_fetch = self._config_manager.last_token_fetch
+            await self._config_manager.invalidate_id_token()
+            if await self._ensure_id_token_valid():
+                _LOGGER.info("Refreshed IdToken after HTTP 401; retrying request")
+                return True
 
-            if has_id_token:
-                if last_fetch > 0:
-                    token_age_seconds = datetime.now().timestamp() - last_fetch
-
-                    if token_age_seconds >= RECONNECT_BACKOFF_MAX.total_seconds():
-                        await self._config_manager.reset_login_details()
-                        flow = "Old token, cleared for re-auth"
-                        status = ConnectivityStatus.EXPIRED_TOKEN
-                    else:
-                        flow = "Fresh token within window"
-                        forced_log_level = logging.DEBUG
-                else:
-                    flow = "Token exists but no timestamp"
-                    forced_log_level = logging.DEBUG
-
-            message = f"{message}, flow: {flow}"
+            return False
 
         elif crex.status in [404, 405]:
             status = ConnectivityStatus.API_NOT_FOUND
 
-        self._set_status(status, message, forced_log_level)
+        self._set_status(status, message)
+        return False
 
     def _handle_server_timeout(self, endpoint: str, method: str):
         message = (

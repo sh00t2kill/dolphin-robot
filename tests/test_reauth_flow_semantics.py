@@ -96,7 +96,7 @@ async def test_coordinator_reauth_is_started_once_for_expired_token():
     """EXPIRED_TOKEN status should trigger reauth only once."""
     calls = {"reauth": 0, "failure": 0}
 
-    async def fake_start_reauth(_hass):
+    def fake_start_reauth(_hass):
         calls["reauth"] += 1
 
     async def fake_handle_failure():
