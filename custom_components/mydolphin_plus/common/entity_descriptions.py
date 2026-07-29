@@ -34,6 +34,7 @@ from .clean_modes import (
 )
 from .consts import (
     DATA_KEY_AWS_BROKER,
+    DATA_KEY_ROBOT_CONNECTIVITY,
     DATA_KEY_BATTERY,
     DATA_KEY_CLEAN_MODE,
     DATA_KEY_CYCLE_COUNT,
@@ -242,6 +243,13 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_AWS_BROKER),
+    ),
+    MyDolphinPlusBinarySensorEntityDescription(
+        key=slugify(DATA_KEY_ROBOT_CONNECTIVITY),
+        name=DATA_KEY_ROBOT_CONNECTIVITY,
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_ROBOT_CONNECTIVITY),
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_ROBOT_ERROR),
