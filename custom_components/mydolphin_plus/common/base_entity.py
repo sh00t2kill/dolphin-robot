@@ -17,6 +17,17 @@ from .robot_family import RobotFamily
 _LOGGER = logging.getLogger(__name__)
 
 
+def _legacy_unique_id(
+    entity_description: MyDolphinPlusEntityDescription,
+    serial_number: str,
+    entity_name: str,
+) -> str:
+    """Keep the historical entity identity for backwards compatibility."""
+    return slugify(
+        f"{entity_description.platform}_{serial_number}_{entity_name}"
+    )
+
+
 def async_setup_entities(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -31,7 +42,6 @@ def async_setup_entities(
         robot_family = RobotFamily.from_string(robot_family_str)
 
         entity_descriptions = get_entity_descriptions(platform, robot_family)
-
         entities = [
             entity_type(entity_description, coordinator)
             for entity_description in entity_descriptions
@@ -66,10 +76,13 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
             entity_description, device_info
         )
 
-        slugify_name = slugify(entity_name)
-
-        unique_id = slugify(
-            f"{entity_description.platform}_{serial_number}_{slugify_name}"
+        raw_device_info = dict(device_info)
+        raw_device_info["name"] = coordinator.raw_robot_name
+        raw_entity_name = coordinator.config_manager.get_entity_name(
+            entity_description, raw_device_info
+        )
+        unique_id = _legacy_unique_id(
+            entity_description, serial_number, raw_entity_name
         )
 
         self.entity_description = entity_description

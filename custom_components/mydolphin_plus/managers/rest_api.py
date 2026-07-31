@@ -455,10 +455,7 @@ class RestAPI:
 
         for key, mapped in DATA_ROBOT_DETAILS.items():
             if key in data:
-                value = data.get(key)
-                if key == "MyRobotName" and isinstance(value, str):
-                    value = self._decode_robot_name(value)
-                self.data[mapped] = value
+                self.data[mapped] = data.get(key)
 
         return True
 

@@ -168,13 +168,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._load_signal_handlers()
 
     @property
-    def robot_name(self):
+    def raw_robot_name(self):
         robot_name = self.api_data.get(DATA_ROBOT_NAME)
 
         if robot_name is None or robot_name == "":
             robot_name = DEFAULT_NAME
 
         return robot_name
+
+    @property
+    def robot_name(self):
+        """Return the robot name corrected for the Maytronics API encoding."""
+        return RestAPI._decode_robot_name(self.raw_robot_name)
 
     @property
     def api_data(self) -> dict:
