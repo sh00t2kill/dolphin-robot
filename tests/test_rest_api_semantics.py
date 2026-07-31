@@ -156,6 +156,12 @@ async def test_fetch_aws_credentials_sets_user_agent():
     assert session.last_headers["Authorization"] == "Bearer id-token"
 
 
+def test_robot_name_decodes_api_mojibake():
+    """Maytronics serializes UTF-8 robot names after Latin-1 decoding."""
+    assert RestAPI._decode_robot_name("CafÃ©") == "Café"
+    assert RestAPI._decode_robot_name("Pool Robot") == "Pool Robot"
+
+
 @pytest.mark.asyncio
 async def test_update_tokens_does_not_touch_aws_fetch_timestamp():
     """Token refresh timestamp is decoupled from AWS fetch timestamp."""

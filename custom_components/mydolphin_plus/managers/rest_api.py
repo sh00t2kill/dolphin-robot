@@ -455,9 +455,20 @@ class RestAPI:
 
         for key, mapped in DATA_ROBOT_DETAILS.items():
             if key in data:
-                self.data[mapped] = data.get(key)
+                value = data.get(key)
+                if key == "MyRobotName" and isinstance(value, str):
+                    value = self._decode_robot_name(value)
+                self.data[mapped] = value
 
         return True
+
+    @staticmethod
+    def _decode_robot_name(value: str) -> str:
+        """Decode the API's Latin-1-mojibaked UTF-8 robot name value."""
+        try:
+            return value.encode("latin-1").decode("utf-8")
+        except UnicodeError:
+            return value
 
     async def _refresh_aws_credentials(self):
         # Use cached creds when still valid
