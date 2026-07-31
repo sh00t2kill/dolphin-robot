@@ -37,8 +37,8 @@
       "aws_broker": {
         "name": "AWS Broker"
       },
-      "robot_connectivity": {
-        "name": "Robot Connectivity"
+      "connectivity": {
+        "name": "Connectivity"
       },
       "weekly_scheduler": {
         "name": "Weekly Scheduler"
