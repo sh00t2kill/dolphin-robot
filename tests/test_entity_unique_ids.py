@@ -15,5 +15,5 @@ def test_unique_id_uses_the_raw_legacy_robot_name():
     description = SimpleNamespace(platform=Platform.LIGHT, key="led")
 
     assert _legacy_unique_id(
-        description, "Y4708NMP4L", "CafÃ© LED"
-    ) == slugify("light_Y4708NMP4L_CafÃ© LED")
+        description, "TEST-7F3A9C", "CafÃ© LED"
+    ) == slugify("light_TEST-7F3A9C_CafÃ© LED")
