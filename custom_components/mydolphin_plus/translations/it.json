@@ -37,6 +37,9 @@
       "aws_broker": {
         "name": "Broker AWS"
       },
+      "connectivity": {
+        "name": "Connettività"
+      },
       "weekly_scheduler": {
         "name": "Scheduler settimanale"
       }

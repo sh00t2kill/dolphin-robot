@@ -52,10 +52,12 @@ from ..common.consts import (
     DATA_ERROR_CODE,
     DATA_ERROR_TURN_ON_COUNT,
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
+    DATA_IS_CONNECTED,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BATTERY,
     DATA_KEY_BUSY,
     DATA_KEY_CLEAN_MODE,
+    DATA_KEY_CONNECTIVITY,
     DATA_KEY_CYCLE_COUNT,
     DATA_KEY_CYCLE_TIME,
     DATA_KEY_CYCLE_TIME_LEFT,
@@ -81,6 +83,7 @@ from ..common.consts import (
     DATA_SECTION_DEBUG,
     DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
+    DATA_SECTION_IS_CONNECTED,
     DATA_SECTION_LED,
     DATA_SECTION_PWS_ERROR,
     DATA_SECTION_ROBOT_ERROR,
@@ -421,6 +424,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
             slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
             slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
+            slugify(DATA_KEY_CONNECTIVITY): self._get_robot_connectivity_data,
             slugify(DATA_KEY_ROBOT_ERROR): self._get_robot_error_data,
             slugify(DATA_KEY_PWS_ERROR): self._get_pws_error_data,
             slugify(DATA_KEY_BATTERY): self._get_battery_data,
@@ -768,6 +772,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         }
 
         return result
+
+    def _get_robot_connectivity_data(self, _entity_description) -> dict | None:
+        """Return the robot reachability reported by the Maytronics cloud.
+
+        This differs from the AWS Broker entity, which only describes the
+        Home Assistant client's connection to AWS IoT. ``None`` is retained
+        as unknown when the cloud has not supplied the field.
+        """
+        connectivity = self.aws_data.get(DATA_SECTION_IS_CONNECTED, {})
+        is_on = connectivity.get(DATA_IS_CONNECTED)
+
+        return {ATTR_IS_ON: is_on}
 
     def _get_robot_error_data(self, entity_description) -> dict | None:
         result = self._get_error_code(entity_description, DATA_SECTION_ROBOT_ERROR)
