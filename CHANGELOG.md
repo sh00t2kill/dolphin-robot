@@ -2,6 +2,7 @@
 
 ## v1.0.26
 
+- Fix reauthentication flow failing to start (`'NoneType' object can't be awaited`) — `ConfigEntry.async_start_reauth` is synchronous and must not be awaited
 - Use vacuum `activity` instead of `state` for start and pause actions (Home Assistant 2026.x forward compatibility)
 - Align HACS metadata with the integration manifest: Cloud Push `iot_class` and minimum Home Assistant 2026.1.0
 - Correct `vacuum_state` return type to `VacuumActivity` in system details
