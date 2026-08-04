@@ -118,6 +118,32 @@ The following errors can appear:
 
 ## Services
 
+### Start Cleaning
+
+The `mydolphin_plus.start_cleaning` service starts a cleaning cycle in a specific clean mode with a single call, regardless of the currently selected mode.
+
+**Available Modes:**
+
+| Mode     | Description                                          |
+| -------- | ---------------------------------------------------- |
+| `all`    | Regular - cleans floor, water and waterline          |
+| `short`  | Fast mode - shortened cleaning cycle                 |
+| `floor`  | Floor only                                           |
+| `water`  | Water line                                           |
+| `ultra`  | Ultra clean - deep cleaning of floor, water and waterline |
+| `pickup` | Pickup - drives to a collection point                |
+
+**Example:**
+
+```yaml
+# Start a floor-only cleaning cycle
+service: mydolphin_plus.start_cleaning
+target:
+  entity_id: vacuum.{Robot Name}
+data:
+  mode: floor
+```
+
 ### Remote Control
 
 The Remote entity provides virtual joystick control for manual robot navigation. Use the Remote entity's activity feature to control the robot:
