@@ -234,6 +234,8 @@ ATTR_ATTRIBUTES = "attributes"
 ATTR_ACTIONS = "actions"
 ATTR_INSTRUCTIONS = "instructions"
 
+SERVICE_START_CLEANING = "start_cleaning"
+
 LED_MODE_BLINKING = "1"
 LED_MODE_ALWAYS_ON = "2"
 LED_MODE_DISCO = "3"

@@ -281,5 +281,17 @@
         }
       }
     }
+  },
+  "services": {
+    "start_cleaning": {
+      "name": "Start cleaning",
+      "description": "Starts a cleaning cycle in a specific clean mode.",
+      "fields": {
+        "mode": {
+          "name": "Clean mode",
+          "description": "The clean mode to run."
+        }
+      }
+    }
   }
 }

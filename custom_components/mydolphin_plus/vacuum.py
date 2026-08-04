@@ -2,6 +2,8 @@ from abc import ABC
 import logging
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.components.vacuum import (
     SERVICE_LOCATE,
     SERVICE_PAUSE,
@@ -12,12 +14,18 @@ from homeassistant.components.vacuum import (
     VacuumActivity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_MODE, ATTR_STATE, Platform
+from homeassistant.const import ATTR_MODE, ATTR_STATE, CONF_MODE, Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .common.base_entity import MyDolphinPlusBaseEntity, async_setup_entities
-from .common.consts import ATTR_ATTRIBUTES, SIGNAL_DEVICE_NEW
+from .common.clean_modes import CleanModes
+from .common.consts import (
+    ATTR_ATTRIBUTES,
+    SERVICE_START_CLEANING,
+    SIGNAL_DEVICE_NEW,
+)
 from .common.entity_descriptions import MyDolphinPlusVacuumEntityDescription
 from .managers.coordinator import MyDolphinPlusCoordinator
 
@@ -42,6 +50,18 @@ async def async_setup_entry(
 
     entry.async_on_unload(
         async_dispatcher_connect(hass, SIGNAL_DEVICE_NEW, _async_device_new)
+    )
+
+    platform = entity_platform.async_get_current_platform()
+
+    platform.async_register_entity_service(
+        SERVICE_START_CLEANING,
+        {
+            vol.Required(CONF_MODE): vol.In(
+                [str(clean_mode) for clean_mode in CleanModes]
+            )
+        },
+        "async_start_cleaning",
     )
 
 
@@ -75,6 +95,10 @@ class MyDolphinPlusVacuumEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC)
 
     async def async_start(self) -> None:
         await self.async_execute_device_action(SERVICE_START, self.activity)
+
+    async def async_start_cleaning(self, mode: str) -> None:
+        """Start a cleaning cycle in the requested clean mode."""
+        await self.async_execute_device_action(SERVICE_START_CLEANING, mode)
 
     async def async_pause(self, **kwargs: Any) -> None:
         await self.async_execute_device_action(SERVICE_PAUSE, self.activity)

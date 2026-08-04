@@ -103,6 +103,7 @@ from ..common.consts import (
     MANUFACTURER,
     PLATFORMS,
     RECONNECT_BACKOFF_MAX,
+    SERVICE_START_CLEANING,
     SIGNAL_API_STATUS,
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
@@ -565,6 +566,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ATTR_ATTRIBUTES: {ATTR_MODE: mode},
             ATTR_ACTIONS: {
                 SERVICE_START: self._vacuum_start,
+                SERVICE_START_CLEANING: self._start_cleaning,
                 SERVICE_PAUSE: self._vacuum_pause,
                 SERVICE_SET_FAN_SPEED: self._set_cleaning_mode,
                 SERVICE_LOCATE: self._vacuum_locate,
@@ -858,6 +860,15 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Pickup vacuum")
 
         self._aws_client.pickup()
+
+    async def _start_cleaning(
+        self, _entity_description: EntityDescription, clean_mode: str
+    ):
+        mode = CleanModes(clean_mode)
+
+        _LOGGER.debug(f"Start cleaning, Mode: {mode}")
+
+        self._aws_client.set_cleaning_mode(mode)
 
     async def _vacuum_start(self, _entity_description: EntityDescription, _state):
         _LOGGER.debug("Start vacuum")

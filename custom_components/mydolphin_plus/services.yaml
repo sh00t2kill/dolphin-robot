@@ -1,0 +1,24 @@
+start_cleaning:
+  target:
+    entity:
+      integration: mydolphin_plus
+      domain: vacuum
+  fields:
+    mode:
+      required: true
+      example: floor
+      selector:
+        select:
+          options:
+            - value: "all"
+              label: "Regular - cleans floor, water and waterline"
+            - value: "short"
+              label: "Fast mode - shortened cleaning cycle"
+            - value: "floor"
+              label: "Floor only"
+            - value: "water"
+              label: "Water line"
+            - value: "ultra"
+              label: "Ultra clean - deep cleaning of floor, water and waterline"
+            - value: "pickup"
+              label: "Pickup - drives to a collection point"
