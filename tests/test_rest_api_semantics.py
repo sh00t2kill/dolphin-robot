@@ -19,10 +19,6 @@ from custom_components.mydolphin_plus.common.consts import (
     STORAGE_DATA_REFRESH_TOKEN,
 )
 from custom_components.mydolphin_plus.managers.config_manager import ConfigManager
-from custom_components.mydolphin_plus.models.exceptions import (
-    CognitoAuthError,
-    CognitoRequestError,
-)
 import custom_components.mydolphin_plus.managers.rest_api as rest_api_module
 from custom_components.mydolphin_plus.managers.rest_api import (
     RestAPI,
@@ -30,6 +26,10 @@ from custom_components.mydolphin_plus.managers.rest_api import (
     cognito_initiate_auth,
     fetch_aws_credentials,
     fetch_user_profile,
+)
+from custom_components.mydolphin_plus.models.exceptions import (
+    CognitoAuthError,
+    CognitoRequestError,
 )
 
 

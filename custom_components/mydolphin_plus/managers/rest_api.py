@@ -92,9 +92,7 @@ async def _cognito_call(
                     error_type = ""
 
                 if error_type.rsplit("#", 1)[-1] == "NotAuthorizedException":
-                    raise CognitoAuthError(
-                        f"Cognito {target} rejected authentication"
-                    )
+                    raise CognitoAuthError(f"Cognito {target} rejected authentication")
 
                 raise CognitoRequestError(
                     f"Cognito {target} returned {response.status}"
