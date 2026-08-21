@@ -22,9 +22,14 @@ from custom_components.mydolphin_plus.managers.config_manager import ConfigManag
 import custom_components.mydolphin_plus.managers.rest_api as rest_api_module
 from custom_components.mydolphin_plus.managers.rest_api import (
     RestAPI,
+    _cognito_call,
     cognito_initiate_auth,
     fetch_aws_credentials,
     fetch_user_profile,
+)
+from custom_components.mydolphin_plus.models.exceptions import (
+    CognitoAuthError,
+    CognitoRequestError,
 )
 
 
@@ -106,6 +111,10 @@ class DummyConfigManager:
     async def reset_login_details(self):
         return None
 
+    async def invalidate_id_token(self):
+        self.id_token = None
+        self.id_token_expires_at = 0
+
     async def update_serial_number(self, serial_number: str):
         self.serial_number = serial_number
 
@@ -130,6 +139,30 @@ async def test_cognito_initiate_auth_sets_user_agent():
     await cognito_initiate_auth(session, "user@example.com", integration_info=info)
 
     assert session.last_headers["User-Agent"] == "HA-MyDolphin-Plus/test"
+
+
+@pytest.mark.asyncio
+async def test_cognito_refresh_rejection_is_an_auth_error():
+    """Only Cognito's explicit auth error invalidates a stored refresh token."""
+
+    class RejectedSession:
+        def post(self, *_args, **_kwargs):
+            return FakeResponse({"__type": "NotAuthorizedException"}, status=400)
+
+    with pytest.raises(CognitoAuthError):
+        await _cognito_call(RejectedSession(), "InitiateAuth", {})
+
+
+@pytest.mark.asyncio
+async def test_cognito_transport_failure_is_not_an_auth_error():
+    """Connectivity failures must remain retryable."""
+
+    class UnreachableSession:
+        def post(self, *_args, **_kwargs):
+            raise OSError("DNS unavailable")
+
+    with pytest.raises(CognitoRequestError):
+        await _cognito_call(UnreachableSession(), "InitiateAuth", {})
 
 
 @pytest.mark.asyncio
@@ -249,3 +282,48 @@ async def test_rate_limited_with_expired_cache_sets_failed():
     await api._refresh_aws_credentials()
 
     assert api.status == ConnectivityStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_cognito_refresh_transport_failure_retains_tokens(monkeypatch):
+    """A transport failure must not be treated as a rejected refresh token."""
+    cfg = DummyConfigManager()
+    api = RestAPI(None, cfg)
+    api._session = object()
+    api.set_local_async_dispatcher_send(lambda *_args: None)
+
+    async def transport_failure(*_args, **_kwargs):
+        raise CognitoRequestError("DNS unavailable")
+
+    monkeypatch.setattr(rest_api_module, "cognito_refresh", transport_failure)
+
+    assert await api._ensure_id_token_valid() is True
+    cfg.id_token_expires_at = 0
+    assert await api._ensure_id_token_valid() is False
+    assert cfg.refresh_token == "refresh-token"
+    assert api.status == ConnectivityStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_cognito_refresh_auth_failure_clears_tokens(monkeypatch):
+    """Only an explicit Cognito auth rejection requires reauthentication."""
+    cfg = DummyConfigManager()
+    cfg.id_token_expires_at = 0
+    cleared = {"called": False}
+
+    async def reset_login_details():
+        cleared["called"] = True
+
+    cfg.reset_login_details = reset_login_details
+    api = RestAPI(None, cfg)
+    api._session = object()
+    api.set_local_async_dispatcher_send(lambda *_args: None)
+
+    async def auth_failure(*_args, **_kwargs):
+        raise CognitoAuthError("Refresh rejected")
+
+    monkeypatch.setattr(rest_api_module, "cognito_refresh", auth_failure)
+
+    assert await api._ensure_id_token_valid() is False
+    assert cleared["called"] is True
+    assert api.status == ConnectivityStatus.EXPIRED_TOKEN
