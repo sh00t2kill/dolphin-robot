@@ -228,7 +228,7 @@ sequenceDiagram
 
 | HA Service              | Coordinator Method                  | AWSClient Method           | MQTT Topic      | Payload                                                |
 | ----------------------- | ----------------------------------- | -------------------------- | --------------- | ------------------------------------------------------ |
-| Reset filter indicator  | (service call)                      | `reset_filter_indicator()` | `shadow/update` | `{"filterBagIndication": {"resetFbi": true}}`          |
+| `button.press`          | `_reset_filter_indicator()`         | `reset_filter_indicator()` | `shadow/update` | `{"filterBagIndication": {"resetFbi": true}}`          |
 | Set cycle time per mode | `_set_clean_mode_cycle_time_data()` | (config only)              | N/A             | Stored in ConfigManager, published on next mode change |
 
 ---
@@ -260,9 +260,9 @@ Published directly to `Maytronics/{mus}/main` without a shadow wrapper. These ar
 
 ## Source Code
 
-| Module                                                                                          | Responsibility                                                                                                                                                                              |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `managers/coordinator.py`                                                                       | `_build_data_mapping()` — registers all handlers; `get_data()` / `get_device_action()` — entity interface; `_vacuum_start()`, `_set_led_*()`, `_set_joystick_mode()`, etc. — action methods |
-| `managers/aws_client.py`                                                                        | `set_cleaning_mode()`, `set_led_*()`, `set_joystick_mode()`, `pause()`, `pickup()` — translate actions to MQTT publishes via `_send_desired_command()` or `_send_dynamic_command()`         |
-| `common/entity_descriptions.py`                                                                 | Entity description definitions with keys that map into `_data_mapping`                                                                                                                      |
-| `vacuum.py`, `light.py`, `select.py`, `number.py`, `remote.py`, `sensor.py`, `binary_sensor.py` | Platform entities that call `coordinator.get_data()` and `coordinator.get_device_action()`                                                                                                  |
+| Module                                                                                                       | Responsibility                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `managers/coordinator.py`                                                                                    | `_build_data_mapping()` — registers all handlers; `get_data()` / `get_device_action()` — entity interface; `_vacuum_start()`, `_set_led_*()`, `_set_joystick_mode()`, etc. — action methods |
+| `managers/aws_client.py`                                                                                     | `set_cleaning_mode()`, `set_led_*()`, `set_joystick_mode()`, `pause()`, `pickup()` — translate actions to MQTT publishes via `_send_desired_command()` or `_send_dynamic_command()`         |
+| `common/entity_descriptions.py`                                                                              | Entity description definitions with keys that map into `_data_mapping`                                                                                                                      |
+| `vacuum.py`, `light.py`, `select.py`, `number.py`, `remote.py`, `button.py`, `sensor.py`, `binary_sensor.py` | Platform entities that call `coordinator.get_data()` and `coordinator.get_device_action()`                                                                                                  |

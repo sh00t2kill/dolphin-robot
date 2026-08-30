@@ -41,6 +41,11 @@
         "name": "Scheduler settimanale"
       }
     },
+    "button": {
+      "reset_filter_indicator": {
+        "name": "Azzera indicatore filtro"
+      }
+    },
     "light": {
       "led": {
         "name": "GUIDATA GUIDATO"

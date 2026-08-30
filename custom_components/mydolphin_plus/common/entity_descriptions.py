@@ -4,6 +4,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
+from homeassistant.components.button import ButtonEntityDescription
 from homeassistant.components.light import LightEntityDescription
 from homeassistant.components.number import NumberDeviceClass, NumberEntityDescription
 from homeassistant.components.remote import RemoteEntityDescription, RemoteEntityFeature
@@ -47,6 +48,7 @@ from .consts import (
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
+    DATA_KEY_RESET_FILTER_INDICATOR,
     DATA_KEY_ROBOT_ERROR,
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
@@ -124,6 +126,13 @@ class MyDolphinPlusLightEntityDescription(
     LightEntityDescription, MyDolphinPlusEntityDescription
 ):
     platform: Platform | None = Platform.LIGHT
+
+
+@dataclass(frozen=True, kw_only=True)
+class MyDolphinPlusButtonEntityDescription(
+    ButtonEntityDescription, MyDolphinPlusEntityDescription
+):
+    platform: Platform | None = Platform.BUTTON
 
 
 ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
@@ -218,6 +227,13 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         key=slugify(DATA_KEY_FILTER_STATUS),
         name=DATA_KEY_FILTER_STATUS,
         translation_key=slugify(DATA_KEY_FILTER_STATUS),
+    ),
+    MyDolphinPlusButtonEntityDescription(
+        key=slugify(DATA_KEY_RESET_FILTER_INDICATOR),
+        name=DATA_KEY_RESET_FILTER_INDICATOR,
+        icon="mdi:filter-check",
+        entity_category=EntityCategory.CONFIG,
+        translation_key=slugify(DATA_KEY_RESET_FILTER_INDICATOR),
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_CYCLE_TIME),
