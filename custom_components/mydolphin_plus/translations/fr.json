@@ -67,6 +67,11 @@
         "name": "Programmateur hebdomadaire"
       }
     },
+    "button": {
+      "reset_filter_indicator": {
+        "name": "Réinitialiser l'indicateur de filtre"
+      }
+    },
     "light": {
       "led": {
         "name": "LED"

@@ -4,6 +4,7 @@ import logging
 import sys
 from typing import Callable
 
+from homeassistant.components.button import SERVICE_PRESS
 from homeassistant.components.number.const import SERVICE_SET_VALUE
 from homeassistant.components.remote import ATTR_ACTIVITY, SERVICE_SEND_COMMAND
 from homeassistant.components.vacuum import (
@@ -67,6 +68,7 @@ from ..common.consts import (
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
+    DATA_KEY_RESET_FILTER_INDICATOR,
     DATA_KEY_ROBOT_ERROR,
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
@@ -418,6 +420,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_LED): self._get_led_data,
             slugify(DATA_KEY_LED_INTENSITY): self._get_led_intensity_data,
             slugify(DATA_KEY_FILTER_STATUS): self._get_filter_status_data,
+            slugify(
+                DATA_KEY_RESET_FILTER_INDICATOR
+            ): self._get_reset_filter_indicator_data,
             slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
             slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
             slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
@@ -676,6 +681,27 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
+    def _get_reset_filter_indicator_data(self, _entity_description) -> dict | None:
+        filter_bag_indication = self.aws_data.get(
+            DATA_SECTION_FILTER_BAG_INDICATION, {}
+        )
+        filter_state = filter_bag_indication.get(CONF_STATE, -1)
+        reset_fbi = filter_bag_indication.get(
+            DATA_FILTER_BAG_INDICATION_RESET_FBI, False
+        )
+
+        result = {
+            ATTR_ATTRIBUTES: {
+                ATTR_RESET_FBI: reset_fbi,
+                ATTR_STATUS: filter_state,
+            },
+            ATTR_ACTIONS: {
+                SERVICE_PRESS: self._reset_filter_indicator,
+            },
+        }
+
+        return result
+
     def _get_cycle_time_data(self, _entity_description) -> dict | None:
         cycle_info = self.aws_data.get(DATA_SECTION_CYCLE_INFO, {})
         cleaning_mode = cycle_info.get(DATA_CYCLE_INFO_CLEANING_MODE, {})
@@ -853,6 +879,11 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         clean_mode = CleanModes(clean_mode_str)
 
         await self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
+
+    async def _reset_filter_indicator(self, _entity_description: EntityDescription):
+        _LOGGER.debug("Reset filter bag indicator")
+
+        self._aws_client.reset_filter_indicator()
 
     async def _pickup(self, _entity_description: EntityDescription):
         _LOGGER.debug("Pickup vacuum")

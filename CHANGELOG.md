@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add `Reset Filter Indicator` button entity that sends the filter bag indicator reset (`resetFbi`) to the robot, so the indicator can be cleared from Home Assistant after cleaning the filter
+
 ## v1.0.26
 
 - Use vacuum `activity` instead of `state` for start and pause actions (Home Assistant 2026.x forward compatibility)
