@@ -11,16 +11,16 @@ Recovery operates at two levels: the AWS CRT SDK handles transient MQTT reconnec
 
 ## Status Values
 
-| Status                | Meaning                             | Triggers                                  |
-| --------------------- | ----------------------------------- | ----------------------------------------- |
-| `CONNECTING`          | Establishing connection             | `initialize()` called                     |
-| `TEMPORARY_CONNECTED` | REST login done, awaiting AWS creds | `authenticate-user` succeeded             |
-| `CONNECTED`           | Fully operational                   | AWS credentials obtained / MQTT connected |
-| `FAILED`              | Error occurred                      | HTTP error, MQTT failure, timeout         |
-| `EXPIRED_TOKEN`       | Token rejected/expired              | 401 response, refresh failure             |
-| `DISCONNECTED`        | Graceful shutdown                   | `terminate()` or connection closed        |
-| `INVALID_CREDENTIALS` | Bad credentials                     | Authentication rejected                   |
-| `API_NOT_FOUND`       | Endpoint missing                    | HTTP 404/405 response                     |
+| Status                | Meaning                             | Triggers                                                 |
+| --------------------- | ----------------------------------- | -------------------------------------------------------- |
+| `CONNECTING`          | Establishing connection             | `initialize()` called                                    |
+| `TEMPORARY_CONNECTED` | REST login done, awaiting AWS creds | `authenticate-user` succeeded                            |
+| `CONNECTED`           | Fully operational                   | AWS credentials obtained / MQTT connected                |
+| `FAILED`              | Error occurred                      | HTTP error, MQTT failure, timeout, Cognito network error |
+| `EXPIRED_TOKEN`       | Login rejected/missing              | Cognito `NotAuthorizedException`, no refresh token       |
+| `DISCONNECTED`        | Graceful shutdown                   | `terminate()` or connection closed                       |
+| `INVALID_CREDENTIALS` | Bad credentials                     | Authentication rejected                                  |
+| `API_NOT_FOUND`       | Endpoint missing                    | HTTP 404/405 response                                    |
 
 ---
 
@@ -38,7 +38,7 @@ stateDiagram-v2
     TEMPORARY_CONNECTED --> FAILED : getToken fails
 
     CONNECTED --> FAILED : HTTP error / MQTT failure
-    CONNECTED --> EXPIRED_TOKEN : 401 + old token
+    CONNECTED --> EXPIRED_TOKEN : Refresh token rejected
     CONNECTED --> DISCONNECTED : terminate()
 
     FAILED --> CONNECTING : Backoff retry → initialize()
@@ -69,13 +69,13 @@ sequenceDiagram
     API->>API: HTTP request fails (network/auth/server error)
     API->>API: _handle_client_error() or _handle_server_timeout()
 
-    alt Token expired (401) and token age >= 15min
-        API->>CM: reset_login_details()
-        CM->>CM: Clear IdToken, RefreshToken
-        API->>API: _set_status(EXPIRED_TOKEN)
-    else 401 but token age < 15min
-        API->>API: Log at DEBUG level
-        Note over API: Treat as transient,<br/>await next scheduled refresh
+    alt HTTP 401 (first attempt)
+        API->>CM: invalidate_id_token()
+        API->>API: _ensure_id_token_valid() refreshes the IdToken
+        API->>API: Retry the request once with the new IdToken
+    else HTTP 401 again after the retry
+        API->>API: _set_status(FAILED)
+        Note over API: Left to the coordinator's<br/>reconnect backoff
     else HTTP 404/405
         API->>API: _set_status(API_NOT_FOUND)
     else Other failures
@@ -237,40 +237,40 @@ The counter (`_reconnection_attempts`) resets to 0 on any successful connection 
 
 ## Sequence Diagram — Token Expiry / 401 Handling
 
+Only an explicit `NotAuthorizedException` from Cognito clears the stored login. DNS failures, timeouts, throttling (`TooManyRequestsException`) and other Cognito errors keep the `RefreshToken` and are retried on the reconnect backoff, so a short internet outage does not force a new OTP. A request is retried at most once after a 401, so a persistent 401 costs one Cognito refresh and one extra API call per backoff cycle.
+
 ```mermaid
 sequenceDiagram
     participant API as RestAPI
     participant CM as ConfigManager
+    participant Cognito as AWS Cognito
     participant Coord as Coordinator
     participant HA as Home Assistant
 
     API->>API: HTTP 401 response received
     API->>API: _handle_client_error(endpoint, method, crex)
 
-    API->>CM: Check id_token exists?
+    alt First 401 for this request
+        API->>CM: invalidate_id_token()
+        Note over CM: Clear only the IdToken,<br/>keep the RefreshToken
+        API->>Cognito: POST InitiateAuth (REFRESH_TOKEN_AUTH)
 
-    alt No IdToken present
-        API->>API: Log "No id token present"
-        API->>API: _set_status(FAILED)
-    else Has IdToken
-        API->>CM: Get last_token_fetch timestamp
-
-        alt last_fetch exists and token_age >= RECONNECT_BACKOFF_MAX (15 min)
+        alt New IdToken returned
+            API->>API: Retry the request once with the new IdToken
+        else NotAuthorizedException
             API->>CM: reset_login_details()
-            Note over CM: Clear IdToken, RefreshToken,<br/>ExpiresAt, serial numbers
             API->>API: _set_status(EXPIRED_TOKEN)
             API->>Coord: SIGNAL_API_STATUS → EXPIRED_TOKEN
-
             Coord->>Coord: _start_reauth_if_needed()
             Coord->>HA: entry.async_start_reauth(hass)
             Note over HA: User sees reauth UI → OTP flow
-        else Token age < 15 min
-            API->>API: Log at DEBUG (treat as transient)
-            Note over API: _ensure_id_token_valid() will<br/>attempt refresh on next cycle
-        else No timestamp recorded
-            API->>API: Log "Token exists but no timestamp"
-            Note over API: Debug level, let refresh cycle handle it
+        else Network, DNS, timeout or other Cognito error
+            API->>API: _set_status(FAILED)
+            Note over API: Tokens kept, retried on<br/>the reconnect backoff
         end
+    else 401 again on the retried request
+        API->>API: _set_status(FAILED)
+        Note over API: No further retry
     end
 ```
 

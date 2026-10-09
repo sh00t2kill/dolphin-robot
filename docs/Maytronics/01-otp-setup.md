@@ -96,7 +96,7 @@ sequenceDiagram
 
 ## Sequence Diagram — Reauthentication
 
-When the refresh token expires or is rejected, the coordinator triggers HA's reauth flow which re-runs the same OTP sequence.
+When Cognito rejects the refresh token (`NotAuthorizedException`), the coordinator triggers HA's reauth flow which re-runs the same OTP sequence. A refresh that fails for a network, DNS or other non-authentication reason keeps the tokens and is retried on the reconnect backoff instead (see [Connection Error Recovery](04-error-recovery.md)).
 
 ```mermaid
 sequenceDiagram
@@ -107,7 +107,7 @@ sequenceDiagram
     participant FM as FlowManager
     participant Cognito as AWS Cognito
 
-    API->>API: _ensure_id_token_valid() - refresh fails
+    API->>API: _ensure_id_token_valid() - Cognito rejects the refresh token
     API->>API: reset_login_details()
     API->>API: _set_status(EXPIRED_TOKEN)
     API->>Coord: dispatcher_send(SIGNAL_API_STATUS, EXPIRED_TOKEN)

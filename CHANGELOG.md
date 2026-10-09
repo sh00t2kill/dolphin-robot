@@ -2,6 +2,9 @@
 
 ## v1.0.26
 
+- Keep the stored Cognito login when a token refresh fails for a network, DNS, timeout or other non-authentication reason; only an explicit `NotAuthorizedException` requires reauthentication (#296)
+- On an HTTP 401 from the Maytronics API, refresh the IdToken and retry the request once instead of clearing the login
+- Fix starting the Home Assistant reauthentication flow (`async_start_reauth` is a callback, not a coroutine)
 - Use vacuum `activity` instead of `state` for start and pause actions (Home Assistant 2026.x forward compatibility)
 - Align HACS metadata with the integration manifest: Cloud Push `iot_class` and minimum Home Assistant 2026.1.0
 - Correct `vacuum_state` return type to `VacuumActivity` in system details

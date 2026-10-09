@@ -221,6 +221,8 @@ Please attach also diagnostic details of the integration, available in:
 
 If the integration logs `EXPIRED_TOKEN` and stops loading, the stored Cognito `RefreshToken` is no longer valid (it has expired or been invalidated server-side). Home Assistant should raise a reauthentication prompt for the existing entry so you can complete the OTP flow again.
 
+A temporary internet or DNS outage does not cause this: the integration keeps its tokens and reconnects on its own once the network is back.
+
 If reauthentication does not appear or cannot be completed, remove and re-add the integration as a fallback.
 
 The token state lives in `.storage/mydolphin_plus.config.json`, keyed by the entry id:

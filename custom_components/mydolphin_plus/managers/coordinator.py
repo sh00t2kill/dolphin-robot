@@ -301,7 +301,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             return
 
         try:
-            await entry.async_start_reauth(self.hass)
+            entry.async_start_reauth(self.hass)
             self._reauth_in_progress = True
             _LOGGER.warning("Started Home Assistant reauthentication flow")
         except Exception as ex:
