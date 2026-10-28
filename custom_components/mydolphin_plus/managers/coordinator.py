@@ -53,6 +53,7 @@ from ..common.consts import (
     DATA_ERROR_CODE,
     DATA_ERROR_TURN_ON_COUNT,
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
+    DATA_IS_CONNECTED,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BATTERY,
     DATA_KEY_BUSY,
@@ -65,6 +66,7 @@ from ..common.consts import (
     DATA_KEY_LED_INTENSITY,
     DATA_KEY_LED_MODE,
     DATA_KEY_NETWORK_NAME,
+    DATA_KEY_POWER_SUPPLY_CONNECTION,
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
@@ -84,6 +86,7 @@ from ..common.consts import (
     DATA_SECTION_DEBUG,
     DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
+    DATA_SECTION_IS_CONNECTED,
     DATA_SECTION_LED,
     DATA_SECTION_PWS_ERROR,
     DATA_SECTION_ROBOT_ERROR,
@@ -505,6 +508,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
             slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
             slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
+            slugify(
+                DATA_KEY_POWER_SUPPLY_CONNECTION
+            ): self._get_power_supply_connection_data,
             slugify(DATA_KEY_ROBOT_ERROR): self._get_robot_error_data,
             slugify(DATA_KEY_PWS_ERROR): self._get_pws_error_data,
             slugify(DATA_KEY_BATTERY): self._get_battery_data,
@@ -852,6 +858,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         }
 
         return result
+
+    def _get_power_supply_connection_data(self, _entity_description) -> dict | None:
+        """
+        Return whether the power supply is connected to the Maytronics cloud.
+
+        AWS Broker is Home Assistant's own connection to AWS IoT. This is the
+        power supply's, so it can be off while AWS Broker is on. The robot
+        itself can be off while this is on.
+        """
+        is_connected = self.aws_data.get(DATA_SECTION_IS_CONNECTED, {})
+
+        return {ATTR_IS_ON: is_connected.get(DATA_IS_CONNECTED)}
 
     def _get_robot_error_data(self, entity_description) -> dict | None:
         result = self._get_error_code(entity_description, DATA_SECTION_ROBOT_ERROR)

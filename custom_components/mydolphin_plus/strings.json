@@ -65,6 +65,9 @@
       },
       "weekly_scheduler": {
         "name": "Weekly Scheduler"
+      },
+      "power_supply_connection": {
+        "name": "Power Supply Connection"
       }
     },
     "light": {

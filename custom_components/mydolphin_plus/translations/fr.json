@@ -65,6 +65,9 @@
       },
       "weekly_scheduler": {
         "name": "Programmateur hebdomadaire"
+      },
+      "power_supply_connection": {
+        "name": "Connexion du bloc d'alimentation"
       }
     },
     "light": {

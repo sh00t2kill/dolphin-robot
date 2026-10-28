@@ -39,6 +39,9 @@
       },
       "weekly_scheduler": {
         "name": "Scheduler settimanale"
+      },
+      "power_supply_connection": {
+        "name": "Connessione dell'alimentatore"
       }
     },
     "light": {

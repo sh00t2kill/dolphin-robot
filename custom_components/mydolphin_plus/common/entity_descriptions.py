@@ -44,6 +44,7 @@ from .consts import (
     DATA_KEY_LED_INTENSITY,
     DATA_KEY_LED_MODE,
     DATA_KEY_NETWORK_NAME,
+    DATA_KEY_POWER_SUPPLY_CONNECTION,
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
@@ -246,6 +247,14 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_AWS_BROKER),
+        power_supply=True,
+    ),
+    MyDolphinPlusBinarySensorEntityDescription(
+        key=slugify(DATA_KEY_POWER_SUPPLY_CONNECTION),
+        name=DATA_KEY_POWER_SUPPLY_CONNECTION,
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_POWER_SUPPLY_CONNECTION),
         power_supply=True,
     ),
     MyDolphinPlusSensorEntityDescription(
