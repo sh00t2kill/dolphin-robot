@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 import json
 import logging
 import os
 import sys
-from time import sleep
+from time import monotonic, sleep
 from typing import Any, Callable
 
 import aiofiles
@@ -52,6 +52,7 @@ from ..common.consts import (
     DATA_STATE_DESIRED,
     DATA_STATE_REPORTED,
     DATA_SYSTEM_STATE_PWS_STATE,
+    DATA_SYSTEM_STATE_TIME_ZONE,
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
     DEFAULT_TIME_PART,
@@ -62,20 +63,24 @@ from ..common.consts import (
     DYNAMIC_CONTENT_REMOTE_CONTROL_MODE,
     DYNAMIC_CONTENT_SERIAL_NUMBER,
     DYNAMIC_CONTENT_SPEED,
+    DYNAMIC_CONTENT_TIMESTAMP,
     DYNAMIC_DESCRIPTION,
     DYNAMIC_DESCRIPTION_JOYSTICK,
     DYNAMIC_DESCRIPTION_TEMPERATURE,
     DYNAMIC_TYPE,
+    DYNAMIC_TYPE_IOT_RESPONSE,
     DYNAMIC_TYPE_PWS_REQUEST,
     LED_MODE_BLINKING,
     MQTT_MESSAGE_ENCODING,
     SIGNAL_AWS_CLIENT_STATUS,
+    TEMPERATURE_REQUEST_INTERVAL,
     TOPIC_CALLBACK_ACCEPTED,
     TOPIC_CALLBACK_REJECTED,
     WS_DATA_DIFF,
     WS_DATA_TIMESTAMP,
     WS_DATA_VERSION,
     WS_LAST_UPDATE,
+    WS_TEMPERATURE_LAST_UPDATE,
 )
 from ..common.joystick_direction import JoystickDirection
 from ..common.power_supply_state import PowerSupplyState
@@ -109,6 +114,8 @@ class AWSClient:
             self._config_manager = config_manager
             self._awsiot_id = awsiot_id
             self._robot_family = None
+            self._robot_family_missing = False
+            self._last_temperature_request: float | None = None
 
             self._api_data = {}
             self._data = {}
@@ -303,10 +310,13 @@ class AWSClient:
 
         if api_data is None:
             self._robot_family = RobotFamily.ALL
+            self._robot_family_missing = False
 
         else:
             robot_family_str = api_data.get(DATA_ROBOT_FAMILY)
             self._robot_family = RobotFamily.from_string(robot_family_str)
+            # The OTP profile omits RobotFamily, even for an M700.
+            self._robot_family_missing = robot_family_str is None
 
     async def update(self):
         try:
@@ -437,8 +447,14 @@ class AWSClient:
                 self._on_data_update_callback()
 
                 if topic == self._topic_data.get_accepted:
-                    if self._robot_family == RobotFamily.M700:
-                        self._read_temperature_and_in_water_details()
+                    if (
+                        self._robot_family == RobotFamily.M700
+                        or self._robot_family_missing
+                    ) and self._is_temperature_request_due():
+                        try:
+                            self.request_temperature()
+                        except ValueError as ex:
+                            _LOGGER.debug(f"Temperature request skipped: {ex}")
 
                 elif topic == self._topic_data.update_accepted:
                     desired = state.get(DATA_STATE_DESIRED)
@@ -473,11 +489,48 @@ class AWSClient:
 
         self.data[DATA_SECTION_DYNAMIC][message_type] = content
 
+        if (
+            message_type == DYNAMIC_TYPE_IOT_RESPONSE
+            and isinstance(content, dict)
+            and content.get(DYNAMIC_DESCRIPTION_TEMPERATURE) is not None
+        ):
+            self.data[WS_TEMPERATURE_LAST_UPDATE] = self._get_temperature_measured_at(
+                content
+            )
+
         if handler is not None:
             handler(message)
 
         # Trigger callback for real-time updates
         self._on_data_update_callback()
+
+    def _get_temperature_measured_at(self, content: dict) -> str:
+        """Return when the power supply measured the reported temperature.
+
+        The power supply can resend an earlier reading, so its own timestamp is
+        more useful than the time the message arrived. That timestamp is in the
+        power supply's local time, offset by the shadow's timeZone in minutes.
+        """
+        received_at = datetime.now(UTC)
+        device_timestamp = content.get(DYNAMIC_CONTENT_TIMESTAMP)
+        system_state = self.data.get(DATA_SECTION_SYSTEM_STATE) or {}
+        time_zone = system_state.get(DATA_SYSTEM_STATE_TIME_ZONE)
+
+        if (
+            isinstance(device_timestamp, (int, float))
+            and not isinstance(device_timestamp, bool)
+            and device_timestamp > 0
+            and isinstance(time_zone, (int, float))
+            and not isinstance(time_zone, bool)
+        ):
+            measured_at = datetime.fromtimestamp(
+                device_timestamp - time_zone * 60, UTC
+            )
+
+            if measured_at <= received_at + timedelta(minutes=5):
+                return measured_at.isoformat()
+
+        return received_at.isoformat()
 
     def _on_pws_request_message(self, message: dict):
         direction = message.get(DYNAMIC_CONTENT_DIRECTION)
@@ -607,9 +660,15 @@ class AWSClient:
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_JOYSTICK, request_data)
 
-    def _read_temperature_and_in_water_details(self):
+    def request_temperature(self):
+        """Ask the power supply for a fresh reading without starting a cycle."""
         motor_unit_serial = self._config_manager.motor_unit_serial
         serial_number = self._config_manager.serial_number
+
+        if not motor_unit_serial or not serial_number:
+            raise ValueError(
+                "Robot serial numbers are required for a temperature request"
+            )
 
         request_data = {
             DYNAMIC_CONTENT_SERIAL_NUMBER: serial_number,
@@ -617,6 +676,18 @@ class AWSClient:
         }
 
         self._send_dynamic_command(DYNAMIC_DESCRIPTION_TEMPERATURE, request_data)
+        self._last_temperature_request = monotonic()
+
+    def _is_temperature_request_due(self) -> bool:
+        """Limit automatic temperature requests; the button is not limited."""
+        last_request = getattr(self, "_last_temperature_request", None)
+
+        if last_request is None:
+            return True
+
+        elapsed = monotonic() - last_request
+
+        return elapsed >= TEMPERATURE_REQUEST_INTERVAL.total_seconds()
 
     def pickup(self):
         self.set_cleaning_mode(CleanModes.PICKUP)

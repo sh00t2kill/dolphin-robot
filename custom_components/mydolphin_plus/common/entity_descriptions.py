@@ -4,6 +4,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
+from homeassistant.components.button import ButtonEntityDescription
 from homeassistant.components.light import LightEntityDescription
 from homeassistant.components.number import NumberDeviceClass, NumberEntityDescription
 from homeassistant.components.remote import RemoteEntityDescription, RemoteEntityFeature
@@ -47,6 +48,7 @@ from .consts import (
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
+    DATA_KEY_REFRESH_TEMPERATURE,
     DATA_KEY_ROBOT_ERROR,
     DATA_KEY_ROBOT_STATUS,
     DATA_KEY_ROBOT_TYPE,
@@ -106,6 +108,13 @@ class MyDolphinPlusSensorEntityDescription(
 
 
 @dataclass(frozen=True, kw_only=True)
+class MyDolphinPlusButtonEntityDescription(
+    ButtonEntityDescription, MyDolphinPlusEntityDescription
+):
+    platform: Platform | None = Platform.BUTTON
+
+
+@dataclass(frozen=True, kw_only=True)
 class MyDolphinPlusSelectEntityDescription(
     SelectEntityDescription, MyDolphinPlusEntityDescription
 ):
@@ -140,6 +149,13 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         features=RemoteEntityFeature.ACTIVITY,
         activity_list=list(JoystickDirection),
         translation_key=slugify(DATA_KEY_REMOTE),
+    ),
+    MyDolphinPlusButtonEntityDescription(
+        key=slugify(DATA_KEY_REFRESH_TEMPERATURE),
+        name=DATA_KEY_REFRESH_TEMPERATURE,
+        icon="mdi:refresh",
+        supported_robot=RobotFamily.M700,
+        translation_key=slugify(DATA_KEY_REFRESH_TEMPERATURE),
     ),
     MyDolphinPlusLightEntityDescription(
         key=slugify(DATA_KEY_LED),
@@ -294,7 +310,9 @@ for clean_mode in list(CleanModes):
 
 
 def get_entity_descriptions(
-    platform: Platform, robot_family: RobotFamily | None
+    platform: Platform,
+    robot_family: RobotFamily | None,
+    family_missing: bool = False,
 ) -> list[MyDolphinPlusEntityDescription]:
     result = [
         entity_description
@@ -303,6 +321,7 @@ def get_entity_descriptions(
         and (
             entity_description.supported_robot == RobotFamily.ALL
             or entity_description.supported_robot == robot_family
+            or (family_missing and entity_description.supported_robot == RobotFamily.M700)
         )
     ]
 

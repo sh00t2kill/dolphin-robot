@@ -93,10 +93,14 @@ The following errors can appear:
 | {Robot Name} Robot Model             | Sensor        | Presents the type of the robot                                              |                                                                                                                           |
 | {Robot Name} Cycle Count             | Sensor        | Presents the number of cycles ran                                           |                                                                                                                           |
 | {Robot Name} Filter Status           | Sensor        | Presents the status of the filter bag                                       |                                                                                                                           |
+| {Robot Name} Temperature             | Sensor        | Last reported pool water temperature for M700 models                       | Shows unknown until the robot reports a reading                                                                            |
+| {Robot Name} Refresh Temperature     | Button        | Requests a fresh temperature reading from an M700 power supply             | Does not start a cleaning cycle; the sensor changes when the robot responds                                                |
 | {Robot Name} Cycle Time              | Sensor        | Indicates the time the robot is cleaning                                    | Measurement of duration in minutes                                                                                        |
 | {Robot Name} Cycle Time Left         | Sensor        | Indicates the time left for the robot to complete the cycle                 | Measurement of duration in seconds                                                                                        |
 | {Robot Name} Remote                  | Remote        | Provides virtual joystick control for manual robot navigation               | Features: Activity (Stop, Forward, Backward, Left, Right), Turn On, Turn Off                                              |
 | {Robot Name}                         | Vacuum        | Provides functionality of vacuum to the robot                               | Features: State, Fan Speed (Cleaning Mode), Return Home (Pickup), Turn On, Turn Off, Send Command (Schedule, Delay Clean) |
+
+M700 temperature controls also appear when the OTP profile omits the robot family. On a model that does not support temperature, the sensor remains unknown. Pressing **Refresh Temperature** requests a reading through the power supply without starting a cleaning cycle. The integration also requests a reading automatically at most every 10 minutes. The sensor's `temperature_last_reported` attribute records when the power supply measured the reading; an unchanged value can still have a newer report time, and a resent earlier reading keeps its original time.
 
 ### Cleaning Modes
 

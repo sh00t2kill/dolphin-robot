@@ -24,6 +24,7 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
 )
 from homeassistant.core import Event, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
@@ -107,6 +108,7 @@ from ..common.consts import (
     SIGNAL_AWS_CLIENT_STATUS,
     UPDATE_API_INTERVAL,
     UPDATE_WS_INTERVAL,
+    WS_TEMPERATURE_LAST_UPDATE,
 )
 from ..common.joystick_direction import JoystickDirection
 from ..models.system_details import SystemDetails
@@ -199,6 +201,13 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     async def terminate(self):
         await self._aws_client.terminate()
+
+    async def async_request_temperature(self) -> None:
+        """Request a new reading; MQTT will update the sensor when it arrives."""
+        if self._aws_client.status != ConnectivityStatus.CONNECTED:
+            raise HomeAssistantError("MyDolphin Plus is not connected to the broker")
+
+        self._aws_client.request_temperature()
 
     async def initialize(self):
         self._build_data_mapping()
@@ -489,15 +498,26 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return result
 
     def _get_temperature_data(self, _entity_description) -> dict | None:
-        dynamic = self.aws_data.get(DATA_SECTION_DYNAMIC, {})
-        iot_response = dynamic.get(DYNAMIC_TYPE_IOT_RESPONSE, {})
-        temperature_int = iot_response.get(DYNAMIC_DESCRIPTION_TEMPERATURE, 0)
+        dynamic = self.aws_data.get(DATA_SECTION_DYNAMIC) or {}
+        iot_response = dynamic.get(DYNAMIC_TYPE_IOT_RESPONSE)
+
+        # The power supply can publish an iotResponse with no content.
+        if not isinstance(iot_response, dict):
+            return {ATTR_STATE: None}
+
+        temperature_int = iot_response.get(DYNAMIC_DESCRIPTION_TEMPERATURE)
+
+        if temperature_int is None:
+            return {ATTR_STATE: None}
 
         state_str = str(temperature_int)
         state_str_fixed = f"{state_str[:2]}.{state_str[2:].ljust(2, '0')}"
         state = float(state_str_fixed)
 
         result = {ATTR_STATE: state}
+        reported_at = self.aws_data.get(WS_TEMPERATURE_LAST_UPDATE)
+        if reported_at is not None:
+            result[ATTR_ATTRIBUTES] = {WS_TEMPERATURE_LAST_UPDATE: reported_at}
 
         return result
 

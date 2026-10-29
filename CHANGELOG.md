@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add an on-demand temperature refresh button for M700 cleaners. An OTP profile with no robot family now exposes the temperature sensor and button; the sensor stays unknown until the robot reports a reading.
+- Request the M700 temperature automatically on each shadow poll when the OTP profile omits the robot family, so the reading returns after a restart without pressing the button.
+- Limit automatic M700 temperature requests to one every 10 minutes; the Refresh Temperature button still requests immediately.
+- Set `temperature_last_reported` from the power supply's measurement time, so a resent earlier reading is not shown as new.
+- Treat an `iotResponse` message without content as an unknown temperature instead of raising on every update.
+
 ## v1.0.26
 
 - Use vacuum `activity` instead of `state` for start and pause actions (Home Assistant 2026.x forward compatibility)

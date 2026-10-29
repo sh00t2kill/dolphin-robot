@@ -30,7 +30,9 @@ def async_setup_entities(
         robot_family_str = coordinator.api_data.get(DATA_ROBOT_FAMILY)
         robot_family = RobotFamily.from_string(robot_family_str)
 
-        entity_descriptions = get_entity_descriptions(platform, robot_family)
+        entity_descriptions = get_entity_descriptions(
+            platform, robot_family, robot_family_str is None
+        )
 
         entities = [
             entity_type(entity_description, coordinator)

@@ -59,6 +59,11 @@
     }
   },
   "entity": {
+    "button": {
+      "refresh_temperature": {
+        "name": "Refresh Temperature"
+      }
+    },
     "binary_sensor": {
       "aws_broker": {
         "name": "AWS Broker"
