@@ -172,6 +172,11 @@ APPS_BASE = "https://apps.maytronics.com"
 AUTHENTICATE_USER_URL = f"{APPS_BASE}/mobapi/user/authenticate-user/"
 AWS_STS_TOKEN_URL = f"{APPS_BASE}/mt-sso/aws/getToken/"
 ROBOT_DETAILS_URL = f"{APPS_BASE}/mobapi/serial-numbers/getRobotDetailsByRobotSN/"
+ROBOT_FEATURES_URL = f"{APPS_BASE}/mobapi/serial-numbers/getSernFeatures/"
+
+# The features API needs a device type but returned the same features for
+# every value tried; 62 is the connectVia value in the user's profile
+ROBOT_FEATURES_DEVICE_TYPE = "62"
 
 APP_KEY = "346BDE92-53D1-4829-8A2E-B496014B586C"
 APP_VERSION = "ios_3.1.7_2"
@@ -181,6 +186,10 @@ BEARER_HEADERS_BASE = {
     "app_version": APP_VERSION,
     "Accept": "*/*",
 }
+
+# Time limit for requests whose data the integration can do without, so a slow
+# server can't hold up startup
+OPTIONAL_REQUEST_TIMEOUT_SECONDS = 10
 
 # Refresh the IdToken if it expires within this many seconds
 ID_TOKEN_REFRESH_WINDOW_SECONDS = 300
@@ -232,6 +241,7 @@ DATA_ROBOT_NAME = "Robot Name"
 DATA_ROBOT_FAMILY = "Robot Family"
 DATA_ROBOT_PRODUCT_NAME = "Product Name"
 DATA_ROBOT_PRODUCT_DESCRIPTION = "Product Description"
+DATA_ROBOT_CLEAN_MODES = "Clean Modes"
 
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Motor Unit Serial",

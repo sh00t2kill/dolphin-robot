@@ -19,9 +19,9 @@ The product name loads from the Maytronics API at startup; the versions appear o
 
 ## 🤖 Vacuum Entity (1)
 
-| Entity                                     | Type     | Functionality                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [**{Robot Name}**](#vacuum-entity-details) | `vacuum` | Main vacuum control entity with the following features:<br/>• **Start** - Begin cleaning cycle<br/>• **Pause** - Pause current cleaning<br/>• **Return to Base** - Pickup/dock the robot<br/>• **Set Fan Speed** - Select cleaning mode (all, short, floor, water, ultra, pickup)<br/>• **Locate** - Turn on LED to find the robot<br/>• Shows current state: docked, cleaning, paused, error |
+| Entity                                     | Type     | Functionality                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**{Robot Name}**](#vacuum-entity-details) | `vacuum` | Main vacuum control entity with the following features:<br/>• **Start** - Begin cleaning cycle<br/>• **Pause** - Pause current cleaning<br/>• **Return to Base** - Pickup/dock the robot<br/>• **Set Fan Speed** - Select cleaning mode (the modes the robot supports, plus pickup)<br/>• **Locate** - Turn on LED to find the robot<br/>• Shows current state: docked, cleaning, paused, error |
 
 ---
 
@@ -67,7 +67,7 @@ The product name loads from the Maytronics API at startup; the versions appear o
 | [**Status**](#status)                           | `sensor` | Shows calculated overall system state<br/>• Includes attributes with detailed status information<br/>• Category: Diagnostic |
 | [**RSSI**](#wifi-signal-strength-rssi)          | `sensor` | WiFi signal strength in dBm<br/>• Device Class: Signal Strength<br/>• Category: Diagnostic                                  |
 | [**Network Name**](#network-name)               | `sensor` | WiFi network the robot is connected to<br/>• Category: Diagnostic                                                           |
-| [**Clean Mode**](#clean-mode)                   | `sensor` | Current active cleaning mode (all/short/floor/water/ultra/pickup)<br/>• Category: Diagnostic                                |
+| [**Clean Mode**](#clean-mode)                   | `sensor` | Current active cleaning mode (all/short/floor/water/ultra/stairs/pickup)<br/>• Category: Diagnostic                         |
 | [**Power Supply Status**](#power-supply-status) | `sensor` | Power unit state (charging, floating, etc.)<br/>• Category: Diagnostic                                                      |
 | [**Robot Status**](#robot-status)               | `sensor` | Robot's current operational status<br/>• Category: Diagnostic                                                               |
 | [**Robot Type**](#robot-type)                   | `sensor` | Model type of the robot<br/>• Category: Diagnostic                                                                          |
@@ -156,12 +156,13 @@ The main vacuum entity provides comprehensive control over the pool cleaning rob
 - **Pause Cleaning** (`vacuum.pause`) - Pause the current cleaning cycle
 - **Return to Base** (`vacuum.return_to_base`) - Command the robot to return to dock/pickup
 - **Locate** (`vacuum.locate`) - Turn on LED to help find the robot in the pool
-- **Set Fan Speed** (`vacuum.set_fan_speed`) - Select cleaning mode:
+- **Set Fan Speed** (`vacuum.set_fan_speed`) - Select cleaning mode. The list holds the modes the robot supports, as the MyDolphin app shows them, plus pickup. If Maytronics doesn't say which modes the robot supports, the list holds all of them:
   - `all` - Regular cleaning (default)
   - `short` - Fast mode
   - `floor` - Floor only
   - `water` - Water line only
   - `ultra` - Ultra clean
+  - `stairs` - Full coverage
   - `pickup` - Quick pickup
 
 #### States
@@ -382,7 +383,7 @@ Displays the SSID of the WiFi network the robot is connected to.
 
 Shows the current active cleaning mode.
 
-**Values**: `all`, `short`, `floor`, `water`, `ultra`, `pickup`
+**Values**: `all`, `short`, `floor`, `water`, `ultra`, `stairs`, `pickup`
 
 ---
 

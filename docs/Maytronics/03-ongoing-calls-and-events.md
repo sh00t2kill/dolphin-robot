@@ -76,6 +76,15 @@ sequenceDiagram
             API->>Maytr: POST /mobapi/user/authenticate-user/
             Maytr-->>API: Sernum, eSERNUM, robot details
 
+            API->>API: _load_robot_details()
+            API->>Maytr: POST /mobapi/serial-numbers/getRobotDetailsByRobotSN/
+            Maytr-->>API: Product name, robot family
+
+            API->>API: _load_clean_modes()
+            API->>Maytr: GET /mobapi/serial-numbers/getSernFeatures/
+            Note right of Maytr: Sernum, device_type: 62
+            Maytr-->>API: Features, including the clean modes the app lists
+
             API->>API: _device_loaded = True
             API->>Coord: dispatcher_send(SIGNAL_DEVICE_NEW)
         else Already loaded

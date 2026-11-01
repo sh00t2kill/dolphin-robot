@@ -88,13 +88,16 @@ Please remove the integration and re-add it to make it work again.
 
 ### Cleaning Modes
 
-| Key   | Name        | Description                                  | Duration (Hours) |
-| ----- | ----------- | -------------------------------------------- | ---------------- |
-| all   | Regular     | cleans floor, water and waterline            | 2                |
-| short | Fast mode   | cleans the floor                             | 1                |
-| floor | Floor only  | Cleans the floor only                        | 2                |
-| water | Water line  | cleans the walls and water line              | 2                |
-| ultra | Ultra clean | deeply cleans the floor, walls and waterline | 2                |
+| Key    | Name          | Description                                  | Duration (Hours) |
+| ------ | ------------- | -------------------------------------------- | ---------------- |
+| all    | Regular       | cleans floor, water and waterline            | 2                |
+| short  | Fast mode     | cleans the floor                             | 1                |
+| floor  | Floor only    | Cleans the floor only                        | 2                |
+| water  | Water line    | cleans the walls and water line              | 2                |
+| ultra  | Ultra clean   | deeply cleans the floor, walls and waterline | 2                |
+| stairs | Full coverage | cleans the floor, walls, waterline and steps | 2.5              |
+
+The vacuum offers the modes the robot supports, which the integration reads from Maytronics when it starts. If it can't, it offers every mode.
 
 ### Led Modes
 

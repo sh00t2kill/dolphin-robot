@@ -73,6 +73,7 @@
           "pickup": "Pickup",
           "short": "Fast mode",
           "ultra": "Ultra clean",
+          "stairs": "Full coverage",
           "water": "Water line"
         }
       },
@@ -234,6 +235,7 @@
               "pickup": "Pickup",
               "short": "Fast mode",
               "ultra": "Ultra clean",
+              "stairs": "Full coverage",
               "water": "Water line"
             }
           }

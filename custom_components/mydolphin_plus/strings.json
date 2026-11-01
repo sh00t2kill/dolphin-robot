@@ -152,6 +152,7 @@
           "floor": "Floor only",
           "water": "Water line",
           "ultra": "Ultra clean",
+          "stairs": "Full coverage",
           "pickup": "Pickup"
         }
       },
@@ -260,6 +261,7 @@
               "floor": "Floor only",
               "water": "Water line",
               "ultra": "Ultra clean",
+              "stairs": "Full coverage",
               "pickup": "Pickup"
             }
           }
