@@ -293,11 +293,9 @@ VACUUM_FEATURES = (
     | VacuumEntityFeature.RETURN_HOME
     | VacuumEntityFeature.START
     | VacuumEntityFeature.PAUSE
-    | VacuumEntityFeature.LOCATE
 )
 
 STORAGE_DATA_KEY = "key"
-STORAGE_DATA_LOCATING = "locating"
 STORAGE_DATA_ID_TOKEN = "id-token"
 STORAGE_DATA_REFRESH_TOKEN = "refresh-token"
 STORAGE_DATA_ID_TOKEN_EXPIRES_AT = "id-token-expires-at"

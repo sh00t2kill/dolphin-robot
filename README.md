@@ -260,7 +260,6 @@ features:
     commands:
       - start_pause
       - stop
-      - locate
       - return_home
 ```
 

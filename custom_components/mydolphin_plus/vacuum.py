@@ -3,7 +3,6 @@ import logging
 from typing import Any
 
 from homeassistant.components.vacuum import (
-    SERVICE_LOCATE,
     SERVICE_PAUSE,
     SERVICE_RETURN_TO_BASE,
     SERVICE_SET_FAN_SPEED,
@@ -78,10 +77,6 @@ class MyDolphinPlusVacuumEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC)
 
     async def async_pause(self, **kwargs: Any) -> None:
         await self.async_execute_device_action(SERVICE_PAUSE, self.activity)
-
-    async def async_locate(self, **kwargs: Any) -> None:
-        """Locate the vacuum cleaner."""
-        await self.async_execute_device_action(SERVICE_LOCATE)
 
     def update_component(self, data):
         """Fetch new state parameters for the sensor."""

@@ -173,12 +173,6 @@ sequenceDiagram
     User->>Coord: _set_cleaning_mode(fan_speed)
     Coord->>AWS: set_cleaning_mode(fan_speed)
     AWS->>Broker: shadow/update → desired.cleaningMode
-
-    Note over User,Broker: vacuum.locate
-    User->>Coord: _vacuum_locate()
-    Coord->>Coord: Enable LED (temporary)
-    Coord->>AWS: set_led_enabled(True)
-    AWS->>Broker: shadow/update → desired.led.ledEnable
 ```
 
 ### LED Actions
