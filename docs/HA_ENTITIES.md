@@ -42,15 +42,15 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 
 ## 🔢 Number Entities (7)
 
-| Entity                                             | Type     | Range     | Functionality                                                                                       |
-| -------------------------------------------------- | -------- | --------- | --------------------------------------------------------------------------------------------------- |
-| [**LED Intensity**](#led-intensity)                | `number` | 0-100     | Adjust LED brightness level (0-100%)<br/>• Category: Configuration<br/>• Device Class: Power Factor |
-| [**Cycle Time all**](#cycle-time-configuration)    | `number` | 0-600 min | Set duration for Regular cleaning mode                                                              |
-| [**Cycle Time short**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Fast Mode cleaning                                                                 |
-| [**Cycle Time floor**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Floor Only cleaning                                                                |
-| [**Cycle Time water**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Water Line cleaning                                                                |
-| [**Cycle Time ultra**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Ultra Clean mode                                                                   |
-| [**Cycle Time pickup**](#cycle-time-configuration) | `number` | 0-600 min | Set duration for Pickup mode                                                                        |
+| Entity                                             | Type     | Range     | Functionality                                                      |
+| -------------------------------------------------- | -------- | --------- | ------------------------------------------------------------------ |
+| [**LED Intensity**](#led-intensity)                | `number` | 0-100     | Adjust LED brightness level (0-100%)<br/>• Category: Configuration |
+| [**Cycle Time all**](#cycle-time-configuration)    | `number` | 0-600 min | Set duration for Regular cleaning mode                             |
+| [**Cycle Time short**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Fast Mode cleaning                                |
+| [**Cycle Time floor**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Floor Only cleaning                               |
+| [**Cycle Time water**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Water Line cleaning                               |
+| [**Cycle Time ultra**](#cycle-time-configuration)  | `number` | 0-600 min | Set duration for Ultra Clean mode                                  |
+| [**Cycle Time pickup**](#cycle-time-configuration) | `number` | 0-600 min | Set duration for Pickup mode                                       |
 
 ---
 
@@ -282,7 +282,6 @@ Current LED mode value (e.g., "blinking", "solid", etc.)
 | ------------------- | ----------------------------------- |
 | **Entity ID**       | `number.{robot_name}_led_intensity` |
 | **Platform**        | Number                              |
-| **Device Class**    | Power Factor                        |
 | **Entity Category** | Configuration                       |
 | **Range**           | 0-100                               |
 | **Unit**            | % (percentage)                      |

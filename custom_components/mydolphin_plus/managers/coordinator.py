@@ -54,7 +54,6 @@ from ..common.consts import (
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BATTERY,
-    DATA_KEY_BUSY,
     DATA_KEY_CLEAN_MODE,
     DATA_KEY_CYCLE_COUNT,
     DATA_KEY_CYCLE_TIME,
@@ -410,7 +409,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_POWER_SUPPLY_STATUS): self._get_power_supply_status_data,
             slugify(DATA_KEY_ROBOT_STATUS): self._get_robot_status_data,
             slugify(DATA_KEY_ROBOT_TYPE): self._get_robot_type_data,
-            slugify(DATA_KEY_BUSY): self._get_busy_data,
             slugify(DATA_KEY_CYCLE_COUNT): self._get_cycle_count_data,
             slugify(DATA_KEY_VACUUM): self._get_vacuum_data,
             slugify(DATA_KEY_REMOTE): self._get_remote_data,
@@ -539,13 +537,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    def _get_busy_data(self, _entity_description) -> dict | None:
-        is_on = self._system_details.is_busy
-
-        result = {ATTR_IS_ON: is_on}
-
-        return result
-
     def _get_cycle_count_data(self, _entity_description) -> dict | None:
         state = self._system_details.turn_on_count
 
@@ -671,7 +662,7 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 ATTR_RESET_FBI: reset_fbi,
                 ATTR_STATUS: filter_state,
             },
-            ATTR_ICON: FILTER_BAG_ICONS.get(filter_state),
+            ATTR_ICON: FILTER_BAG_ICONS.get(state),
         }
 
         return result

@@ -36,9 +36,6 @@
     "binary_sensor": {
       "aws_broker": {
         "name": "Broker AWS"
-      },
-      "weekly_scheduler": {
-        "name": "Scheduler settimanale"
       }
     },
     "light": {
@@ -230,6 +227,7 @@
         "name": "Stato",
         "state": {
           "cleaning": "Pulizia",
+          "error": "Errore",
           "holddelay": "Inattivo (ritardo)",
           "holdweekly": "Idle (settimanale)",
           "init": "Verifica dell'ambiente",
