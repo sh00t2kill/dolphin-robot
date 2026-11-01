@@ -199,9 +199,7 @@ class AWSClient:
             aws_key = self._api_data.get(API_RESPONSE_DATA_ACCESS_KEY_ID)
             aws_secret = self._api_data.get(API_RESPONSE_DATA_SECRET_ACCESS_KEY)
 
-            _LOGGER.debug(
-                f"AWS IAM Credentials, Key: {aws_key}, Secret: {aws_secret}, Token: {aws_token}"
-            )
+            _LOGGER.debug("AWS IAM Credentials loaded")
 
             self._topic_data = TopicData(self._config_manager.motor_unit_serial)
 

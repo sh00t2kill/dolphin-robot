@@ -6,6 +6,7 @@ import sys
 
 from cryptography.fernet import InvalidToken
 
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import STORAGE_VERSION, ConfigEntry
 from homeassistant.const import CONF_NAME, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
@@ -33,6 +34,7 @@ from ..common.consts import (
     STORAGE_DATA_MOTOR_UNIT_SERIAL,
     STORAGE_DATA_REFRESH_TOKEN,
     STORAGE_DATA_SERIAL_NUMBER,
+    TO_REDACT,
     TOKEN_PARAMS,
 )
 from ..common.entity_descriptions import MyDolphinPlusEntityDescription
@@ -340,7 +342,7 @@ class ConfigManager:
 
         await self._load_config_from_file()
 
-        _LOGGER.info(f"loaded: {self._data}")
+        _LOGGER.info(f"loaded: {async_redact_data(self._data, TO_REDACT)}")
         should_save = False
 
         if self._data is None:
@@ -417,8 +419,9 @@ class ConfigManager:
             entry_data = store_data.get(self._entry_id, {})
 
             _LOGGER.debug(
-                f"Storing config data: {json.dumps(self._data)}, "
-                f"Exiting: {json.dumps(entry_data)}"
+                "Storing config data: "
+                f"{json.dumps(async_redact_data(self._data, TO_REDACT))}, "
+                f"Exiting: {json.dumps(async_redact_data(entry_data, TO_REDACT))}"
             )
 
             for key in self._data:
