@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import sys
-from time import sleep
 from typing import Any, Callable
 
 import aiofiles
@@ -29,6 +28,7 @@ from ..common.consts import (
     AWS_IOT_URL,
     AWS_REGION,
     CA_FILE_NAME,
+    CYCLE_TIME_DELAY_SECONDS,
     DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
     DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND,
     DATA_LED_ENABLE,
@@ -448,8 +448,14 @@ class AWSClient:
                         mode = cleaning_mode.get(CONF_MODE)
 
                         if mode is not None:
-                            sleep(1)
-                            self._set_cycle_time(mode)
+                            # This runs on the MQTT client's thread; sleeping
+                            # here would hold up every message behind it
+                            self._loop.call_soon_threadsafe(
+                                self._loop.call_later,
+                                CYCLE_TIME_DELAY_SECONDS,
+                                self._set_cycle_time,
+                                mode,
+                            )
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
