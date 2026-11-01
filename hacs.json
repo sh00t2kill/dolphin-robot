@@ -1,5 +1,4 @@
 {
   "name": "MyDolphin Plus",
-  "iot_class": "Cloud Push",
   "homeassistant": "2026.1.0"
 }

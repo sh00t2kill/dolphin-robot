@@ -10,6 +10,7 @@ import sys
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME, EVENT_HOMEASSISTANT_START
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 
 from .common.consts import (
     DEFAULT_NAME,
@@ -27,6 +28,8 @@ from .managers.coordinator import MyDolphinPlusCoordinator
 from .models.exceptions import LoginError
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(_hass, _config):
