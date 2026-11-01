@@ -1,4 +1,4 @@
-"""Cycle Time and Cycle Time Left show hours on older entities."""
+"""Cycle Time Left shows hours on older entities."""
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -27,48 +27,45 @@ def _sensor(
     )
 
 
-async def test_cycle_time_sensors_get_suggested_units(hass: HomeAssistant) -> None:
-    """Both sensors change unit and keep their other options."""
+async def test_cycle_time_left_gets_suggested_unit(hass: HomeAssistant) -> None:
+    """The sensor changes unit and keeps its other options."""
     entry = MockConfigEntry(domain=DOMAIN)
     entry.add_to_hass(hass)
 
     entity_registry = er.async_get(hass)
 
-    cycle_time = _sensor(entity_registry, entry, "cycle_time", UnitOfTime.MINUTES)
-    entity_registry.async_update_entity_options(
-        cycle_time.entity_id, "sensor", {"suggested_display_precision": 2}
-    )
     time_left = _sensor(entity_registry, entry, "cycle_time_left", UnitOfTime.SECONDS)
+    entity_registry.async_update_entity_options(
+        time_left.entity_id, "sensor", {"suggested_display_precision": 3}
+    )
     cycle_count = _sensor(entity_registry, entry, "cycle_count", "")
 
     _set_suggested_time_units(hass, entry)
 
-    cycle_time = entity_registry.async_get(cycle_time.entity_id)
     time_left = entity_registry.async_get(time_left.entity_id)
     cycle_count = entity_registry.async_get(cycle_count.entity_id)
 
-    assert cycle_time.options["sensor"] == {
-        "suggested_display_precision": 2,
+    assert time_left.options["sensor"] == {
+        "suggested_display_precision": 3,
         "unit_of_measurement": UnitOfTime.HOURS,
     }
-    assert time_left.options["sensor"] == {"unit_of_measurement": UnitOfTime.HOURS}
     assert "sensor" not in cycle_count.options
 
 
-async def test_cycle_time_sensors_keep_user_unit(hass: HomeAssistant) -> None:
+async def test_cycle_time_left_keeps_user_unit(hass: HomeAssistant) -> None:
     """A unit the user already picked stays."""
     entry = MockConfigEntry(domain=DOMAIN)
     entry.add_to_hass(hass)
 
     entity_registry = er.async_get(hass)
 
-    cycle_time = _sensor(entity_registry, entry, "cycle_time", UnitOfTime.MINUTES)
+    time_left = _sensor(entity_registry, entry, "cycle_time_left", UnitOfTime.SECONDS)
     entity_registry.async_update_entity_options(
-        cycle_time.entity_id, "sensor", {"unit_of_measurement": UnitOfTime.MINUTES}
+        time_left.entity_id, "sensor", {"unit_of_measurement": UnitOfTime.MINUTES}
     )
 
     _set_suggested_time_units(hass, entry)
 
-    cycle_time = entity_registry.async_get(cycle_time.entity_id)
+    time_left = entity_registry.async_get(time_left.entity_id)
 
-    assert cycle_time.options["sensor"]["unit_of_measurement"] == UnitOfTime.MINUTES
+    assert time_left.options["sensor"]["unit_of_measurement"] == UnitOfTime.MINUTES

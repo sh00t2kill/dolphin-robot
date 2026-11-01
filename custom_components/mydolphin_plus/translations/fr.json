@@ -73,26 +73,11 @@
       }
     },
     "number": {
-      "cycle_time_all": {
-        "name": "Durée du cycle Complet"
-      },
-      "cycle_time_floor": {
-        "name": "Durée du cycle Sol uniquement"
-      },
-      "cycle_time_pickup": {
-        "name": "Durée du cycle Ramassage"
-      },
-      "cycle_time_short": {
-        "name": "Durée du cycle Rapide"
-      },
-      "cycle_time_ultra": {
-        "name": "Durée du cycle Ultra propre"
-      },
-      "cycle_time_water": {
-        "name": "Durée du cycle Ligne d'eau"
-      },
       "led_intensity": {
         "name": "Intensité LED"
+      },
+      "cycle_time": {
+        "name": "Durée du cycle"
       }
     },
     "select": {
@@ -280,6 +265,11 @@
           }
         }
       }
+    }
+  },
+  "exceptions": {
+    "cycle_time_needs_cleaning": {
+      "message": "Le robot n'accepte une nouvelle durée de cycle que pendant le nettoyage."
     }
   }
 }

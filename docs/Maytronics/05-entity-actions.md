@@ -52,31 +52,30 @@ sequenceDiagram
 
 The coordinator builds a mapping from entity keys to handler functions at initialization. Each handler knows which data source to read (MQTT shadow, REST profile, or computed `SystemDetails`).
 
-| Entity Key            | Handler                           | Data Source                          | Returns                                  |
-| --------------------- | --------------------------------- | ------------------------------------ | ---------------------------------------- |
-| `status`              | `_get_status_data`                | SystemDetails (computed)             | Calculated state + all system attributes |
-| `vacuum`              | `_get_vacuum_data`                | aws_data (cycleInfo) + SystemDetails | Vacuum state + mode + action callbacks   |
-| `remote`              | `_get_remote_data`                | SystemDetails                        | Manual mode state + joystick actions     |
-| `clean_mode`          | `_get_clean_mode_data`            | aws_data (cycleInfo)                 | Current cleaning mode                    |
-| `led`                 | `_get_led_data`                   | aws_data (led)                       | LED on/off + toggle actions              |
-| `led_mode`            | `_get_led_mode_data`              | aws_data (led)                       | LED pattern + select action              |
-| `led_intensity`       | `_get_led_intensity_data`         | aws_data (led)                       | Brightness value + set action            |
-| `filter_status`       | `_get_filter_status_data`         | aws_data (filterBagIndication)       | Filter bag level + icon                  |
-| `cycle_time`          | `_get_cycle_time_data`            | aws_data (cycleInfo)                 | Duration + start time                    |
-| `cycle_time_left`     | `_get_cycle_time_left_data`       | aws_data (cycleInfo) + SystemDetails | Remaining seconds + end time             |
-| `rssi`                | `_get_rssi_data`                  | aws_data (debug)                     | WiFi signal strength                     |
-| `network_name`        | `_get_network_name_data`          | aws_data (wifi)                      | Connected network name                   |
-| `power_supply_status` | `_get_power_supply_status_data`   | SystemDetails                        | Power unit state                         |
-| `robot_status`        | `_get_robot_status_data`          | SystemDetails                        | Robot state                              |
-| `robot_type`          | `_get_robot_type_data`            | SystemDetails                        | Robot type identifier                    |
-| `busy`                | `_get_busy_data`                  | SystemDetails                        | Is robot busy (binary)                   |
-| `cycle_count`         | `_get_cycle_count_data`           | SystemDetails                        | Turn-on count                            |
-| `aws_broker`          | `_get_aws_broker_data`            | AWSClient status                     | MQTT connection status (binary)          |
-| `robot_error`         | `_get_robot_error_data`           | aws_data (robotError)                | Error code (current cycle)               |
-| `power_supply_error`  | `_get_pws_error_data`             | aws_data (pwsError)                  | PSU error code                           |
-| `battery`             | `_get_battery_data`               | Hardcoded                            | Always 100% (pool robots are wired)      |
-| `temperature`         | `_get_temperature_data`           | aws_data (dynamic/iotResponse)       | Water temperature (M700 only)            |
-| `cycle_time_*`        | `_get_clean_mode_cycle_time_data` | ConfigManager                        | Per-mode cycle time + set action         |
+| Entity Key            | Handler                         | Data Source                          | Returns                                  |
+| --------------------- | ------------------------------- | ------------------------------------ | ---------------------------------------- |
+| `status`              | `_get_status_data`              | SystemDetails (computed)             | Calculated state + all system attributes |
+| `vacuum`              | `_get_vacuum_data`              | aws_data (cycleInfo) + SystemDetails | Vacuum state + mode + action callbacks   |
+| `remote`              | `_get_remote_data`              | SystemDetails                        | Manual mode state + joystick actions     |
+| `clean_mode`          | `_get_clean_mode_data`          | aws_data (cycleInfo)                 | Current cleaning mode                    |
+| `led`                 | `_get_led_data`                 | aws_data (led)                       | LED on/off + toggle actions              |
+| `led_mode`            | `_get_led_mode_data`            | aws_data (led)                       | LED pattern + select action              |
+| `led_intensity`       | `_get_led_intensity_data`       | aws_data (led)                       | Brightness value + set action            |
+| `filter_status`       | `_get_filter_status_data`       | aws_data (filterBagIndication)       | Filter bag level + icon                  |
+| `cycle_time`          | `_get_cycle_time_data`          | aws_data (cycleInfo)                 | Duration + start time + set action       |
+| `cycle_time_left`     | `_get_cycle_time_left_data`     | aws_data (cycleInfo) + SystemDetails | Remaining seconds + end time             |
+| `rssi`                | `_get_rssi_data`                | aws_data (debug)                     | WiFi signal strength                     |
+| `network_name`        | `_get_network_name_data`        | aws_data (wifi)                      | Connected network name                   |
+| `power_supply_status` | `_get_power_supply_status_data` | SystemDetails                        | Power unit state                         |
+| `robot_status`        | `_get_robot_status_data`        | SystemDetails                        | Robot state                              |
+| `robot_type`          | `_get_robot_type_data`          | SystemDetails                        | Robot type identifier                    |
+| `busy`                | `_get_busy_data`                | SystemDetails                        | Is robot busy (binary)                   |
+| `cycle_count`         | `_get_cycle_count_data`         | SystemDetails                        | Turn-on count                            |
+| `aws_broker`          | `_get_aws_broker_data`          | AWSClient status                     | MQTT connection status (binary)          |
+| `robot_error`         | `_get_robot_error_data`         | aws_data (robotError)                | Error code (current cycle)               |
+| `power_supply_error`  | `_get_pws_error_data`           | aws_data (pwsError)                  | PSU error code                           |
+| `battery`             | `_get_battery_data`             | Hardcoded                            | Always 100% (pool robots are wired)      |
+| `temperature`         | `_get_temperature_data`         | aws_data (dynamic/iotResponse)       | Water temperature (M700 only)            |
 
 ---
 
@@ -226,10 +225,10 @@ sequenceDiagram
 
 ### Other Actions
 
-| HA Service              | Coordinator Method                  | AWSClient Method           | MQTT Topic      | Payload                                                |
-| ----------------------- | ----------------------------------- | -------------------------- | --------------- | ------------------------------------------------------ |
-| Reset filter indicator  | (service call)                      | `reset_filter_indicator()` | `shadow/update` | `{"filterBagIndication": {"resetFbi": true}}`          |
-| Set cycle time per mode | `_set_clean_mode_cycle_time_data()` | (config only)              | N/A             | Stored in ConfigManager, published on next mode change |
+| HA Service             | Coordinator Method  | AWSClient Method           | MQTT Topic      | Payload                                                 |
+| ---------------------- | ------------------- | -------------------------- | --------------- | ------------------------------------------------------- |
+| Reset filter indicator | (service call)      | `reset_filter_indicator()` | `shadow/update` | `{"filterBagIndication": {"resetFbi": true}}`           |
+| `number.set_value`     | `_set_cycle_time()` | `set_cycle_time()`         | `shadow/update` | `{"cycleInfo": {"cycleTime": 90}}`, only while cleaning |
 
 ---
 
