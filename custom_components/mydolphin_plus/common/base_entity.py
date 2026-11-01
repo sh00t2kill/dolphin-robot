@@ -75,6 +75,11 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
         self.entity_description = entity_description
         self._local_entity_description = entity_description
 
+        # Name and unique ID still come from the robot, so moving an entity to
+        # the power supply device keeps its entity ID and history
+        if entity_description.power_supply:
+            device_info = coordinator.get_power_supply_device()
+
         self._attr_device_info = device_info
         self._attr_name = entity_name
         self._attr_unique_id = unique_id
