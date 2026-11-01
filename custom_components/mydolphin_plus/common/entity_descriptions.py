@@ -5,7 +5,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.components.light import LightEntityDescription
-from homeassistant.components.number import NumberDeviceClass, NumberEntityDescription
+from homeassistant.components.number import NumberEntityDescription
 from homeassistant.components.remote import RemoteEntityDescription, RemoteEntityFeature
 from homeassistant.components.select import SelectEntityDescription
 from homeassistant.components.sensor import (
@@ -18,6 +18,7 @@ from homeassistant.components.vacuum import (
     VacuumEntityFeature,
 )
 from homeassistant.const import (
+    PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS,
     EntityCategory,
     Platform,
@@ -160,7 +161,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         native_min_value=0,
         native_max_value=100,
         entity_category=EntityCategory.CONFIG,
-        device_class=NumberDeviceClass.POWER_FACTOR,
+        native_unit_of_measurement=PERCENTAGE,
         translation_key=slugify(DATA_KEY_LED_INTENSITY),
     ),
     MyDolphinPlusSensorEntityDescription(

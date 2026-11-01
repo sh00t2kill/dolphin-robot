@@ -69,7 +69,6 @@ The coordinator builds a mapping from entity keys to handler functions at initia
 | `power_supply_status` | `_get_power_supply_status_data`   | SystemDetails                        | Power unit state                         |
 | `robot_status`        | `_get_robot_status_data`          | SystemDetails                        | Robot state                              |
 | `robot_type`          | `_get_robot_type_data`            | SystemDetails                        | Robot type identifier                    |
-| `busy`                | `_get_busy_data`                  | SystemDetails                        | Is robot busy (binary)                   |
 | `cycle_count`         | `_get_cycle_count_data`           | SystemDetails                        | Turn-on count                            |
 | `aws_broker`          | `_get_aws_broker_data`            | AWSClient status                     | MQTT connection status (binary)          |
 | `robot_error`         | `_get_robot_error_data`           | aws_data (robotError)                | Error code (current cycle)               |
