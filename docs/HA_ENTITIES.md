@@ -71,10 +71,10 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 
 ### Cleaning Cycle Sensors
 
-| Entity                                  | Type     | Unit    | Functionality                                                                                                                    |
-| --------------------------------------- | -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| [**Cycle Time**](#cycle-time)           | `sensor` | Minutes | Duration of current/last cleaning cycle<br/>• Shows start time in attributes<br/>• Device Class: Duration                        |
-| [**Cycle Time Left**](#cycle-time-left) | `sensor` | Seconds | Remaining time in current cleaning cycle<br/>• Shows start time and expected end time in attributes<br/>• Device Class: Duration |
+| Entity                                  | Type     | Unit  | Functionality                                                                                                                    |
+| --------------------------------------- | -------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
+| [**Cycle Time**](#cycle-time)           | `sensor` | Hours | Duration of current/last cleaning cycle<br/>• Shows start time in attributes<br/>• Device Class: Duration                        |
+| [**Cycle Time Left**](#cycle-time-left) | `sensor` | Hours | Remaining time in current cleaning cycle<br/>• Shows start time and expected end time in attributes<br/>• Device Class: Duration |
 
 ### Filter & Maintenance Sensors
 
@@ -445,9 +445,9 @@ Total number of cleaning cycles completed since the robot was first used.
 | **Entity ID**    | `sensor.{robot_name}_cycle_time` |
 | **Device Class** | Duration                         |
 | **State Class**  | Measurement                      |
-| **Unit**         | Minutes                          |
+| **Unit**         | Hours                            |
 
-Duration of the current or last cleaning cycle.
+Duration of the current or last cleaning cycle. The robot reports minutes; Home Assistant shows hours and minutes by default, such as 2h 30m, and you can pick another unit in the entity settings.
 
 **Attributes**:
 
@@ -464,9 +464,9 @@ Duration of the current or last cleaning cycle.
 | **Entity ID**    | `sensor.{robot_name}_cycle_time_left` |
 | **Device Class** | Duration                              |
 | **State Class**  | Measurement                           |
-| **Unit**         | Seconds                               |
+| **Unit**         | Hours                                 |
 
-Remaining time in the current cleaning cycle.
+Remaining time in the current cleaning cycle. The robot reports seconds; Home Assistant shows hours and minutes by default, such as 0h 45m, and you can pick another unit in the entity settings.
 
 **Attributes**:
 
