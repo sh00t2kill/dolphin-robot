@@ -1,7 +1,5 @@
 from enum import StrEnum
 
-from homeassistant.util import slugify
-
 
 class CleanModes(StrEnum):
     REGULAR = "all"
@@ -12,24 +10,13 @@ class CleanModes(StrEnum):
     PICKUP = "pickup"
 
 
-CLEAN_MODES_CYCLE_TIME = {
-    CleanModes.REGULAR: 120,
-    CleanModes.FAST_MODE: 60,
-    CleanModes.FLOOR_ONLY: 120,
-    CleanModes.WATER_LINE: 120,
-    CleanModes.ULTRA_CLEAN: 120,
-    CleanModes.PICKUP: 5,
-}
-
-
-def get_clean_mode_cycle_time_name(clean_mode: CleanModes):
-    name = f"Cycle Time {clean_mode}"
-
-    return name
-
-
-def get_clean_mode_cycle_time_key(clean_mode: CleanModes):
-    name = get_clean_mode_cycle_time_name(clean_mode)
-    key = slugify(name)
-
-    return key
+# Keys of the cycle time presets for each clean mode, which older versions
+# created as entities and kept in storage
+LEGACY_CYCLE_TIME_KEYS = (
+    "cycle_time_all",
+    "cycle_time_short",
+    "cycle_time_floor",
+    "cycle_time_water",
+    "cycle_time_ultra",
+    "cycle_time_pickup",
+)

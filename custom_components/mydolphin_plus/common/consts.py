@@ -78,6 +78,7 @@ DATA_SECTION_LED = "led"
 DATA_SECTION_DEBUG = "debug"
 DATA_SECTION_WIFI = "wifi"
 DATA_SECTION_CYCLE_INFO = "cycleInfo"
+DATA_SECTION_CLEANING_MODES = "cleaningModes"
 DATA_SECTION_FILTER_BAG_INDICATION = "filterBagIndication"
 DATA_SECTION_SYSTEM_STATE = "systemState"
 DATA_SECTION_ROBOT_ERROR = "robotError"
@@ -124,6 +125,10 @@ DEFAULT_TIME_PART = 255
 
 UPDATE_API_INTERVAL = timedelta(hours=1)
 UPDATE_WS_INTERVAL = timedelta(seconds=30)
+
+# How long a start from Home Assistant waits for the robot to start up
+# before it gives up sending the clean mode's cycle time
+CYCLE_TIME_AFTER_START_TIMEOUT_SECONDS = 60
 API_RECONNECT_INTERVAL = timedelta(minutes=1)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 

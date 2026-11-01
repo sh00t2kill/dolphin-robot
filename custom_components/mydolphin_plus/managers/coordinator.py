@@ -24,6 +24,7 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
 )
 from homeassistant.core import Event, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
@@ -31,7 +32,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import slugify
 
 from ..common.calculated_state import CalculatedState
-from ..common.clean_modes import CleanModes, get_clean_mode_cycle_time_key
+from ..common.clean_modes import CleanModes
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     ATTR_ACTIONS,
@@ -427,11 +428,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DYNAMIC_DESCRIPTION_TEMPERATURE): self._get_temperature_data,
         }
 
-        for clean_mode in list(CleanModes):
-            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
-
-            data_mapping[key] = self._get_clean_mode_cycle_time_data
-
         self._data_mapping = data_mapping
 
         _LOGGER.debug(f"Data retrieval mapping created, Mapping: {self._data_mapping}")
@@ -628,22 +624,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    def _get_clean_mode_cycle_time_data(self, entity_description) -> dict | None:
-        key = entity_description.key
-        key_parts = key.split("_")
-        clean_mode_str = key_parts[len(key_parts) - 1]
-        clean_mode = CleanModes(clean_mode_str)
-        state = self.config_manager.get_clean_cycle_time(clean_mode)
-
-        result = {
-            ATTR_STATE: state,
-            ATTR_ACTIONS: {
-                SERVICE_SET_VALUE: self._set_clean_mode_cycle_time_data,
-            },
-        }
-
-        return result
-
     def _get_filter_status_data(self, _entity_description) -> dict | None:
         filter_bag_indication = self.aws_data.get(
             DATA_SECTION_FILTER_BAG_INDICATION, {}
@@ -686,7 +666,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         attributes = {}
 
-        if cycle_time_minutes == 0:
+        if not cycle_time_minutes:
+            cycle_time_minutes = None
             cycle_time_hours = None
 
         else:
@@ -706,6 +687,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ATTR_STATE: cycle_time_minutes,
             ATTR_ATTRIBUTES: attributes,
             ATTR_ICON: icon,
+            ATTR_ACTIONS: {
+                SERVICE_SET_VALUE: self._set_cycle_time,
+            },
         }
 
         return result
@@ -845,14 +829,20 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     ):
         self._aws_client.set_led_intensity(intensity)
 
-    async def _set_clean_mode_cycle_time_data(
-        self, entity_description: EntityDescription, cycle_time: int
+    async def _set_cycle_time(
+        self, _entity_description: EntityDescription, cycle_time: float
     ):
-        key_parts = entity_description.key.split("_")
-        clean_mode_str = key_parts[len(key_parts) - 1]
-        clean_mode = CleanModes(clean_mode_str)
+        # The robot ignores a new cycle time unless it is cleaning or starting up
+        if self._system_details.calculated_state not in (
+            CalculatedState.CLEANING,
+            CalculatedState.INIT,
+        ):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="cycle_time_needs_cleaning",
+            )
 
-        await self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
+        self._aws_client.set_cycle_time(int(cycle_time))
 
     async def _pickup(self, _entity_description: EntityDescription):
         _LOGGER.debug("Pickup vacuum")

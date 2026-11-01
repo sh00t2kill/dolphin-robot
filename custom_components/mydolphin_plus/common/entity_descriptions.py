@@ -5,7 +5,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.components.light import LightEntityDescription
-from homeassistant.components.number import NumberDeviceClass, NumberEntityDescription
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntityDescription,
+    NumberMode,
+)
 from homeassistant.components.remote import RemoteEntityDescription, RemoteEntityFeature
 from homeassistant.components.select import SelectEntityDescription
 from homeassistant.components.sensor import (
@@ -27,11 +31,7 @@ from homeassistant.const import (
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.util import slugify
 
-from .clean_modes import (
-    CleanModes,
-    get_clean_mode_cycle_time_key,
-    get_clean_mode_cycle_time_name,
-)
+from .clean_modes import CleanModes
 from .consts import (
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BATTERY,
@@ -219,11 +219,14 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         name=DATA_KEY_FILTER_STATUS,
         translation_key=slugify(DATA_KEY_FILTER_STATUS),
     ),
-    MyDolphinPlusSensorEntityDescription(
+    MyDolphinPlusNumberEntityDescription(
         key=slugify(DATA_KEY_CYCLE_TIME),
         name=DATA_KEY_CYCLE_TIME,
-        device_class=SensorDeviceClass.DURATION,
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=NumberDeviceClass.DURATION,
+        native_min_value=1,
+        native_max_value=600,
+        native_step=1,
+        mode=NumberMode.BOX,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         translation_key=slugify(DATA_KEY_CYCLE_TIME),
     ),
@@ -233,6 +236,10 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
+        # The frontend rounds hours to this many places before showing
+        # hours and minutes, so 3 places keeps the minutes right
+        suggested_display_precision=3,
         translation_key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
     ),
     MyDolphinPlusBinarySensorEntityDescription(
@@ -275,22 +282,6 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         translation_key=slugify(DYNAMIC_DESCRIPTION_TEMPERATURE),
     ),
 ]
-
-for clean_mode in list(CleanModes):
-    name = get_clean_mode_cycle_time_name(CleanModes(clean_mode))
-    key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
-
-    ed = MyDolphinPlusNumberEntityDescription(
-        key=key,
-        name=name,
-        native_min_value=0,
-        native_max_value=600,
-        entity_category=EntityCategory.CONFIG,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        translation_key=key,
-    )
-
-    ENTITY_DESCRIPTIONS.append(ed)
 
 
 def get_entity_descriptions(
