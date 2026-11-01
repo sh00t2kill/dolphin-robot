@@ -6,6 +6,15 @@ This document provides a comprehensive list of all entities created by the MyDol
 
 The MyDolphin Plus integration creates **25 entities** (24 for standard models, 25 for M700 models with temperature sensor) across 7 different platforms. All entities are automatically discovered and created when you add the integration to Home Assistant.
 
+### Devices
+
+The integration creates two devices:
+
+- **{Robot Name} Power Supply** holds the Wi-Fi and cloud connection. It shows the power supply firmware, and has the Power Supply Status, Power Supply Error, RSSI, Network Name and AWS Broker entities.
+- **{Robot Name}** is the robot, connected through the power supply. It shows the product name (for example DOLPHIN PREMIUM 2000 AU) as its model, the part number as its model ID, the robot firmware, the robot type (for example S4) as its hardware, and the serial number. It has every other entity.
+
+The product name loads from the Maytronics API at startup; the versions appear once the robot first reports its state.
+
 ---
 
 ## 🤖 Vacuum Entity (1)

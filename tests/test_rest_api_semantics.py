@@ -249,3 +249,43 @@ async def test_rate_limited_with_expired_cache_sets_failed():
     await api._refresh_aws_credentials()
 
     assert api.status == ConnectivityStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_load_robot_details_maps_product():
+    """Robot details fill in the product name and robot family."""
+    config_manager = DummyConfigManager()
+    config_manager.serial_number = "N1234"
+    api = RestAPI(None, config_manager)
+    api._session = FakeSession(
+        post_payload={
+            "Status": "1",
+            "Data": {
+                "PARTNAME": "99996291-PR2AU",
+                "PARTDES": "DOLPHIN PREMIUM 2000 AU",
+                "RobotFamily": "M700",
+            },
+        }
+    )
+    api._status = ConnectivityStatus.CONNECTED
+
+    await api._load_robot_details()
+
+    assert api.data["Product Name"] == "99996291-PR2AU"
+    assert api.data["Product Description"] == "DOLPHIN PREMIUM 2000 AU"
+    assert api.data["Robot Family"] == "M700"
+    assert api._session.last_headers["Authorization"] == "Bearer id-token"
+    assert api.status == ConnectivityStatus.CONNECTED
+
+
+@pytest.mark.asyncio
+async def test_load_robot_details_failure_keeps_connection():
+    """A failed details call leaves the data and connection status alone."""
+    api = RestAPI(None, DummyConfigManager())
+    api._session = FakeSession(post_payload={"Status": "0", "Alert": "nope"})
+    api._status = ConnectivityStatus.CONNECTED
+
+    await api._load_robot_details()
+
+    assert api.data == {}
+    assert api.status == ConnectivityStatus.CONNECTED

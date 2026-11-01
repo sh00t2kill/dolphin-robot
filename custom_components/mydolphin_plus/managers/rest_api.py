@@ -18,6 +18,8 @@ from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     API_RESPONSE_ALERT,
     API_RESPONSE_DATA,
+    API_RESPONSE_STATUS,
+    API_RESPONSE_STATUS_SUCCESS,
     API_RESPONSE_UNIT_SERIAL_NUMBER,
     API_TOKEN_FIELDS,
     AUTHENTICATE_USER_URL,
@@ -36,6 +38,7 @@ from ..common.consts import (
     ID_TOKEN_REFRESH_WINDOW_SECONDS,
     MIN_TOKEN_FETCH_INTERVAL,
     RECONNECT_BACKOFF_MAX,
+    ROBOT_DETAILS_URL,
     SIGNAL_API_STATUS,
     SIGNAL_DEVICE_NEW,
 )
@@ -310,6 +313,8 @@ class RestAPI:
         if not await self._authenticate_user():
             return
 
+        await self._load_robot_details()
+
         self._device_loaded = True
 
         self._async_dispatcher_send(SIGNAL_DEVICE_NEW, self._config_manager.entry_id)
@@ -458,6 +463,43 @@ class RestAPI:
                 self.data[mapped] = data.get(key)
 
         return True
+
+    async def _load_robot_details(self):
+        """
+        Load the product name and robot family, which the profile lacks.
+
+        The integration works without them, so a failure here only logs a
+        warning and leaves the connection status alone.
+        """
+        headers = _build_headers(
+            base=BEARER_HEADERS_BASE,
+            id_token=self._config_manager.id_token,
+            extra={"Content-Type": "application/x-www-form-urlencoded"},
+            integration_info=self._integration_info,
+        )
+        body = f"SERNUM={self._config_manager.serial_number}"
+
+        try:
+            async with self._session.post(
+                ROBOT_DETAILS_URL, headers=headers, data=body
+            ) as response:
+                response.raise_for_status()
+                payload = await response.json()
+
+        except Exception as ex:
+            _LOGGER.warning(f"Failed to load robot details, Error: {ex}")
+            return
+
+        if payload.get(API_RESPONSE_STATUS) != API_RESPONSE_STATUS_SUCCESS:
+            alert = payload.get(API_RESPONSE_ALERT)
+            _LOGGER.warning(f"Failed to load robot details, Alert: {alert}")
+            return
+
+        data = payload.get(API_RESPONSE_DATA) or {}
+
+        for key, mapped in DATA_ROBOT_DETAILS.items():
+            if key in data:
+                self.data[mapped] = data.get(key)
 
     async def _refresh_aws_credentials(self):
         # Use cached creds when still valid
