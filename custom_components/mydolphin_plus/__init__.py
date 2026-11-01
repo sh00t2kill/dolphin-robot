@@ -7,11 +7,21 @@ https://home-assistant.io/components/mydolphin_plus/
 import logging
 import sys
 
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_USERNAME, EVENT_HOMEASSISTANT_START
+from homeassistant.const import (
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_USERNAME,
+    EVENT_HOMEASSISTANT_START,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+from homeassistant.util import slugify
 
 from .common.consts import (
+    DATA_KEY_CYCLE_TIME,
+    DATA_KEY_CYCLE_TIME_LEFT,
     DEFAULT_NAME,
     DOMAIN,
     INITIAL_TOKENS_KEY,
@@ -27,6 +37,12 @@ from .managers.coordinator import MyDolphinPlusCoordinator
 from .models.exceptions import LoginError
 
 _LOGGER = logging.getLogger(__name__)
+
+# Units for sensors that older versions created without a suggested unit
+SUGGESTED_TIME_UNITS = {
+    slugify(DATA_KEY_CYCLE_TIME): UnitOfTime.HOURS,
+    slugify(DATA_KEY_CYCLE_TIME_LEFT): UnitOfTime.HOURS,
+}
 
 
 async def async_setup(_hass, _config):
@@ -65,6 +81,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         is_initialized = config_manager.is_initialized
 
         if is_initialized:
+            _set_suggested_time_units(hass, entry)
+
             coordinator = MyDolphinPlusCoordinator(hass, config_manager)
 
             hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -92,6 +110,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     return initialized
+
+
+def _set_suggested_time_units(hass: HomeAssistant, entry: ConfigEntry):
+    """
+    Show Cycle Time and Cycle Time Left in hours.
+
+    New entities get these as their suggested units. Home Assistant only
+    applies a suggested unit when it first creates an entity, so set it here
+    for entities made by older versions. A unit the user picked stays.
+    """
+    entity_registry = er.async_get(hass)
+
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        unit = SUGGESTED_TIME_UNITS.get(entity.translation_key)
+        sensor_options = entity.options.get(SENSOR_DOMAIN, {})
+
+        if (
+            entity.domain == SENSOR_DOMAIN
+            and unit is not None
+            and CONF_UNIT_OF_MEASUREMENT not in sensor_options
+        ):
+            _LOGGER.info(f"Showing {entity.entity_id} in {unit}")
+
+            entity_registry.async_update_entity_options(
+                entity.entity_id,
+                SENSOR_DOMAIN,
+                {**sensor_options, CONF_UNIT_OF_MEASUREMENT: unit},
+            )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):

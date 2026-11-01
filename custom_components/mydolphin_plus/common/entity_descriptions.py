@@ -225,6 +225,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.MINUTES,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
         translation_key=slugify(DATA_KEY_CYCLE_TIME),
     ),
     MyDolphinPlusSensorEntityDescription(
@@ -233,6 +234,10 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
+        # The frontend rounds hours to this many places before showing
+        # hours and minutes, so 3 places keeps the minutes right
+        suggested_display_precision=3,
         translation_key=slugify(DATA_KEY_CYCLE_TIME_LEFT),
     ),
     MyDolphinPlusBinarySensorEntityDescription(
