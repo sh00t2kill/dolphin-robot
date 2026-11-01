@@ -7,7 +7,6 @@ from typing import Callable
 from homeassistant.components.number.const import SERVICE_SET_VALUE
 from homeassistant.components.remote import ATTR_ACTIVITY, SERVICE_SEND_COMMAND
 from homeassistant.components.vacuum import (
-    SERVICE_LOCATE,
     SERVICE_PAUSE,
     SERVICE_RETURN_TO_BASE,
     SERVICE_SET_FAN_SPEED,
@@ -567,7 +566,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
                 SERVICE_START: self._vacuum_start,
                 SERVICE_PAUSE: self._vacuum_pause,
                 SERVICE_SET_FAN_SPEED: self._set_cleaning_mode,
-                SERVICE_LOCATE: self._vacuum_locate,
                 SERVICE_RETURN_TO_BASE: self._pickup,
             },
         }
@@ -874,23 +872,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         if not is_idle_state:
             self._aws_client.pause()
-
-    async def _vacuum_locate(self, entity_description: EntityDescription):
-        led_light_entity = self._get_led_data(None)
-
-        led_light_state = led_light_entity.get(CONF_STATE)
-
-        if led_light_state:
-            _LOGGER.warning(
-                "Locate will not run as the LED currently on, "
-                "you should see the robot"
-            )
-
-        else:
-            _LOGGER.debug("Locate robot")
-
-            await self._config_manager.update_is_locating(True)
-            await self._set_led_enabled(entity_description)
 
     async def _exit_joystick_mode(self, _entity_description: EntityDescription):
         _LOGGER.debug("Exit joystick mode")

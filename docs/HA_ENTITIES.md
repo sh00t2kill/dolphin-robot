@@ -10,9 +10,9 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 
 ## 🤖 Vacuum Entity (1)
 
-| Entity                                     | Type     | Functionality                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [**{Robot Name}**](#vacuum-entity-details) | `vacuum` | Main vacuum control entity with the following features:<br/>• **Start** - Begin cleaning cycle<br/>• **Pause** - Pause current cleaning<br/>• **Return to Base** - Pickup/dock the robot<br/>• **Set Fan Speed** - Select cleaning mode (all, short, floor, water, ultra, pickup)<br/>• **Locate** - Turn on LED to find the robot<br/>• Shows current state: docked, cleaning, paused, error |
+| Entity                                     | Type     | Functionality                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**{Robot Name}**](#vacuum-entity-details) | `vacuum` | Main vacuum control entity with the following features:<br/>• **Start** - Begin cleaning cycle<br/>• **Pause** - Pause current cleaning<br/>• **Return to Base** - Pickup/dock the robot<br/>• **Set Fan Speed** - Select cleaning mode (all, short, floor, water, ultra, pickup)<br/>• Shows current state: docked, cleaning, paused, error |
 
 ---
 
@@ -26,9 +26,9 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 
 ## 💡 Light Entity (1)
 
-| Entity                           | Type    | Functionality                                                                                                                                         |
-| -------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [**LED**](#light-entity-details) | `light` | Control the robot's LED light:<br/>• **Turn On/Off** - Enable/disable LED<br/>• Used for locating the robot in the pool<br/>• Category: Configuration |
+| Entity                           | Type    | Functionality                                                                                           |
+| -------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| [**LED**](#light-entity-details) | `light` | Control the robot's LED light:<br/>• **Turn On/Off** - Enable/disable LED<br/>• Category: Configuration |
 
 ---
 
@@ -138,12 +138,12 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 
 ### Main Vacuum Control
 
-| Attribute        | Value                                               |
-| ---------------- | --------------------------------------------------- |
-| **Entity ID**    | `vacuum.{robot_name}`                               |
-| **Platform**     | Vacuum                                              |
-| **Device Class** | -                                                   |
-| **Features**     | Start, Pause, Return to Base, Locate, Set Fan Speed |
+| Attribute        | Value                                       |
+| ---------------- | ------------------------------------------- |
+| **Entity ID**    | `vacuum.{robot_name}`                       |
+| **Platform**     | Vacuum                                      |
+| **Device Class** | -                                           |
+| **Features**     | Start, Pause, Return to Base, Set Fan Speed |
 
 #### Functionality
 
@@ -152,7 +152,6 @@ The main vacuum entity provides comprehensive control over the pool cleaning rob
 - **Start Cleaning** (`vacuum.start`) - Begin a cleaning cycle using the current cleaning mode
 - **Pause Cleaning** (`vacuum.pause`) - Pause the current cleaning cycle
 - **Return to Base** (`vacuum.return_to_base`) - Command the robot to return to dock/pickup
-- **Locate** (`vacuum.locate`) - Turn on LED to help find the robot in the pool
 - **Set Fan Speed** (`vacuum.set_fan_speed`) - Select cleaning mode:
   - `all` - Regular cleaning (default)
   - `short` - Fast mode
@@ -244,7 +243,6 @@ Controls the robot's built-in LED light:
 
 The LED is primarily used for:
 
-- Locating the robot in the pool (via `vacuum.locate` service)
 - Visibility during night operation
 - Customizing robot appearance with LED modes
 

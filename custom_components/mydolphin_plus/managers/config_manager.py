@@ -29,7 +29,6 @@ from ..common.consts import (
     STORAGE_DATA_ID_TOKEN_EXPIRES_AT,
     STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH,
     STORAGE_DATA_LAST_TOKEN_FETCH,
-    STORAGE_DATA_LOCATING,
     STORAGE_DATA_MOTOR_UNIT_SERIAL,
     STORAGE_DATA_REFRESH_TOKEN,
     STORAGE_DATA_SERIAL_NUMBER,
@@ -98,12 +97,6 @@ class ConfigManager:
         entry_title = self._entry_title
 
         return entry_title
-
-    @property
-    def is_locating(self) -> bool:
-        is_locating = self._data.get(STORAGE_DATA_LOCATING, False)
-
-        return is_locating
 
     @property
     def id_token(self) -> str | None:
@@ -307,11 +300,6 @@ class ConfigManager:
 
         await self._save()
 
-    async def update_is_locating(self, state: bool):
-        self._data[STORAGE_DATA_LOCATING] = state
-
-        await self._save()
-
     async def update_last_token_fetch(self, timestamp: float):
         if timestamp is not None:
             self._data[STORAGE_DATA_LAST_TOKEN_FETCH] = timestamp
@@ -368,7 +356,6 @@ class ConfigManager:
     @staticmethod
     def _get_defaults() -> dict:
         data = {
-            STORAGE_DATA_LOCATING: False,
             STORAGE_DATA_LAST_TOKEN_FETCH: 0,
             STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH: 0,
             AWS_CREDENTIALS_EXPIRY: 0,
