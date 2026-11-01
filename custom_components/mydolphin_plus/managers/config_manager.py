@@ -14,11 +14,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.json import JSONEncoder
 from homeassistant.helpers.storage import Store
 
-from ..common.clean_modes import (
-    CLEAN_MODES_CYCLE_TIME,
-    CleanModes,
-    get_clean_mode_cycle_time_key,
-)
+from ..common.clean_modes import LEGACY_CYCLE_TIME_KEYS
 from ..common.consts import (
     AWS_CREDENTIALS_EXPIRY,
     CONFIGURATION_FILE,
@@ -245,12 +241,6 @@ class ConfigManager:
 
         return entity_name
 
-    def get_clean_cycle_time(self, clean_mode: CleanModes) -> int:
-        key = get_clean_mode_cycle_time_key(clean_mode)
-        value = self._data.get(key)
-
-        return value
-
     async def reset_login_details(self):
         # Reset login-related tokens, but preserve motor_unit_serial
         # so we can re-attach to the same robot after re-authentication
@@ -298,12 +288,6 @@ class ConfigManager:
 
     async def update_motor_unit_serial(self, motor_unit_serial: str):
         self._data[STORAGE_DATA_MOTOR_UNIT_SERIAL] = motor_unit_serial
-
-        await self._save()
-
-    async def update_clean_cycle_time(self, clean_mode: CleanModes, time: int):
-        key = get_clean_mode_cycle_time_key(clean_mode)
-        self._data[key] = int(time)
 
         await self._save()
 
@@ -358,6 +342,10 @@ class ConfigManager:
                 should_save = True
                 self._data[key] = value
 
+        for key in LEGACY_CYCLE_TIME_KEYS:
+            if self._data.pop(key, None) is not None:
+                should_save = True
+
         if should_save:
             _LOGGER.info("updated")
             await self._save()
@@ -373,12 +361,6 @@ class ConfigManager:
             STORAGE_DATA_LAST_AWS_CREDENTIALS_FETCH: 0,
             AWS_CREDENTIALS_EXPIRY: 0,
         }
-
-        for clean_mode in list(CleanModes):
-            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
-            default_time = CLEAN_MODES_CYCLE_TIME.get(clean_mode)
-
-            data[key] = int(default_time)
 
         return data
 

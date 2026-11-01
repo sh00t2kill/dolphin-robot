@@ -56,7 +56,7 @@ class MyDolphinPlusVacuumEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC)
         super().__init__(entity_description, coordinator)
 
         self._attr_supported_features = entity_description.features
-        self._attr_fan_speed_list = entity_description.fan_speed_list
+        self._attr_fan_speed_list = coordinator.clean_modes
 
         # Battery level is now handled by a dedicated battery sensor
         self._attr_activity = VacuumActivity.DOCKED
@@ -100,6 +100,7 @@ class MyDolphinPlusVacuumEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC)
 
             self._attr_extra_state_attributes = attributes
             self._attr_fan_speed = fan_speed
+            self._attr_fan_speed_list = self.coordinator.clean_modes
 
         else:
             self._attr_activity = VacuumActivity.DOCKED

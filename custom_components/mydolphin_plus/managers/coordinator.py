@@ -24,6 +24,8 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
 )
 from homeassistant.core import Event, callback
+from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
@@ -31,7 +33,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import slugify
 
 from ..common.calculated_state import CalculatedState
-from ..common.clean_modes import CleanModes, get_clean_mode_cycle_time_key
+from ..common.clean_modes import CleanModes
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     ATTR_ACTIONS,
@@ -76,7 +78,10 @@ from ..common.consts import (
     DATA_LED_ENABLE,
     DATA_LED_INTENSITY,
     DATA_LED_MODE,
+    DATA_ROBOT_CLEAN_MODES,
     DATA_ROBOT_NAME,
+    DATA_ROBOT_PRODUCT_DESCRIPTION,
+    DATA_ROBOT_PRODUCT_NAME,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DEBUG,
     DATA_SECTION_DYNAMIC,
@@ -85,8 +90,15 @@ from ..common.consts import (
     DATA_SECTION_PWS_ERROR,
     DATA_SECTION_ROBOT_ERROR,
     DATA_SECTION_SYSTEM_STATE,
+    DATA_SECTION_VERSIONS,
     DATA_SECTION_WIFI,
+    DATA_SYSTEM_STATE_ROBOT_TYPE,
     DATA_SYSTEM_STATE_TURN_ON_COUNT,
+    DATA_VERSIONS_PWS,
+    DATA_VERSIONS_PWS_HW,
+    DATA_VERSIONS_PWS_SW,
+    DATA_VERSIONS_ROBOT,
+    DATA_VERSIONS_ROBOT_SW,
     DATA_WIFI_NETWORK_NAME,
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
@@ -183,6 +195,15 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return data
 
     @property
+    def clean_modes(self) -> list[str]:
+        """Return the clean modes the robot supports and pickup, or every mode."""
+        clean_modes = self.api_data.get(DATA_ROBOT_CLEAN_MODES)
+        if not clean_modes:
+            return list(CleanModes)
+
+        return [*clean_modes, CleanModes.PICKUP]
+
+    @property
     def aws_data(self) -> dict:
         data = self._aws_client.data
 
@@ -202,6 +223,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     async def initialize(self):
         self._build_data_mapping()
+
+        self._create_power_supply_device()
 
         entry = self.config_manager.entry
         await self.hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -247,27 +270,97 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return data
 
     def get_device(self) -> DeviceInfo:
+        """Return the robot, which connects to the cloud through the power supply."""
         data = self.api_data
-        device_name = self.robot_name
-        model = data.get("Product Description")
-        versions = data.get("versions", {})
-        pws_version = versions.get("pwsVersion", {})
-        sw_version = pws_version.get("pwsSwVersion")
-        hw_version = pws_version.get("pwsHwVersion")
+
+        versions = self.aws_data.get(DATA_SECTION_VERSIONS, {})
+        robot_version = versions.get(DATA_VERSIONS_ROBOT, {})
+
+        # The robot reports its hardware version as "00"; the robot type
+        # (for example S4) says more about the hardware
+        system_state = self.aws_data.get(DATA_SECTION_SYSTEM_STATE, {})
+        robot_type = system_state.get(DATA_SYSTEM_STATE_ROBOT_TYPE)
 
         serial_number = self.config_manager.serial_number
 
         device_info = DeviceInfo(
             identifiers={(DEFAULT_NAME, serial_number)},
-            name=device_name,
-            model=model,
+            name=self.robot_name,
+            model=data.get(DATA_ROBOT_PRODUCT_DESCRIPTION),
+            model_id=data.get(DATA_ROBOT_PRODUCT_NAME),
             manufacturer=MANUFACTURER,
-            hw_version=hw_version,
-            sw_version=sw_version,
+            serial_number=serial_number,
+            hw_version=robot_type,
+            sw_version=robot_version.get(DATA_VERSIONS_ROBOT_SW),
+            via_device=(DEFAULT_NAME, self._power_supply_id),
             configuration_url=CONFIGURATION_URL,
         )
 
         return device_info
+
+    def get_power_supply_device(self) -> DeviceInfo:
+        """Return the power supply, which holds the Wi-Fi and cloud connection."""
+        versions = self.aws_data.get(DATA_SECTION_VERSIONS, {})
+        pws_version = versions.get(DATA_VERSIONS_PWS, {})
+
+        # "00" is the only hardware version seen so far and tells the user
+        # nothing, so leave the field empty
+        hw_version = pws_version.get(DATA_VERSIONS_PWS_HW)
+        if hw_version == "00":
+            hw_version = None
+
+        device_info = DeviceInfo(
+            identifiers={(DEFAULT_NAME, self._power_supply_id)},
+            name=f"{self.robot_name} Power Supply",
+            manufacturer=MANUFACTURER,
+            model="Power Supply",
+            hw_version=hw_version,
+            sw_version=pws_version.get(DATA_VERSIONS_PWS_SW),
+            configuration_url=CONFIGURATION_URL,
+        )
+
+        return device_info
+
+    @property
+    def _power_supply_id(self) -> str:
+        return f"{self.config_manager.serial_number}_power_supply"
+
+    def _create_power_supply_device(self):
+        """Create the power supply before the robot device that links to it."""
+        device_registry = dr.async_get(self.hass)
+
+        device_registry.async_get_or_create(
+            config_entry_id=self.config_manager.entry.entry_id,
+            **self.get_power_supply_device(),
+        )
+
+    def _update_device_registry(self):
+        """Copy the product and versions onto the devices once they load."""
+        device_registry = dr.async_get(self.hass)
+
+        for device_info in (self.get_power_supply_device(), self.get_device()):
+            device = device_registry.async_get_device(
+                identifiers=device_info["identifiers"]
+            )
+
+            if device is None:
+                continue
+
+            changes = {
+                key: device_info.get(key)
+                for key in (
+                    "model",
+                    "model_id",
+                    "hw_version",
+                    "sw_version",
+                    "serial_number",
+                )
+                if device_info.get(key) is not None
+                and getattr(device, key) != device_info.get(key)
+            }
+
+            if changes:
+                device_registry.async_update_device(device.id, **changes)
 
     async def _on_api_status_changed(self, entry_id: str, status: ConnectivityStatus):
         if entry_id != self._config_manager.entry_id:
@@ -396,6 +489,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
                 self._set_system_status_details()
 
+                self._update_device_registry()
+
             return {}
 
         except Exception as err:
@@ -426,11 +521,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_BATTERY): self._get_battery_data,
             slugify(DYNAMIC_DESCRIPTION_TEMPERATURE): self._get_temperature_data,
         }
-
-        for clean_mode in list(CleanModes):
-            key = get_clean_mode_cycle_time_key(CleanModes(clean_mode))
-
-            data_mapping[key] = self._get_clean_mode_cycle_time_data
 
         self._data_mapping = data_mapping
 
@@ -628,22 +718,6 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         return result
 
-    def _get_clean_mode_cycle_time_data(self, entity_description) -> dict | None:
-        key = entity_description.key
-        key_parts = key.split("_")
-        clean_mode_str = key_parts[len(key_parts) - 1]
-        clean_mode = CleanModes(clean_mode_str)
-        state = self.config_manager.get_clean_cycle_time(clean_mode)
-
-        result = {
-            ATTR_STATE: state,
-            ATTR_ACTIONS: {
-                SERVICE_SET_VALUE: self._set_clean_mode_cycle_time_data,
-            },
-        }
-
-        return result
-
     def _get_filter_status_data(self, _entity_description) -> dict | None:
         filter_bag_indication = self.aws_data.get(
             DATA_SECTION_FILTER_BAG_INDICATION, {}
@@ -686,7 +760,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         attributes = {}
 
-        if cycle_time_minutes == 0:
+        if not cycle_time_minutes:
+            cycle_time_minutes = None
             cycle_time_hours = None
 
         else:
@@ -706,6 +781,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ATTR_STATE: cycle_time_minutes,
             ATTR_ATTRIBUTES: attributes,
             ATTR_ICON: icon,
+            ATTR_ACTIONS: {
+                SERVICE_SET_VALUE: self._set_cycle_time,
+            },
         }
 
         return result
@@ -845,14 +923,20 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
     ):
         self._aws_client.set_led_intensity(intensity)
 
-    async def _set_clean_mode_cycle_time_data(
-        self, entity_description: EntityDescription, cycle_time: int
+    async def _set_cycle_time(
+        self, _entity_description: EntityDescription, cycle_time: float
     ):
-        key_parts = entity_description.key.split("_")
-        clean_mode_str = key_parts[len(key_parts) - 1]
-        clean_mode = CleanModes(clean_mode_str)
+        # The robot ignores a new cycle time unless it is cleaning or starting up
+        if self._system_details.calculated_state not in (
+            CalculatedState.CLEANING,
+            CalculatedState.INIT,
+        ):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="cycle_time_needs_cleaning",
+            )
 
-        await self.config_manager.update_clean_cycle_time(clean_mode, cycle_time)
+        self._aws_client.set_cycle_time(int(cycle_time))
 
     async def _pickup(self, _entity_description: EntityDescription):
         _LOGGER.debug("Pickup vacuum")

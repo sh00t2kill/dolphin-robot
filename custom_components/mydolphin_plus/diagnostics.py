@@ -45,7 +45,12 @@ def _async_get_diagnostics(
 
     _LOGGER.debug("Getting diagnostic information for all devices")
 
-    data.update(device=_async_device_as_dict(hass, identifiers))
+    power_supply_identifiers = coordinator.get_power_supply_device().get("identifiers")
+
+    data.update(
+        device=_async_device_as_dict(hass, identifiers),
+        power_supply_device=_async_device_as_dict(hass, power_supply_identifiers),
+    )
 
     return data
 

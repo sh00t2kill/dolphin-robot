@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import sys
-from time import sleep
+import time
 from typing import Any, Callable
 
 import aiofiles
@@ -29,6 +29,7 @@ from ..common.consts import (
     AWS_IOT_URL,
     AWS_REGION,
     CA_FILE_NAME,
+    CYCLE_TIME_AFTER_START_TIMEOUT_SECONDS,
     DATA_CYCLE_INFO_CLEANING_MODE_DURATION,
     DATA_FILTER_BAG_INDICATION_RESET_FBI_COMMAND,
     DATA_LED_ENABLE,
@@ -44,6 +45,7 @@ from ..common.consts import (
     DATA_SCHEDULE_TIME_HOURS,
     DATA_SCHEDULE_TIME_MINUTES,
     DATA_SECTION_ACTIVITY,
+    DATA_SECTION_CLEANING_MODES,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
@@ -52,6 +54,7 @@ from ..common.consts import (
     DATA_STATE_DESIRED,
     DATA_STATE_REPORTED,
     DATA_SYSTEM_STATE_PWS_STATE,
+    DATA_SYSTEM_STATE_ROBOT_STATE,
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
     DEFAULT_TIME_PART,
@@ -80,6 +83,7 @@ from ..common.consts import (
 from ..common.joystick_direction import JoystickDirection
 from ..common.power_supply_state import PowerSupplyState
 from ..common.robot_family import RobotFamily
+from ..common.robot_state import RobotState
 from ..models.topic_data import TopicData
 from .config_manager import ConfigManager
 
@@ -116,6 +120,10 @@ class AWSClient:
             self._topic_data = None
             self._awsiot_client = None
             self._messages_published: dict[int, dict[str, str]] = {}
+
+            # Clean mode of the last start from Home Assistant, and when it was
+            self._started_mode: CleanModes | None = None
+            self._started_at = 0.0
 
             self._status = None
 
@@ -441,15 +449,7 @@ class AWSClient:
                         self._read_temperature_and_in_water_details()
 
                 elif topic == self._topic_data.update_accepted:
-                    desired = state.get(DATA_STATE_DESIRED)
-
-                    if desired is not None:
-                        cleaning_mode = desired.get(DATA_SCHEDULE_CLEANING_MODE, {})
-                        mode = cleaning_mode.get(CONF_MODE)
-
-                        if mode is not None:
-                            sleep(1)
-                            self._set_cycle_time(mode)
+                    self._send_started_mode_cycle_time(reported)
 
         except Exception as ex:
             exc_type, exc_obj, tb = sys.exc_info()
@@ -558,8 +558,37 @@ class AWSClient:
         _LOGGER.info(f"Set cleaning mode, Desired: {data}")
         self._send_desired_command(data)
 
-    def _set_cycle_time(self, clean_mode: CleanModes):
-        cycle_time = self._config_manager.get_clean_cycle_time(clean_mode)
+        self._started_mode = clean_mode
+        self._started_at = time.monotonic()
+
+    def _send_started_mode_cycle_time(self, reported: dict):
+        """
+        Send the robot's own cycle time for the mode Home Assistant started.
+
+        Otherwise the robot keeps the cycle time of its last clean. It ignores
+        a cycle time until it starts up, so wait for that, as the app does.
+        """
+        robot_state = reported.get(DATA_SECTION_SYSTEM_STATE, {}).get(
+            DATA_SYSTEM_STATE_ROBOT_STATE
+        )
+
+        if self._started_mode is None or robot_state != RobotState.INIT:
+            return
+
+        clean_mode = self._started_mode
+        self._started_mode = None
+
+        if time.monotonic() - self._started_at > CYCLE_TIME_AFTER_START_TIMEOUT_SECONDS:
+            return
+
+        cycle_time = self.data.get(DATA_SECTION_CLEANING_MODES, {}).get(clean_mode)
+
+        if isinstance(cycle_time, int) and cycle_time > 0:
+            self.set_cycle_time(cycle_time)
+
+    def set_cycle_time(self, cycle_time: int):
+        # A time set here wins over the mode's own time from a recent start
+        self._started_mode = None
 
         data = {
             DATA_SECTION_CYCLE_INFO: {

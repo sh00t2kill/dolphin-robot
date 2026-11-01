@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 import json
 import logging
@@ -7,17 +8,20 @@ import sys
 import time
 from typing import Any
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from aiohttp.hdrs import METH_GET, METH_POST
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.dispatcher import dispatcher_send
 
+from ..common.clean_modes import supported_clean_modes
 from ..common.connectivity_status import ConnectivityStatus
 from ..common.consts import (
     API_RESPONSE_ALERT,
     API_RESPONSE_DATA,
+    API_RESPONSE_STATUS,
+    API_RESPONSE_STATUS_SUCCESS,
     API_RESPONSE_UNIT_SERIAL_NUMBER,
     API_TOKEN_FIELDS,
     AUTHENTICATE_USER_URL,
@@ -32,10 +36,15 @@ from ..common.consts import (
     COGNITO_ENDPOINT,
     COGNITO_HEADER_TARGET,
     COGNITO_TARGET_PREFIX,
+    DATA_ROBOT_CLEAN_MODES,
     DATA_ROBOT_DETAILS,
     ID_TOKEN_REFRESH_WINDOW_SECONDS,
     MIN_TOKEN_FETCH_INTERVAL,
+    OPTIONAL_REQUEST_TIMEOUT_SECONDS,
     RECONNECT_BACKOFF_MAX,
+    ROBOT_DETAILS_URL,
+    ROBOT_FEATURES_DEVICE_TYPE,
+    ROBOT_FEATURES_URL,
     SIGNAL_API_STATUS,
     SIGNAL_DEVICE_NEW,
 )
@@ -310,6 +319,8 @@ class RestAPI:
         if not await self._authenticate_user():
             return
 
+        await asyncio.gather(self._load_robot_details(), self._load_clean_modes())
+
         self._device_loaded = True
 
         self._async_dispatcher_send(SIGNAL_DEVICE_NEW, self._config_manager.entry_id)
@@ -458,6 +469,85 @@ class RestAPI:
                 self.data[mapped] = data.get(key)
 
         return True
+
+    async def _load_optional_data(
+        self, label: str, method: str, url: str, **kwargs: Any
+    ) -> dict | None:
+        """
+        Send a request whose data the integration can do without.
+
+        Return the response data, or None after logging a warning. Either way
+        the connection status stays as it is.
+        """
+        extra = (
+            {"Content-Type": "application/x-www-form-urlencoded"}
+            if method == METH_POST
+            else None
+        )
+        headers = _build_headers(
+            base=BEARER_HEADERS_BASE,
+            id_token=self._config_manager.id_token,
+            extra=extra,
+            integration_info=self._integration_info,
+        )
+        timeout = ClientTimeout(total=OPTIONAL_REQUEST_TIMEOUT_SECONDS)
+
+        try:
+            async with self._session.request(
+                method, url, headers=headers, timeout=timeout, **kwargs
+            ) as response:
+                response.raise_for_status()
+                payload = await response.json()
+
+        except Exception as ex:
+            _LOGGER.warning(f"Failed to load {label}, Error: {ex}")
+            return None
+
+        if (
+            not isinstance(payload, dict)
+            or payload.get(API_RESPONSE_STATUS) != API_RESPONSE_STATUS_SUCCESS
+        ):
+            alert = (
+                payload.get(API_RESPONSE_ALERT) if isinstance(payload, dict) else None
+            )
+            _LOGGER.warning(f"Failed to load {label}, Alert: {alert}")
+            return None
+
+        data = payload.get(API_RESPONSE_DATA)
+        return data if isinstance(data, dict) else {}
+
+    async def _load_robot_details(self):
+        """Load the product name and robot family, which the profile lacks."""
+        data = await self._load_optional_data(
+            "robot details",
+            METH_POST,
+            ROBOT_DETAILS_URL,
+            data=f"SERNUM={self._config_manager.serial_number}",
+        )
+        if data is None:
+            return
+
+        for key, mapped in DATA_ROBOT_DETAILS.items():
+            if key in data:
+                self.data[mapped] = data.get(key)
+
+    async def _load_clean_modes(self):
+        """Load the clean modes the robot supports, which the app lists."""
+        data = await self._load_optional_data(
+            "robot features",
+            METH_GET,
+            ROBOT_FEATURES_URL,
+            params={
+                "Sernum": self._config_manager.serial_number,
+                "device_type": ROBOT_FEATURES_DEVICE_TYPE,
+            },
+        )
+        if data is None:
+            return
+
+        clean_modes = supported_clean_modes(data.get("features"))
+        if clean_modes is not None:
+            self.data[DATA_ROBOT_CLEAN_MODES] = clean_modes
 
     async def _refresh_aws_credentials(self):
         # Use cached creds when still valid

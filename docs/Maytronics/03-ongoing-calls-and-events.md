@@ -76,6 +76,15 @@ sequenceDiagram
             API->>Maytr: POST /mobapi/user/authenticate-user/
             Maytr-->>API: Sernum, eSERNUM, robot details
 
+            API->>API: _load_robot_details()
+            API->>Maytr: POST /mobapi/serial-numbers/getRobotDetailsByRobotSN/
+            Maytr-->>API: Product name, robot family
+
+            API->>API: _load_clean_modes()
+            API->>Maytr: GET /mobapi/serial-numbers/getSernFeatures/
+            Note right of Maytr: Sernum, device_type: 62
+            Maytr-->>API: Features, including the clean modes the app lists
+
             API->>API: _device_loaded = True
             API->>Coord: dispatcher_send(SIGNAL_DEVICE_NEW)
         else Already loaded
@@ -152,13 +161,9 @@ sequenceDiagram
             AWS->>AWS: Merge into self.data[category]
         end
 
-        alt Has state.desired (command echo)
-            AWS->>AWS: Extract cleaning_mode from desired
-            alt Mode is not None
-                AWS->>AWS: sleep(1)
-                AWS->>AWS: _set_cycle_time(mode)
-                AWS->>Broker: Publish cycle time to shadow/update
-            end
+        alt HA started a clean in the last 60s and robotState is init
+            AWS->>AWS: _send_started_mode_cycle_time(reported)
+            AWS->>Broker: Publish cleaningModes[mode] as cycleInfo.cycleTime
         end
 
         AWS->>Coord: _on_data_update_callback()
@@ -261,11 +266,15 @@ Commands are sent by publishing to the shadow `update` topic with a `desired` st
 | Command                | Desired Payload                                                    | Function                   |
 | ---------------------- | ------------------------------------------------------------------ | -------------------------- |
 | Set cleaning mode      | `{"cleaningMode": {"mode": "all"}}`                                | `set_cleaning_mode()`      |
-| Set cycle time         | `{"cycleInfo": {"cycleTime": 120}}`                                | `_set_cycle_time()`        |
+| Set cycle time         | `{"cycleInfo": {"cycleTime": 120}}`                                | `set_cycle_time()`         |
 | Set LED mode           | `{"led": {"ledMode": "2", "ledIntensity": 80, "ledEnable": true}}` | `set_led_mode()`           |
 | Pause robot            | `{"systemState": {"pwsState": 0}}`                                 | `pause()`                  |
 | Pickup (return home)   | Sets cleaning mode to PICKUP                                       | `pickup()`                 |
 | Reset filter indicator | `{"filterBagIndication": {"resetFbi": true}}`                      | `reset_filter_indicator()` |
+
+The robot only acts on a cycle time while it cleans or starts up (`robotState` `init` or `scanning`). While idle it clears the command and keeps its time. It does not act on `cycleInfo.cleaningMode.cycleTime` or `cleaningModes`.
+
+The robot keeps the cycle time of its last clean for the next one. `cleaningModes` holds its default time for each mode, which only changes in the MyDolphin app's settings. When the app starts a clean it sends the mode, then the chosen cycle time once the robot reports `init`. When Home Assistant starts a clean it does the same with the robot's default for that mode.
 
 ---
 

@@ -69,14 +69,21 @@ class FakeSession:
         self._post_payload = post_payload or {}
         self._get_payload = get_payload or {}
         self.last_headers: dict | None = None
+        self.last_params: dict | None = None
 
     def post(self, _url, headers=None, data=None):
         self.last_headers = headers
         return FakeResponse(self._post_payload)
 
-    def get(self, _url, headers=None):
+    def get(self, _url, headers=None, params=None):
         self.last_headers = headers
+        self.last_params = params
         return FakeResponse(self._get_payload)
+
+    def request(self, method, url, timeout=None, **kwargs):
+        if method == "POST":
+            return self.post(url, **kwargs)
+        return self.get(url, **kwargs)
 
 
 class DummyConfigManager:
@@ -249,3 +256,93 @@ async def test_rate_limited_with_expired_cache_sets_failed():
     await api._refresh_aws_credentials()
 
     assert api.status == ConnectivityStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_load_robot_details_maps_product():
+    """Robot details fill in the product name and robot family."""
+    config_manager = DummyConfigManager()
+    config_manager.serial_number = "N1234"
+    api = RestAPI(None, config_manager)
+    api._session = FakeSession(
+        post_payload={
+            "Status": "1",
+            "Data": {
+                "PARTNAME": "99996291-PR2AU",
+                "PARTDES": "DOLPHIN PREMIUM 2000 AU",
+                "RobotFamily": "M700",
+            },
+        }
+    )
+    api._status = ConnectivityStatus.CONNECTED
+
+    await api._load_robot_details()
+
+    assert api.data["Product Name"] == "99996291-PR2AU"
+    assert api.data["Product Description"] == "DOLPHIN PREMIUM 2000 AU"
+    assert api.data["Robot Family"] == "M700"
+    assert api._session.last_headers["Authorization"] == "Bearer id-token"
+    assert api.status == ConnectivityStatus.CONNECTED
+
+
+@pytest.mark.asyncio
+async def test_load_robot_details_failure_keeps_connection():
+    """A failed details call leaves the data and connection status alone."""
+    api = RestAPI(None, DummyConfigManager())
+    api._session = FakeSession(post_payload={"Status": "0", "Alert": "nope"})
+    api._status = ConnectivityStatus.CONNECTED
+
+    await api._load_robot_details()
+
+    assert api.data == {}
+    assert api.status == ConnectivityStatus.CONNECTED
+
+
+def _features(*clean_mode_ids: str) -> dict:
+    subs = [{"id": feature_id} for feature_id in clean_mode_ids]
+    return {
+        "Status": "1",
+        "Data": {"features": [{"id": "90"}, {"id": "2", "subFeatures": subs}]},
+    }
+
+
+@pytest.mark.asyncio
+async def test_load_clean_modes_keeps_the_robots_modes():
+    """The features call sets the clean modes the vacuum offers."""
+    config_manager = DummyConfigManager()
+    config_manager.serial_number = "N1234"
+    api = RestAPI(None, config_manager)
+    api._session = FakeSession(get_payload=_features("211", "291", "23", "22", "292"))
+    api._status = ConnectivityStatus.CONNECTED
+
+    await api._load_clean_modes()
+
+    assert api.data["Clean Modes"] == ["stairs", "all", "floor", "short"]
+    assert api._session.last_params["Sernum"] == "N1234"
+    assert api._session.last_headers["Authorization"] == "Bearer id-token"
+    assert api.status == ConnectivityStatus.CONNECTED
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"Status": "0", "Alert": "nope"},
+        _features("291", "999"),
+        {"Status": "1", "Data": {"features": [{"id": "90"}]}},
+        {"Status": "1", "Data": ["not", "a", "dict"]},
+        {"Status": "1", "Data": {"features": {"id": "2"}}},
+        {"Status": "1", "Data": {"features": [{"id": "2", "subFeatures": "x"}]}},
+        ["not", "a", "dict"],
+    ],
+)
+async def test_load_clean_modes_failure_keeps_connection(payload):
+    """A failed call, or an unknown mode, leaves the data and status alone."""
+    api = RestAPI(None, DummyConfigManager())
+    api._session = FakeSession(get_payload=payload)
+    api._status = ConnectivityStatus.CONNECTED
+
+    await api._load_clean_modes()
+
+    assert api.data == {}
+    assert api.status == ConnectivityStatus.CONNECTED

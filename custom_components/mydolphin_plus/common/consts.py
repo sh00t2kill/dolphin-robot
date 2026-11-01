@@ -78,11 +78,13 @@ DATA_SECTION_LED = "led"
 DATA_SECTION_DEBUG = "debug"
 DATA_SECTION_WIFI = "wifi"
 DATA_SECTION_CYCLE_INFO = "cycleInfo"
+DATA_SECTION_CLEANING_MODES = "cleaningModes"
 DATA_SECTION_FILTER_BAG_INDICATION = "filterBagIndication"
 DATA_SECTION_SYSTEM_STATE = "systemState"
 DATA_SECTION_ROBOT_ERROR = "robotError"
 DATA_SECTION_PWS_ERROR = "pwsError"
 DATA_SECTION_ACTIVITY = "activity"
+DATA_SECTION_VERSIONS = "versions"
 
 DATA_STATE_REPORTED = "reported"
 DATA_STATE_DESIRED = "desired"
@@ -94,6 +96,12 @@ DATA_SYSTEM_STATE_IS_BUSY = "isBusy"
 DATA_SYSTEM_STATE_TURN_ON_COUNT = "rTurnOnCount"
 DATA_SYSTEM_STATE_TIME_ZONE = "timeZone"
 DATA_SYSTEM_STATE_TIME_ZONE_NAME = "timeZoneName"
+
+DATA_VERSIONS_PWS = "pwsVersion"
+DATA_VERSIONS_PWS_HW = "pwsHwVersion"
+DATA_VERSIONS_PWS_SW = "pwsSwVersion"
+DATA_VERSIONS_ROBOT = "robotVersion"
+DATA_VERSIONS_ROBOT_SW = "muSwVersion"
 
 DATA_SCHEDULE_IS_ENABLED = "isEnabled"
 DATA_SCHEDULE_CLEANING_MODE = "cleaningMode"
@@ -124,6 +132,10 @@ DEFAULT_TIME_PART = 255
 
 UPDATE_API_INTERVAL = timedelta(hours=1)
 UPDATE_WS_INTERVAL = timedelta(seconds=30)
+
+# How long a start from Home Assistant waits for the robot to start up
+# before it gives up sending the clean mode's cycle time
+CYCLE_TIME_AFTER_START_TIMEOUT_SECONDS = 60
 API_RECONNECT_INTERVAL = timedelta(minutes=1)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
@@ -159,6 +171,12 @@ COGNITO_CHALLENGE_NAME = "CUSTOM_CHALLENGE"
 APPS_BASE = "https://apps.maytronics.com"
 AUTHENTICATE_USER_URL = f"{APPS_BASE}/mobapi/user/authenticate-user/"
 AWS_STS_TOKEN_URL = f"{APPS_BASE}/mt-sso/aws/getToken/"
+ROBOT_DETAILS_URL = f"{APPS_BASE}/mobapi/serial-numbers/getRobotDetailsByRobotSN/"
+ROBOT_FEATURES_URL = f"{APPS_BASE}/mobapi/serial-numbers/getSernFeatures/"
+
+# The features API needs a device type but returned the same features for
+# every value tried; 62 is the connectVia value in the user's profile
+ROBOT_FEATURES_DEVICE_TYPE = "62"
 
 APP_KEY = "346BDE92-53D1-4829-8A2E-B496014B586C"
 APP_VERSION = "ios_3.1.7_2"
@@ -168,6 +186,10 @@ BEARER_HEADERS_BASE = {
     "app_version": APP_VERSION,
     "Accept": "*/*",
 }
+
+# Time limit for requests whose data the integration can do without, so a slow
+# server can't hold up startup
+OPTIONAL_REQUEST_TIMEOUT_SECONDS = 10
 
 # Refresh the IdToken if it expires within this many seconds
 ID_TOKEN_REFRESH_WINDOW_SECONDS = 300
@@ -217,11 +239,14 @@ TOPIC_CALLBACK_REJECTED = "rejected"
 
 DATA_ROBOT_NAME = "Robot Name"
 DATA_ROBOT_FAMILY = "Robot Family"
+DATA_ROBOT_PRODUCT_NAME = "Product Name"
+DATA_ROBOT_PRODUCT_DESCRIPTION = "Product Description"
+DATA_ROBOT_CLEAN_MODES = "Clean Modes"
 
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Motor Unit Serial",
-    "PARTNAME": "Product Name",
-    "PARTDES": "Product Description",
+    "PARTNAME": DATA_ROBOT_PRODUCT_NAME,
+    "PARTDES": DATA_ROBOT_PRODUCT_DESCRIPTION,
     "AppName": "Application Name",
     "RegDate": "Registration Date",
     "MyRobotName": DATA_ROBOT_NAME,

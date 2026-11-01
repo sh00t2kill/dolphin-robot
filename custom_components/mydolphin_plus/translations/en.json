@@ -47,26 +47,11 @@
       }
     },
     "number": {
-      "cycle_time_all": {
-        "name": "Cycle Time Regular"
-      },
-      "cycle_time_floor": {
-        "name": "Cycle Time Floor only"
-      },
-      "cycle_time_pickup": {
-        "name": "Cycle Time Pickup"
-      },
-      "cycle_time_short": {
-        "name": "Cycle Time Fast mode"
-      },
-      "cycle_time_ultra": {
-        "name": "Cycle Time Ultra clean"
-      },
-      "cycle_time_water": {
-        "name": "Cycle Time Water line"
-      },
       "led_intensity": {
         "name": "LED Intensity"
+      },
+      "cycle_time": {
+        "name": "Cycle Time"
       }
     },
     "select": {
@@ -88,6 +73,7 @@
           "pickup": "Pickup",
           "short": "Fast mode",
           "ultra": "Ultra clean",
+          "stairs": "Full coverage",
           "water": "Water line"
         }
       },
@@ -249,6 +235,7 @@
               "pickup": "Pickup",
               "short": "Fast mode",
               "ultra": "Ultra clean",
+              "stairs": "Full coverage",
               "water": "Water line"
             }
           }
@@ -280,6 +267,11 @@
         "description": "Enter the login code sent to your email.",
         "title": "Confirm OTP"
       }
+    }
+  },
+  "exceptions": {
+    "cycle_time_needs_cleaning": {
+      "message": "The robot only accepts a new cycle time while it is cleaning."
     }
   }
 }
