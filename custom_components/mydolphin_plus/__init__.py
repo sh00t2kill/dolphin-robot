@@ -7,9 +7,11 @@ https://home-assistant.io/components/mydolphin_plus/
 import logging
 import sys
 
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME, EVENT_HOMEASSISTANT_START
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from .common.consts import (
     DEFAULT_NAME,
@@ -65,6 +67,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         is_initialized = config_manager.is_initialized
 
         if is_initialized:
+            _remove_battery_entity(hass, entry)
+
             coordinator = MyDolphinPlusCoordinator(hass, config_manager)
 
             hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -92,6 +96,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     return initialized
+
+
+def _remove_battery_entity(hass: HomeAssistant, entry: ConfigEntry):
+    """Remove the old battery sensor, which always showed 100%."""
+    entity_registry = er.async_get(hass)
+
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.original_device_class == SensorDeviceClass.BATTERY:
+            _LOGGER.info(f"Removing battery sensor {entity.entity_id}")
+
+            entity_registry.async_remove(entity.entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):

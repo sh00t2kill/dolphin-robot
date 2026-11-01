@@ -74,7 +74,6 @@ The coordinator builds a mapping from entity keys to handler functions at initia
 | `aws_broker`          | `_get_aws_broker_data`            | AWSClient status                     | MQTT connection status (binary)          |
 | `robot_error`         | `_get_robot_error_data`           | aws_data (robotError)                | Error code (current cycle)               |
 | `power_supply_error`  | `_get_pws_error_data`             | aws_data (pwsError)                  | PSU error code                           |
-| `battery`             | `_get_battery_data`               | Hardcoded                            | Always 100% (pool robots are wired)      |
 | `temperature`         | `_get_temperature_data`           | aws_data (dynamic/iotResponse)       | Water temperature (M700 only)            |
 | `cycle_time_*`        | `_get_clean_mode_cycle_time_data` | ConfigManager                        | Per-mode cycle time + set action         |
 

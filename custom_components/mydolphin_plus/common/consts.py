@@ -324,7 +324,6 @@ DATA_KEY_BUSY = "Busy"
 DATA_KEY_CYCLE_COUNT = "Cycle Count"
 DATA_KEY_ROBOT_ERROR = "Robot Error"
 DATA_KEY_PWS_ERROR = "Power Supply Error"
-DATA_KEY_BATTERY = "Battery"
 
 TRANSLATION_KEY_ERROR_INSTRUCTIONS = "state_attributes.instructions.state"
 ERROR_CLEAN_CODES = [0, 255]

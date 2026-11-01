@@ -34,7 +34,6 @@ from .clean_modes import (
 )
 from .consts import (
     DATA_KEY_AWS_BROKER,
-    DATA_KEY_BATTERY,
     DATA_KEY_CLEAN_MODE,
     DATA_KEY_CYCLE_COUNT,
     DATA_KEY_CYCLE_TIME,
@@ -256,14 +255,6 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         icon="mdi:water-boiler",
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_PWS_ERROR),
-    ),
-    MyDolphinPlusSensorEntityDescription(
-        key=slugify(DATA_KEY_BATTERY),
-        name=DATA_KEY_BATTERY,
-        device_class=SensorDeviceClass.BATTERY,
-        native_unit_of_measurement="%",
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key=slugify(DATA_KEY_BATTERY),
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DYNAMIC_DESCRIPTION_TEMPERATURE),
