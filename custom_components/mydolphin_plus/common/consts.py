@@ -124,6 +124,9 @@ DEFAULT_TIME_PART = 255
 
 UPDATE_API_INTERVAL = timedelta(hours=1)
 UPDATE_WS_INTERVAL = timedelta(seconds=30)
+
+# Wait after a clean mode change before sending that mode's cycle time
+CYCLE_TIME_DELAY_SECONDS = 1
 API_RECONNECT_INTERVAL = timedelta(minutes=1)
 WS_RECONNECT_INTERVAL = timedelta(minutes=1)
 
