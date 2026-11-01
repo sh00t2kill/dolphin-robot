@@ -4,7 +4,7 @@ This document provides a comprehensive list of all entities created by the MyDol
 
 ## Overview
 
-The MyDolphin Plus integration creates **25 entities** (24 for standard models, 25 for M700 models with temperature sensor) across 7 different platforms. All entities are automatically discovered and created when you add the integration to Home Assistant.
+The MyDolphin Plus integration creates **24 entities** (23 for standard models, 24 for M700 models with temperature sensor) across 7 different platforms. All entities are automatically discovered and created when you add the integration to Home Assistant.
 
 ---
 
@@ -89,11 +89,10 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 | [**Robot Error**](#robot-error) | `sensor` | Robot error code (0 = no error)<br/>• Icon changes when error present<br/>• Category: Diagnostic        |
 | [**PWS Error**](#pws-error)     | `sensor` | Power Supply error code (0 = no error)<br/>• Icon changes when error present<br/>• Category: Diagnostic |
 
-### Battery & Environment Sensors
+### Environment Sensors
 
 | Entity                                           | Type     | Unit | Functionality                                                                                                                                |
 | ------------------------------------------------ | -------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| [**Battery**](#battery)                          | `sensor` | %    | Battery level (always 100% for corded robots)<br/>• Device Class: Battery<br/>• State Class: Measurement                                     |
 | [**Temperature**](#temperature-m700-models-only) | `sensor` | °C   | Water temperature (M700 models only)<br/>• Device Class: Temperature<br/>• State Class: Measurement<br/>• Only appears on M700 family robots |
 
 ---
@@ -115,9 +114,9 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 | **Light**         | 1      | LED control                                     |
 | **Select**        | 1      | LED mode selection                              |
 | **Number**        | 7      | LED intensity + 6 cycle time configurations     |
-| **Sensor**        | 13     | Status, diagnostics, cleaning info, errors      |
+| **Sensor**        | 12     | Status, diagnostics, cleaning info, errors      |
 | **Binary Sensor** | 1      | AWS connectivity status                         |
-| **TOTAL**         | **25** | (24 for non-M700, 25 for M700 with temperature) |
+| **TOTAL**         | **24** | (23 for non-M700, 24 for M700 with temperature) |
 
 ---
 
@@ -126,7 +125,7 @@ The MyDolphin Plus integration creates **25 entities** (24 for standard models, 
 - **Main Control**: Vacuum, Remote
 - **Configuration** (EntityCategory.CONFIG): LED, LED Mode, LED Intensity, Cycle Times (7 entities)
 - **Diagnostic** (EntityCategory.DIAGNOSTIC): Status, RSSI, Network Name, Clean Mode, Power Supply Status, Robot Status, Robot Type, Cycle Count, AWS Broker, Robot Error, PWS Error (11 entities)
-- **Measurement**: Filter Status, Cycle Time, Cycle Time Left, Battery, Temperature (5 entities)
+- **Measurement**: Filter Status, Cycle Time, Cycle Time Left, Temperature (4 entities)
 
 ---
 
@@ -538,22 +537,7 @@ Power Supply (PWS) error code. A value of `0` indicates no error.
 
 ---
 
-### Battery & Environment Sensors
-
-#### Battery
-
-| Attribute        | Value                         |
-| ---------------- | ----------------------------- |
-| **Entity ID**    | `sensor.{robot_name}_battery` |
-| **Device Class** | Battery                       |
-| **State Class**  | Measurement                   |
-| **Unit**         | %                             |
-
-Battery level percentage.
-
-**Note**: Pool cleaning robots are corded devices, so this always shows 100%. This entity exists for Home Assistant compatibility.
-
----
+### Environment Sensors
 
 #### Temperature (M700 Models Only)
 
@@ -652,10 +636,9 @@ Entities for primary control and monitoring (no specific category):
 - `sensor.{robot_name}_filter_status`
 - `sensor.{robot_name}_cycle_time`
 - `sensor.{robot_name}_cycle_time_left`
-- `sensor.{robot_name}_battery`
 - `sensor.{robot_name}_temperature` (M700 only)
 
-**Total**: 6-7 entities
+**Total**: 5-6 entities
 
 **UI Display**: Prominently displayed on the device page
 
@@ -839,11 +822,11 @@ automation:
 | Light         | 1        | Configuration | LED on/off                        |
 | Select        | 1        | Configuration | LED mode selection                |
 | Number        | 7        | Configuration | LED intensity + 6 cycle times     |
-| Sensor        | 13       | Mixed         | Status, diagnostics, measurements |
+| Sensor        | 12       | Mixed         | Status, diagnostics, measurements |
 | Binary Sensor | 1        | Diagnostic    | AWS connectivity                  |
-| **TOTAL**     | **25\*** |               |                                   |
+| **TOTAL**     | **24\*** |               |                                   |
 
-\* 24 entities for standard models, 25 for M700 models (includes temperature sensor)
+\* 23 entities for standard models, 24 for M700 models (includes temperature sensor)
 
 ---
 

@@ -58,7 +58,6 @@ class MyDolphinPlusVacuumEntity(MyDolphinPlusBaseEntity, StateVacuumEntity, ABC)
         self._attr_supported_features = entity_description.features
         self._attr_fan_speed_list = entity_description.fan_speed_list
 
-        # Battery level is now handled by a dedicated battery sensor
         self._attr_activity = VacuumActivity.DOCKED
 
     @property
