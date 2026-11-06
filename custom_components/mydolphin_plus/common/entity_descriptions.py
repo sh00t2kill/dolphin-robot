@@ -67,6 +67,8 @@ class MyDolphinPlusEntityDescription(EntityDescription):
     platform: Platform | None = None
     supported_robot: RobotFamily = RobotFamily.ALL
     power_supply: bool = False
+    # Stays available while the power supply is offline
+    available_offline: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -248,6 +250,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_AWS_BROKER),
         power_supply=True,
+        available_offline=True,
     ),
     MyDolphinPlusBinarySensorEntityDescription(
         key=slugify(DATA_KEY_POWER_SUPPLY_CONNECTION),
@@ -256,6 +259,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_POWER_SUPPLY_CONNECTION),
         power_supply=True,
+        available_offline=True,
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_ROBOT_ERROR),

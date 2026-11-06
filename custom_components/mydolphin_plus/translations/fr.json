@@ -284,5 +284,10 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "robot_offline": {
+      "message": "Le robot est hors ligne. Vérifiez que le bloc d'alimentation est allumé et connecté au Wi-Fi."
+    }
   }
 }

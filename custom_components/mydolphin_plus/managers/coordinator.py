@@ -202,6 +202,19 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return data
 
     @property
+    def is_power_supply_online(self) -> bool:
+        """
+        Return whether the power supply is connected to the Maytronics cloud.
+
+        AWS keeps the robot's last state while it is offline and holds
+        commands until it comes back, so neither means anything until then.
+        Online until the robot's state says otherwise.
+        """
+        is_connected = self.aws_data.get(DATA_SECTION_IS_CONNECTED, {})
+
+        return is_connected.get(DATA_IS_CONNECTED) is not False
+
+    @property
     def config_manager(self) -> ConfigManager:
         config_manager = self._config_manager
 

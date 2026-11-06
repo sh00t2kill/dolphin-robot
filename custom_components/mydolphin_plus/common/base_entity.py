@@ -5,6 +5,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
@@ -85,6 +86,7 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
         self._attr_unique_id = unique_id
 
         self._data = {}
+        self._last_available: bool | None = None
 
     @property
     def _local_coordinator(self) -> MyDolphinPlusCoordinator:
@@ -104,7 +106,25 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
     def data(self) -> dict | None:
         return self._data
 
+    @property
+    def available(self) -> bool:
+        """Return False while the power supply is offline, as its state is stale."""
+        if not super().available:
+            return False
+
+        return (
+            self._local_entity_description.available_offline
+            or self._local_coordinator.is_power_supply_online
+        )
+
     async def async_execute_device_action(self, key: str, *kwargs: Any):
+        # AWS would hold the command until the robot comes back, so fail now
+        if not self._local_coordinator.is_power_supply_online:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="robot_offline",
+            )
+
         async_device_action = self._local_coordinator.get_device_action(
             self.entity_description, key
         )
@@ -128,7 +148,12 @@ class MyDolphinPlusBaseEntity(CoordinatorEntity):
         try:
             new_data = self._local_coordinator.get_data(self.entity_description)
 
-            if self._data != new_data:
+            # The robot can go offline without any of this entity's data changing
+            available = self.available
+
+            if self._data != new_data or self._last_available != available:
+                self._last_available = available
+
                 data_for_log = {
                     key: new_data[key] for key in new_data if key != ATTR_ACTIONS
                 }

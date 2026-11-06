@@ -284,5 +284,10 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "robot_offline": {
+      "message": "The robot is offline. Check that the power supply is on and connected to Wi-Fi."
+    }
   }
 }

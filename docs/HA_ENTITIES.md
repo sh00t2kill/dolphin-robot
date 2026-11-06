@@ -15,6 +15,10 @@ The integration creates two devices:
 
 The product name loads from the Maytronics API at startup; the versions appear once the robot first reports its state.
 
+### When the robot is offline
+
+When the power supply loses its connection to the Maytronics cloud, every entity except AWS Broker and Power Supply Connection shows as unavailable, and commands fail with a "robot is offline" error. They come back once the power supply reconnects.
+
 ---
 
 ## 🤖 Vacuum Entity (1)
@@ -684,6 +688,8 @@ Entities for primary control and monitoring (no specific category):
 **Total**: 6-7 entities
 
 **UI Display**: Prominently displayed on the device page
+
+While this is off, every entity except this one and AWS Broker is unavailable.
 
 ---
 

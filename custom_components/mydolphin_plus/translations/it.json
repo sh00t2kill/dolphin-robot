@@ -284,5 +284,10 @@
         "title": "Conferma OTP"
       }
     }
+  },
+  "exceptions": {
+    "robot_offline": {
+      "message": "Il robot è offline. Verifica che l'alimentatore sia acceso e connesso al Wi-Fi."
+    }
   }
 }
