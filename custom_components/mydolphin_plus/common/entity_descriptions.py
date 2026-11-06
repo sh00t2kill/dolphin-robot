@@ -44,6 +44,7 @@ from .consts import (
     DATA_KEY_LED_INTENSITY,
     DATA_KEY_LED_MODE,
     DATA_KEY_NETWORK_NAME,
+    DATA_KEY_POWER_SUPPLY_CONNECTION,
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
@@ -65,6 +66,9 @@ from .robot_family import RobotFamily
 class MyDolphinPlusEntityDescription(EntityDescription):
     platform: Platform | None = None
     supported_robot: RobotFamily = RobotFamily.ALL
+    power_supply: bool = False
+    # Stays available while the power supply is offline
+    available_offline: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -176,12 +180,14 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
         translation_key=slugify(DATA_KEY_RSSI),
+        power_supply=True,
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_NETWORK_NAME),
         name=DATA_KEY_NETWORK_NAME,
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_NETWORK_NAME),
+        power_supply=True,
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_CLEAN_MODE),
@@ -194,6 +200,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         name=DATA_KEY_POWER_SUPPLY_STATUS,
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_POWER_SUPPLY_STATUS),
+        power_supply=True,
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_ROBOT_STATUS),
@@ -242,6 +249,17 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_AWS_BROKER),
+        power_supply=True,
+        available_offline=True,
+    ),
+    MyDolphinPlusBinarySensorEntityDescription(
+        key=slugify(DATA_KEY_POWER_SUPPLY_CONNECTION),
+        name=DATA_KEY_POWER_SUPPLY_CONNECTION,
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        translation_key=slugify(DATA_KEY_POWER_SUPPLY_CONNECTION),
+        power_supply=True,
+        available_offline=True,
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_ROBOT_ERROR),
@@ -256,6 +274,7 @@ ENTITY_DESCRIPTIONS: list[MyDolphinPlusEntityDescription] = [
         icon="mdi:water-boiler",
         entity_category=EntityCategory.DIAGNOSTIC,
         translation_key=slugify(DATA_KEY_PWS_ERROR),
+        power_supply=True,
     ),
     MyDolphinPlusSensorEntityDescription(
         key=slugify(DATA_KEY_BATTERY),

@@ -24,6 +24,7 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
 )
 from homeassistant.core import Event, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityDescription
@@ -52,6 +53,7 @@ from ..common.consts import (
     DATA_ERROR_CODE,
     DATA_ERROR_TURN_ON_COUNT,
     DATA_FILTER_BAG_INDICATION_RESET_FBI,
+    DATA_IS_CONNECTED,
     DATA_KEY_AWS_BROKER,
     DATA_KEY_BATTERY,
     DATA_KEY_BUSY,
@@ -64,6 +66,7 @@ from ..common.consts import (
     DATA_KEY_LED_INTENSITY,
     DATA_KEY_LED_MODE,
     DATA_KEY_NETWORK_NAME,
+    DATA_KEY_POWER_SUPPLY_CONNECTION,
     DATA_KEY_POWER_SUPPLY_STATUS,
     DATA_KEY_PWS_ERROR,
     DATA_KEY_REMOTE,
@@ -77,16 +80,26 @@ from ..common.consts import (
     DATA_LED_INTENSITY,
     DATA_LED_MODE,
     DATA_ROBOT_NAME,
+    DATA_ROBOT_PRODUCT_DESCRIPTION,
+    DATA_ROBOT_PRODUCT_NAME,
     DATA_SECTION_CYCLE_INFO,
     DATA_SECTION_DEBUG,
     DATA_SECTION_DYNAMIC,
     DATA_SECTION_FILTER_BAG_INDICATION,
+    DATA_SECTION_IS_CONNECTED,
     DATA_SECTION_LED,
     DATA_SECTION_PWS_ERROR,
     DATA_SECTION_ROBOT_ERROR,
     DATA_SECTION_SYSTEM_STATE,
+    DATA_SECTION_VERSIONS,
     DATA_SECTION_WIFI,
+    DATA_SYSTEM_STATE_ROBOT_TYPE,
     DATA_SYSTEM_STATE_TURN_ON_COUNT,
+    DATA_VERSIONS_PWS,
+    DATA_VERSIONS_PWS_HW,
+    DATA_VERSIONS_PWS_SW,
+    DATA_VERSIONS_ROBOT,
+    DATA_VERSIONS_ROBOT_SW,
     DATA_WIFI_NETWORK_NAME,
     DEFAULT_ENABLE,
     DEFAULT_LED_INTENSITY,
@@ -189,6 +202,19 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return data
 
     @property
+    def is_power_supply_online(self) -> bool:
+        """
+        Return whether the power supply is connected to the Maytronics cloud.
+
+        AWS keeps the robot's last state while it is offline and holds
+        commands until it comes back, so neither means anything until then.
+        Online until the robot's state says otherwise.
+        """
+        is_connected = self.aws_data.get(DATA_SECTION_IS_CONNECTED, {})
+
+        return is_connected.get(DATA_IS_CONNECTED) is not False
+
+    @property
     def config_manager(self) -> ConfigManager:
         config_manager = self._config_manager
 
@@ -202,6 +228,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
     async def initialize(self):
         self._build_data_mapping()
+
+        self._create_power_supply_device()
 
         entry = self.config_manager.entry
         await self.hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -247,27 +275,97 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         return data
 
     def get_device(self) -> DeviceInfo:
+        """Return the robot, which connects to the cloud through the power supply."""
         data = self.api_data
-        device_name = self.robot_name
-        model = data.get("Product Description")
-        versions = data.get("versions", {})
-        pws_version = versions.get("pwsVersion", {})
-        sw_version = pws_version.get("pwsSwVersion")
-        hw_version = pws_version.get("pwsHwVersion")
+
+        versions = self.aws_data.get(DATA_SECTION_VERSIONS, {})
+        robot_version = versions.get(DATA_VERSIONS_ROBOT, {})
+
+        # The robot reports its hardware version as "00"; the robot type
+        # (for example S4) says more about the hardware
+        system_state = self.aws_data.get(DATA_SECTION_SYSTEM_STATE, {})
+        robot_type = system_state.get(DATA_SYSTEM_STATE_ROBOT_TYPE)
 
         serial_number = self.config_manager.serial_number
 
         device_info = DeviceInfo(
             identifiers={(DEFAULT_NAME, serial_number)},
-            name=device_name,
-            model=model,
+            name=self.robot_name,
+            model=data.get(DATA_ROBOT_PRODUCT_DESCRIPTION),
+            model_id=data.get(DATA_ROBOT_PRODUCT_NAME),
             manufacturer=MANUFACTURER,
-            hw_version=hw_version,
-            sw_version=sw_version,
+            serial_number=serial_number,
+            hw_version=robot_type,
+            sw_version=robot_version.get(DATA_VERSIONS_ROBOT_SW),
+            via_device=(DEFAULT_NAME, self._power_supply_id),
             configuration_url=CONFIGURATION_URL,
         )
 
         return device_info
+
+    def get_power_supply_device(self) -> DeviceInfo:
+        """Return the power supply, which holds the Wi-Fi and cloud connection."""
+        versions = self.aws_data.get(DATA_SECTION_VERSIONS, {})
+        pws_version = versions.get(DATA_VERSIONS_PWS, {})
+
+        # "00" is the only hardware version seen so far and tells the user
+        # nothing, so leave the field empty
+        hw_version = pws_version.get(DATA_VERSIONS_PWS_HW)
+        if hw_version == "00":
+            hw_version = None
+
+        device_info = DeviceInfo(
+            identifiers={(DEFAULT_NAME, self._power_supply_id)},
+            name=f"{self.robot_name} Power Supply",
+            manufacturer=MANUFACTURER,
+            model="Power Supply",
+            hw_version=hw_version,
+            sw_version=pws_version.get(DATA_VERSIONS_PWS_SW),
+            configuration_url=CONFIGURATION_URL,
+        )
+
+        return device_info
+
+    @property
+    def _power_supply_id(self) -> str:
+        return f"{self.config_manager.serial_number}_power_supply"
+
+    def _create_power_supply_device(self):
+        """Create the power supply before the robot device that links to it."""
+        device_registry = dr.async_get(self.hass)
+
+        device_registry.async_get_or_create(
+            config_entry_id=self.config_manager.entry.entry_id,
+            **self.get_power_supply_device(),
+        )
+
+    def _update_device_registry(self):
+        """Copy the product and versions onto the devices once they load."""
+        device_registry = dr.async_get(self.hass)
+
+        for device_info in (self.get_power_supply_device(), self.get_device()):
+            device = device_registry.async_get_device(
+                identifiers=device_info["identifiers"]
+            )
+
+            if device is None:
+                continue
+
+            changes = {
+                key: device_info.get(key)
+                for key in (
+                    "model",
+                    "model_id",
+                    "hw_version",
+                    "sw_version",
+                    "serial_number",
+                )
+                if device_info.get(key) is not None
+                and getattr(device, key) != device_info.get(key)
+            }
+
+            if changes:
+                device_registry.async_update_device(device.id, **changes)
 
     async def _on_api_status_changed(self, entry_id: str, status: ConnectivityStatus):
         if entry_id != self._config_manager.entry_id:
@@ -396,6 +494,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
                 self._set_system_status_details()
 
+                self._update_device_registry()
+
             return {}
 
         except Exception as err:
@@ -421,6 +521,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             slugify(DATA_KEY_CYCLE_TIME): self._get_cycle_time_data,
             slugify(DATA_KEY_CYCLE_TIME_LEFT): self._get_cycle_time_left_data,
             slugify(DATA_KEY_AWS_BROKER): self._get_aws_broker_data,
+            slugify(
+                DATA_KEY_POWER_SUPPLY_CONNECTION
+            ): self._get_power_supply_connection_data,
             slugify(DATA_KEY_ROBOT_ERROR): self._get_robot_error_data,
             slugify(DATA_KEY_PWS_ERROR): self._get_pws_error_data,
             slugify(DATA_KEY_BATTERY): self._get_battery_data,
@@ -768,6 +871,18 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         }
 
         return result
+
+    def _get_power_supply_connection_data(self, _entity_description) -> dict | None:
+        """
+        Return whether the power supply is connected to the Maytronics cloud.
+
+        AWS Broker is Home Assistant's own connection to AWS IoT. This is the
+        power supply's, so it can be off while AWS Broker is on. The robot
+        itself can be off while this is on.
+        """
+        is_connected = self.aws_data.get(DATA_SECTION_IS_CONNECTED, {})
+
+        return {ATTR_IS_ON: is_connected.get(DATA_IS_CONNECTED)}
 
     def _get_robot_error_data(self, entity_description) -> dict | None:
         result = self._get_error_code(entity_description, DATA_SECTION_ROBOT_ERROR)

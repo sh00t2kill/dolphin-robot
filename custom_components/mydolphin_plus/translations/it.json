@@ -39,6 +39,9 @@
       },
       "weekly_scheduler": {
         "name": "Scheduler settimanale"
+      },
+      "power_supply_connection": {
+        "name": "Connessione dell'alimentatore"
       }
     },
     "light": {
@@ -280,6 +283,11 @@
         "description": "Inserisci il codice di accesso ricevuto via email.",
         "title": "Conferma OTP"
       }
+    }
+  },
+  "exceptions": {
+    "robot_offline": {
+      "message": "Il robot è offline. Verifica che l'alimentatore sia acceso e connesso al Wi-Fi."
     }
   }
 }

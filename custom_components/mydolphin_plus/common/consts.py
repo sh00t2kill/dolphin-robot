@@ -80,9 +80,11 @@ DATA_SECTION_WIFI = "wifi"
 DATA_SECTION_CYCLE_INFO = "cycleInfo"
 DATA_SECTION_FILTER_BAG_INDICATION = "filterBagIndication"
 DATA_SECTION_SYSTEM_STATE = "systemState"
+DATA_SECTION_IS_CONNECTED = "isConnected"
 DATA_SECTION_ROBOT_ERROR = "robotError"
 DATA_SECTION_PWS_ERROR = "pwsError"
 DATA_SECTION_ACTIVITY = "activity"
+DATA_SECTION_VERSIONS = "versions"
 
 DATA_STATE_REPORTED = "reported"
 DATA_STATE_DESIRED = "desired"
@@ -94,6 +96,13 @@ DATA_SYSTEM_STATE_IS_BUSY = "isBusy"
 DATA_SYSTEM_STATE_TURN_ON_COUNT = "rTurnOnCount"
 DATA_SYSTEM_STATE_TIME_ZONE = "timeZone"
 DATA_SYSTEM_STATE_TIME_ZONE_NAME = "timeZoneName"
+DATA_IS_CONNECTED = "connected"
+
+DATA_VERSIONS_PWS = "pwsVersion"
+DATA_VERSIONS_PWS_HW = "pwsHwVersion"
+DATA_VERSIONS_PWS_SW = "pwsSwVersion"
+DATA_VERSIONS_ROBOT = "robotVersion"
+DATA_VERSIONS_ROBOT_SW = "muSwVersion"
 
 DATA_SCHEDULE_IS_ENABLED = "isEnabled"
 DATA_SCHEDULE_CLEANING_MODE = "cleaningMode"
@@ -159,6 +168,7 @@ COGNITO_CHALLENGE_NAME = "CUSTOM_CHALLENGE"
 APPS_BASE = "https://apps.maytronics.com"
 AUTHENTICATE_USER_URL = f"{APPS_BASE}/mobapi/user/authenticate-user/"
 AWS_STS_TOKEN_URL = f"{APPS_BASE}/mt-sso/aws/getToken/"
+ROBOT_DETAILS_URL = f"{APPS_BASE}/mobapi/serial-numbers/getRobotDetailsByRobotSN/"
 
 APP_KEY = "346BDE92-53D1-4829-8A2E-B496014B586C"
 APP_VERSION = "ios_3.1.7_2"
@@ -217,11 +227,13 @@ TOPIC_CALLBACK_REJECTED = "rejected"
 
 DATA_ROBOT_NAME = "Robot Name"
 DATA_ROBOT_FAMILY = "Robot Family"
+DATA_ROBOT_PRODUCT_NAME = "Product Name"
+DATA_ROBOT_PRODUCT_DESCRIPTION = "Product Description"
 
 DATA_ROBOT_DETAILS = {
     "SERNUM": "Motor Unit Serial",
-    "PARTNAME": "Product Name",
-    "PARTDES": "Product Description",
+    "PARTNAME": DATA_ROBOT_PRODUCT_NAME,
+    "PARTDES": DATA_ROBOT_PRODUCT_DESCRIPTION,
     "AppName": "Application Name",
     "RegDate": "Registration Date",
     "MyRobotName": DATA_ROBOT_NAME,
@@ -314,6 +326,7 @@ DATA_KEY_FILTER_STATUS = "Filter Status"
 DATA_KEY_CYCLE_TIME = "Cycle Time"
 DATA_KEY_CYCLE_TIME_LEFT = "Cycle Time Left"
 DATA_KEY_AWS_BROKER = "AWS Broker"
+DATA_KEY_POWER_SUPPLY_CONNECTION = "Power Supply Connection"
 DATA_KEY_RSSI = "RSSI"
 DATA_KEY_NETWORK_NAME = "Network Name"
 DATA_KEY_CLEAN_MODE = "Clean Mode"

@@ -113,6 +113,11 @@ sequenceDiagram
     participant Broker as AWS IoT Broker
 
     User->>Entity: Call service (e.g. vacuum.start)
+
+    alt isConnected.connected is false
+        Entity-->>User: Raise robot_offline error
+    end
+
     Entity->>Coord: get_device_action(entity_description, SERVICE_START)
 
     Coord->>Coord: get_data(entity_description)
@@ -140,6 +145,17 @@ sequenceDiagram
 
     Note over Entity: Next refresh shows updated state
 ```
+
+### Robot offline
+
+When the robot's state reports `isConnected.connected` as `false`, the power supply is offline. AWS still accepts commands then and keeps them in the shadow's `desired` state, but nothing reads them until the power supply comes back. The robot's last reported state also stays in the shadow, so it looks current.
+
+So while the power supply is offline:
+
+- Every entity except AWS Broker and Power Supply Connection is unavailable (`MyDolphinPlusBaseEntity.available`)
+- Commands raise a `robot_offline` error instead of publishing (`async_execute_device_action`)
+
+Until the first shadow arrives, the robot counts as online.
 
 ---
 
